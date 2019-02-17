@@ -1,4 +1,4 @@
-package aws
+package awsauth
 
 import (
 	"errors"
@@ -21,6 +21,21 @@ import (
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-multierror"
 )
+
+type Config struct {
+	AccessKey             string
+	AssumeRoleARN         string
+	AssumeRoleExternalID  string
+	AssumeRolePolicy      string
+	AssumeRoleSessionName string
+	CredsFilename         string
+	MaxRetries            int
+	Profile               string
+	Region                string
+	SecretKey             string
+	SkipMetadataApiCheck  bool
+	Token                 string
+}
 
 func GetAccountIDAndPartition(iamconn *iam.IAM, stsconn *sts.STS, authProviderName string) (string, string, error) {
 	var accountID, partition string
@@ -82,14 +97,11 @@ func GetAccountIDAndPartitionFromIAMGetUser(iamconn *iam.IAM) (string, string, e
 	if err != nil {
 		// AccessDenied and ValidationError can be raised
 		// if credentials belong to federated profile, so we ignore these
-		if isAWSErr(err, "AccessDenied", "") {
-			return "", "", nil
-		}
-		if isAWSErr(err, "InvalidClientTokenId", "") {
-			return "", "", nil
-		}
-		if isAWSErr(err, "ValidationError", "") {
-			return "", "", nil
+		if awsErr, ok := err.(awserr.Error); ok {
+			switch awsErr.Code() {
+			case "AccessDenied", "InvalidClientTokenId", "ValidationError":
+				return "", "", nil
+			}
 		}
 		err = fmt.Errorf("failed getting account information via iam:GetUser: %s", err)
 		log.Printf("[DEBUG] %s", err)
@@ -247,11 +259,10 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 	log.Printf("[INFO] AWS Auth provider used: %q", cp.ProviderName)
 
 	awsConfig := &aws.Config{
-		Credentials:      creds,
-		Region:           aws.String(c.Region),
-		MaxRetries:       aws.Int(c.MaxRetries),
-		HTTPClient:       cleanhttp.DefaultClient(),
-		S3ForcePathStyle: aws.Bool(c.S3ForcePathStyle),
+		Credentials: creds,
+		Region:      aws.String(c.Region),
+		MaxRetries:  aws.Int(c.MaxRetries),
+		HTTPClient:  cleanhttp.DefaultClient(),
 	}
 
 	stsclient := sts.New(session.New(awsConfig))
