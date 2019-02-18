@@ -203,7 +203,13 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		// Real AWS should reply to a simple metadata request.
 		// We check it actually does to ensure something else didn't just
 		// happen to be listening on the same IP:Port
-		metadataClient := ec2metadata.New(session.New(cfg))
+		ec2Session, err := session.NewSession(cfg)
+
+		if err != nil {
+			return nil, fmt.Errorf("error creating EC2 Metadata session: %s", err)
+		}
+
+		metadataClient := ec2metadata.New(ec2Session)
 		if metadataClient.Available() {
 			providers = append(providers, &ec2rolecreds.EC2RoleProvider{
 				Client: metadataClient,
@@ -250,7 +256,13 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		HTTPClient:  cleanhttp.DefaultClient(),
 	}
 
-	stsclient := sts.New(session.New(awsConfig))
+	assumeRoleSession, err := session.NewSession(awsConfig)
+
+	if err != nil {
+		return nil, fmt.Errorf("error creating assume role session: %s", err)
+	}
+
+	stsclient := sts.New(assumeRoleSession)
 	assumeRoleProvider := &stscreds.AssumeRoleProvider{
 		Client:  stsclient,
 		RoleARN: c.AssumeRoleARN,
