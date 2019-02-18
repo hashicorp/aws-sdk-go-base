@@ -13,9 +13,9 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-// getMockedAwsApiSession establishes a httptest server to simulate behaviour
+// GetMockedAwsApiSession establishes a httptest server to simulate behaviour
 // of a real AWS API server
-func getMockedAwsApiSession(svcName string, endpoints []*awsMockEndpoint) (func(), *session.Session, error) {
+func GetMockedAwsApiSession(svcName string, endpoints []*MockEndpoint) (func(), *session.Session, error) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buf := new(bytes.Buffer)
 		if _, err := buf.ReadFrom(r.Body); err != nil {
@@ -58,18 +58,18 @@ func getMockedAwsApiSession(svcName string, endpoints []*awsMockEndpoint) (func(
 	return ts.Close, sess, err
 }
 
-type awsMockEndpoint struct {
-	Request  *awsMockRequest
-	Response *awsMockResponse
+type MockEndpoint struct {
+	Request  *MockRequest
+	Response *MockResponse
 }
 
-type awsMockRequest struct {
+type MockRequest struct {
 	Method string
 	Uri    string
 	Body   string
 }
 
-type awsMockResponse struct {
+type MockResponse struct {
 	StatusCode  int
 	Body        string
 	ContentType string

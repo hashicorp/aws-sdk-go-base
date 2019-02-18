@@ -20,8 +20,8 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 		Description          string
 		AuthProviderName     string
 		EC2MetadataEndpoints []*endpoint
-		IAMEndpoints         []*awsMockEndpoint
-		STSEndpoints         []*awsMockEndpoint
+		IAMEndpoints         []*MockEndpoint
+		STSEndpoints         []*MockEndpoint
 		ErrCount             int
 		ExpectedAccountID    string
 		ExpectedPartition    string
@@ -30,10 +30,10 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			Description:          "EC2 Metadata over iam:GetUser when using EC2 Instance Profile",
 			AuthProviderName:     ec2rolecreds.ProviderName,
 			EC2MetadataEndpoints: append(ec2metadata_securityCredentialsEndpoints, ec2metadata_instanceIdEndpoint, ec2metadata_iamInfoEndpoint),
-			IAMEndpoints: []*awsMockEndpoint{
+			IAMEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsMockResponse{200, iamResponse_GetUser_valid, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &MockResponse{200, iamResponse_GetUser_valid, "text/xml"},
 				},
 			},
 			ExpectedAccountID: ec2metadata_iamInfoEndpoint_expectedAccountID,
@@ -43,16 +43,16 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			Description:          "Mimic the metadata service mocked by Hologram (https://github.com/AdRoll/hologram)",
 			AuthProviderName:     ec2rolecreds.ProviderName,
 			EC2MetadataEndpoints: ec2metadata_securityCredentialsEndpoints,
-			IAMEndpoints: []*awsMockEndpoint{
+			IAMEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsMockResponse{403, iamResponse_GetUser_unauthorized, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &MockResponse{403, iamResponse_GetUser_unauthorized, "text/xml"},
 				},
 			},
-			STSEndpoints: []*awsMockEndpoint{
+			STSEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &awsMockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
+					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
 				},
 			},
 			ExpectedAccountID: stsResponse_GetCallerIdentity_valid_expectedAccountID,
@@ -60,20 +60,20 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 		},
 		{
 			Description: "iam:ListRoles if iam:GetUser AccessDenied and sts:GetCallerIdentity fails",
-			IAMEndpoints: []*awsMockEndpoint{
+			IAMEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsMockResponse{403, iamResponse_GetUser_unauthorized, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &MockResponse{403, iamResponse_GetUser_unauthorized, "text/xml"},
 				},
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsMockResponse{200, iamResponse_ListRoles_valid, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &MockResponse{200, iamResponse_ListRoles_valid, "text/xml"},
 				},
 			},
-			STSEndpoints: []*awsMockEndpoint{
+			STSEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &awsMockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
+					Response: &MockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
 				},
 			},
 			ExpectedAccountID: iamResponse_ListRoles_valid_expectedAccountID,
@@ -81,20 +81,20 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 		},
 		{
 			Description: "iam:ListRoles if iam:GetUser ValidationError and sts:GetCallerIdentity fails",
-			IAMEndpoints: []*awsMockEndpoint{
+			IAMEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsMockResponse{400, iamResponse_GetUser_federatedFailure, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &MockResponse{400, iamResponse_GetUser_federatedFailure, "text/xml"},
 				},
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsMockResponse{200, iamResponse_ListRoles_valid, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &MockResponse{200, iamResponse_ListRoles_valid, "text/xml"},
 				},
 			},
-			STSEndpoints: []*awsMockEndpoint{
+			STSEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &awsMockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
+					Response: &MockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
 				},
 			},
 			ExpectedAccountID: iamResponse_ListRoles_valid_expectedAccountID,
@@ -102,20 +102,20 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 		},
 		{
 			Description: "Error when all endpoints fail",
-			IAMEndpoints: []*awsMockEndpoint{
+			IAMEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsMockResponse{400, iamResponse_GetUser_federatedFailure, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &MockResponse{400, iamResponse_GetUser_federatedFailure, "text/xml"},
 				},
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsMockResponse{403, iamResponse_ListRoles_unauthorized, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &MockResponse{403, iamResponse_ListRoles_unauthorized, "text/xml"},
 				},
 			},
-			STSEndpoints: []*awsMockEndpoint{
+			STSEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &awsMockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
+					Response: &MockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
 				},
 			},
 			ErrCount: 1,
@@ -130,13 +130,13 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			awsTs := awsMetadataApiMock(testCase.EC2MetadataEndpoints)
 			defer awsTs()
 
-			closeIam, iamSess, err := getMockedAwsApiSession("IAM", testCase.IAMEndpoints)
+			closeIam, iamSess, err := GetMockedAwsApiSession("IAM", testCase.IAMEndpoints)
 			defer closeIam()
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			closeSts, stsSess, err := getMockedAwsApiSession("STS", testCase.STSEndpoints)
+			closeSts, stsSess, err := GetMockedAwsApiSession("STS", testCase.STSEndpoints)
 			defer closeSts()
 			if err != nil {
 				t.Fatal(err)
@@ -187,37 +187,37 @@ func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 	var testCases = []struct {
 		Description       string
-		MockEndpoints     []*awsMockEndpoint
+		MockEndpoints     []*MockEndpoint
 		ErrCount          int
 		ExpectedAccountID string
 		ExpectedPartition string
 	}{
 		{
 			Description: "Ignore iam:GetUser failure with federated user",
-			MockEndpoints: []*awsMockEndpoint{
+			MockEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsMockResponse{400, iamResponse_GetUser_federatedFailure, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &MockResponse{400, iamResponse_GetUser_federatedFailure, "text/xml"},
 				},
 			},
 			ErrCount: 0,
 		},
 		{
 			Description: "Ignore iam:GetUser failure with unauthorized user",
-			MockEndpoints: []*awsMockEndpoint{
+			MockEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsMockResponse{403, iamResponse_GetUser_unauthorized, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &MockResponse{403, iamResponse_GetUser_unauthorized, "text/xml"},
 				},
 			},
 			ErrCount: 0,
 		},
 		{
 			Description: "iam:GetUser success",
-			MockEndpoints: []*awsMockEndpoint{
+			MockEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsMockResponse{200, iamResponse_GetUser_valid, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &MockResponse{200, iamResponse_GetUser_valid, "text/xml"},
 				},
 			},
 			ExpectedAccountID: iamResponse_GetUser_valid_expectedAccountID,
@@ -227,7 +227,7 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, iamSess, err := getMockedAwsApiSession("IAM", testCase.MockEndpoints)
+			closeIam, iamSess, err := GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
 			if err != nil {
 				t.Fatal(err)
@@ -255,27 +255,27 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 	var testCases = []struct {
 		Description       string
-		MockEndpoints     []*awsMockEndpoint
+		MockEndpoints     []*MockEndpoint
 		ErrCount          int
 		ExpectedAccountID string
 		ExpectedPartition string
 	}{
 		{
 			Description: "iam:ListRoles unauthorized",
-			MockEndpoints: []*awsMockEndpoint{
+			MockEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsMockResponse{403, iamResponse_ListRoles_unauthorized, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &MockResponse{403, iamResponse_ListRoles_unauthorized, "text/xml"},
 				},
 			},
 			ErrCount: 1,
 		},
 		{
 			Description: "iam:ListRoles success",
-			MockEndpoints: []*awsMockEndpoint{
+			MockEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsMockResponse{200, iamResponse_ListRoles_valid, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &MockResponse{200, iamResponse_ListRoles_valid, "text/xml"},
 				},
 			},
 			ExpectedAccountID: iamResponse_ListRoles_valid_expectedAccountID,
@@ -285,7 +285,7 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, iamSess, err := getMockedAwsApiSession("IAM", testCase.MockEndpoints)
+			closeIam, iamSess, err := GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
 			if err != nil {
 				t.Fatal(err)
@@ -313,27 +313,27 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 	var testCases = []struct {
 		Description       string
-		MockEndpoints     []*awsMockEndpoint
+		MockEndpoints     []*MockEndpoint
 		ErrCount          int
 		ExpectedAccountID string
 		ExpectedPartition string
 	}{
 		{
 			Description: "sts:GetCallerIdentity unauthorized",
-			MockEndpoints: []*awsMockEndpoint{
+			MockEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &awsMockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
+					Response: &MockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
 				},
 			},
 			ErrCount: 1,
 		},
 		{
 			Description: "sts:GetCallerIdentity success",
-			MockEndpoints: []*awsMockEndpoint{
+			MockEndpoints: []*MockEndpoint{
 				{
-					Request:  &awsMockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &awsMockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
+					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
+					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
 				},
 			},
 			ExpectedAccountID: stsResponse_GetCallerIdentity_valid_expectedAccountID,
@@ -343,7 +343,7 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeSts, stsSess, err := getMockedAwsApiSession("STS", testCase.MockEndpoints)
+			closeSts, stsSess, err := GetMockedAwsApiSession("STS", testCase.MockEndpoints)
 			defer closeSts()
 			if err != nil {
 				t.Fatal(err)
