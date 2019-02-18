@@ -1,4 +1,4 @@
-package awsauth
+package awsbase
 
 import (
 	"bytes"
