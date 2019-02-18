@@ -17,6 +17,3 @@ linters:
     - unused
     - varcheck
     - vet
-
-run:
-  modules-download-mode: vendor
