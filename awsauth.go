@@ -22,21 +22,6 @@ import (
 	"github.com/hashicorp/go-multierror"
 )
 
-type Config struct {
-	AccessKey             string
-	AssumeRoleARN         string
-	AssumeRoleExternalID  string
-	AssumeRolePolicy      string
-	AssumeRoleSessionName string
-	CredsFilename         string
-	MaxRetries            int
-	Profile               string
-	Region                string
-	SecretKey             string
-	SkipMetadataApiCheck  bool
-	Token                 string
-}
-
 func GetAccountIDAndPartition(iamconn *iam.IAM, stsconn *sts.STS, authProviderName string) (string, string, error) {
 	var accountID, partition string
 	var err, errors error
