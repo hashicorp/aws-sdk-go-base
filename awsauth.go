@@ -197,6 +197,9 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 	if uri := os.Getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"); len(uri) > 0 {
 		providers = append(providers, defaults.RemoteCredProvider(*cfg, defaults.Handlers()))
 		log.Print("[INFO] ECS container credentials detected, RemoteCredProvider added to auth chain")
+	} else if uri := os.Getenv("AWS_CONTAINER_CREDENTIALS_FULL_URI"); len(uri) > 0 {
+		providers = append(providers, defaults.RemoteCredProvider(*cfg, defaults.Handlers()))
+		log.Print("[INFO] ECS container credentials detected, RemoteCredProvider added to auth chain")
 	}
 
 	if !c.SkipMetadataApiCheck {
