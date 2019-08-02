@@ -1,9 +1,15 @@
 dist: xenial
 language: go
 go:
-- "1.11.x"
+- "1.12.x"
+
 env:
   GOFLAGS=-mod=vendor
+
+matrix:
+  fast_finish: true
+  allow_failures:
+  - go: tip
 
 install:
 - make tools
@@ -15,7 +21,3 @@ script:
 branches:
   only:
   - master
-matrix:
-  fast_finish: true
-  allow_failures:
-  - go: tip
