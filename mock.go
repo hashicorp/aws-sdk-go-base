@@ -13,9 +13,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 )
 
-// GetMockedAwsApiSession establishes a httptest server to simulate behaviour
-// of a real AWS API server
-func GetMockedAwsApiSession(svcName string, endpoints []*MockEndpoint) (func(), *session.Session, error) {
+// MockAwsApiServer establishes a httptest server to simulate behaviour of a real AWS API server
+func MockAwsApiServer(svcName string, endpoints []*MockEndpoint) *httptest.Server {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buf := new(bytes.Buffer)
 		if _, err := buf.ReadFrom(r.Body); err != nil {
@@ -46,6 +45,13 @@ func GetMockedAwsApiSession(svcName string, endpoints []*MockEndpoint) (func(), 
 		w.WriteHeader(400)
 	}))
 
+	return ts
+}
+
+// GetMockedAwsApiSession establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
+func GetMockedAwsApiSession(svcName string, endpoints []*MockEndpoint) (func(), *session.Session, error) {
+	ts := MockAwsApiServer(svcName, endpoints)
+
 	sc := awsCredentials.NewStaticCredentials("accessKey", "secretKey", "")
 
 	sess, err := session.NewSession(&aws.Config{
@@ -58,17 +64,20 @@ func GetMockedAwsApiSession(svcName string, endpoints []*MockEndpoint) (func(), 
 	return ts.Close, sess, err
 }
 
+// MockEndpoint represents a basic request and response that can be used for creating simple httptest server routes.
 type MockEndpoint struct {
 	Request  *MockRequest
 	Response *MockResponse
 }
 
+// MockRequest represents a basic HTTP request
 type MockRequest struct {
 	Method string
 	Uri    string
 	Body   string
 }
 
+// MockResponse represents a basic HTTP response.
 type MockResponse struct {
 	StatusCode  int
 	Body        string
