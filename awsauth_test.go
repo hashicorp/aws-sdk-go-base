@@ -420,25 +420,27 @@ func TestAWSParseAccountIDAndPartitionFromARN(t *testing.T) {
 	}
 }
 
-func TestAWSGetCredentials_shouldError(t *testing.T) {
+func TestAWSGetCredentials_shouldErrorWhenBlank(t *testing.T) {
 	resetEnv := unsetEnv(t)
 	defer resetEnv()
-	cfg := Config{}
 
+	cfg := Config{}
 	c, err := GetCredentials(&cfg)
-	if awsErr, ok := err.(awserr.Error); ok {
-		if awsErr.Code() != "NoCredentialProviders" {
-			t.Fatal("Expected NoCredentialProviders error")
-		}
-	}
-	_, err = c.Get()
-	if awsErr, ok := err.(awserr.Error); ok {
-		if awsErr.Code() != "NoCredentialProviders" {
-			t.Fatal("Expected NoCredentialProviders error")
-		}
-	}
+
 	if err == nil {
-		t.Fatal("Expected an error with empty env, keys, and IAM in AWS Config")
+		_, err = c.Get()
+		if awsErr, ok := err.(awserr.Error); ok {
+			if awsErr.Code() != "NoCredentialProviders" {
+				t.Fatal("Expected NoCredentialProviders error")
+			}
+		} else {
+			t.Fatal("Expected AWS error")
+		}
+		if err == nil {
+			t.Fatal("Expected an error given empty env, keys, and IAM in AWS Config")
+		}
+	} else {
+		t.Fatalf("Unexpected error: %s", err)
 	}
 }
 
@@ -768,6 +770,10 @@ func unsetEnv(t *testing.T) func() {
 	if err := os.Unsetenv("AWS_SHARED_CREDENTIALS_FILE"); err != nil {
 		t.Fatalf("Error unsetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
 	}
+	// The Shared Credentials Provider has a very reasonable fallback option of
+	// checking the user's home directory for credentials, which may create
+	// unexpected results for users running these tests
+	os.Setenv("HOME", "/dev/null")
 
 	return func() {
 		// re-set all the envs we unset above
@@ -785,6 +791,9 @@ func unsetEnv(t *testing.T) func() {
 		}
 		if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", e.CredsFilename); err != nil {
 			t.Fatalf("Error resetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
+		}
+		if err := os.Setenv("HOME", e.Home); err != nil {
+			t.Fatalf("Error resetting env var HOME: %s", err)
 		}
 	}
 }
@@ -871,12 +880,13 @@ func getEnv() *currentEnv {
 		Token:         os.Getenv("AWS_SESSION_TOKEN"),
 		Profile:       os.Getenv("AWS_PROFILE"),
 		CredsFilename: os.Getenv("AWS_SHARED_CREDENTIALS_FILE"),
+		Home:          os.Getenv("HOME"),
 	}
 }
 
 // struct to preserve the current environment
 type currentEnv struct {
-	Key, Secret, Token, Profile, CredsFilename string
+	Key, Secret, Token, Profile, CredsFilename, Home string
 }
 
 type endpoint struct {

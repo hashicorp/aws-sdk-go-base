@@ -16,7 +16,7 @@ install:
 
 script:
 - make lint
-- make test
+- go test -timeout=30s -parallel=4 -v ./...
 
 branches:
   only:
