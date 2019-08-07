@@ -230,7 +230,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		return awsCredentials.NewChainCredentials(providers), nil
 	}
 
-	// Otherwise we need to construct and STS client with the main credentials, and verify
+	// Otherwise we need to construct an STS client with the main credentials, and verify
 	// that we can assume the defined role.
 	log.Printf("[INFO] Attempting to AssumeRole %s (SessionName: %q, ExternalId: %q, Policy: %q)",
 		c.AssumeRoleARN, c.AssumeRoleSessionName, c.AssumeRoleExternalID, c.AssumeRolePolicy)
