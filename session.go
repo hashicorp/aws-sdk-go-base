@@ -22,9 +22,10 @@ import (
 func GetSessionOptions(c *Config) (*session.Options, error) {
 	options := &session.Options{
 		Config: aws.Config{
-			HTTPClient: cleanhttp.DefaultClient(),
-			MaxRetries: aws.Int(0),
-			Region:     aws.String(c.Region),
+			CredentialsChainVerboseErrors: aws.Bool(c.DebugLogging),
+			HTTPClient:                    cleanhttp.DefaultClient(),
+			MaxRetries:                    aws.Int(0),
+			Region:                        aws.String(c.Region),
 		},
 	}
 
