@@ -747,29 +747,6 @@ func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
 	}
 }
 
-// func TestAWSGetCredentials_shouldAssumeRole(t *testing.T) {
-// 	resetEnv := unsetEnv(t)
-// 	defer resetEnv()
-
-// 	awsTs := awsMetadataApiMock(append(ec2metadata_securityCredentialsEndpoints, ec2metadata_instanceIdEndpoint, ec2metadata_iamInfoEndpoint))
-// 	defer awsTs()
-
-// 	config := Config{
-// 		AccessKey: "test",
-// 		SecretKey: "test",
-// 		AssumeRoleARN: "arn:aws:iam::222222222222:user/Alice",
-// 		Region: "us-west-2",
-// 	}
-
-// 	creds, err := GetCredentials(&config)
-// 	if err != nil {
-// 		t.Fatalf("Error gettings creds: %s", err)
-// 	}
-// 	if creds == nil {
-// 		t.Fatal("Expected a creds provider to be returned")
-// 	}
-// }
-
 // invalidAwsEnv establishes a httptest server to simulate behaviour
 // when endpoint doesn't respond as expected
 func invalidAwsEnv(t *testing.T) func() {

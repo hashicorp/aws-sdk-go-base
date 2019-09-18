@@ -98,9 +98,37 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 		expectedAcctID    string
 		expectedPartition string
 	}{
-		{"StandardProvider_Config", &Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey", Region: "us-west-2", UserAgentProducts: []*UserAgentProduct{{}}, StsEndpoint: ts.URL}, "222222222222", "aws"},
-		{"SkipCredsValidation_Config", &Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey", Region: "us-west-2", SkipCredsValidation: true, UserAgentProducts: []*UserAgentProduct{{}}, StsEndpoint: ts.URL}, "222222222222", "aws"},
-		{"SkipRequestingAccountId_Config", &Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey", Region: "us-west-2", SkipCredsValidation: true, SkipRequestingAccountId: true, UserAgentProducts: []*UserAgentProduct{{}}, StsEndpoint: ts.URL}, "", "aws"},
+		{"StandardProvider_Config", &Config{
+			AccessKey:         "MockAccessKey",
+			SecretKey:         "MockSecretKey",
+			Region:            "us-west-2",
+			UserAgentProducts: []*UserAgentProduct{{}},
+			StsEndpoint:       ts.URL},
+			"222222222222", "aws"},
+		{"SkipCredsValidation_Config", &Config{
+			AccessKey:           "MockAccessKey",
+			SecretKey:           "MockSecretKey",
+			Region:              "us-west-2",
+			SkipCredsValidation: true,
+			UserAgentProducts:   []*UserAgentProduct{{}},
+			StsEndpoint:         ts.URL},
+			"222222222222", "aws"},
+		{"SkipRequestingAccountId_Config", &Config{
+			AccessKey:               "MockAccessKey",
+			SecretKey:               "MockSecretKey",
+			Region:                  "us-west-2",
+			SkipCredsValidation:     true,
+			SkipRequestingAccountId: true,
+			UserAgentProducts:       []*UserAgentProduct{{}},
+			StsEndpoint:             ts.URL},
+			"", "aws"},
+		// {"WithAssumeRole", &Config{
+		// 		AccessKey: "MockAccessKey",
+		// 		SecretKey: "MockSecretKey",
+		// 		Region: "us-west-2",
+		// 		UserAgentProducts: []*UserAgentProduct{{}},
+		// 		AssumeRoleARN: "arn:aws:iam::222222222222:user/Alice"},
+		// 	"222222222222", "aws"},
 	}
 
 	for _, tc := range tt {
