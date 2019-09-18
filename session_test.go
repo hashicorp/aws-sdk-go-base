@@ -2,6 +2,7 @@ package awsbase
 
 import (
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/awstesting"
@@ -97,6 +98,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 		config            *Config
 		expectedAcctID    string
 		expectedPartition string
+		expectedError     string
 	}{
 		{"StandardProvider_Config", &Config{
 			AccessKey:         "MockAccessKey",
@@ -104,7 +106,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			Region:            "us-west-2",
 			UserAgentProducts: []*UserAgentProduct{{}},
 			StsEndpoint:       ts.URL},
-			"222222222222", "aws"},
+			"222222222222", "aws", ""},
 		{"SkipCredsValidation_Config", &Config{
 			AccessKey:           "MockAccessKey",
 			SecretKey:           "MockSecretKey",
@@ -112,7 +114,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			SkipCredsValidation: true,
 			UserAgentProducts:   []*UserAgentProduct{{}},
 			StsEndpoint:         ts.URL},
-			"222222222222", "aws"},
+			"222222222222", "aws", ""},
 		{"SkipRequestingAccountId_Config", &Config{
 			AccessKey:               "MockAccessKey",
 			SecretKey:               "MockSecretKey",
@@ -121,7 +123,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			SkipRequestingAccountId: true,
 			UserAgentProducts:       []*UserAgentProduct{{}},
 			StsEndpoint:             ts.URL},
-			"", "aws"},
+			"", "aws", ""},
 		// {"WithAssumeRole", &Config{
 		// 		AccessKey: "MockAccessKey",
 		// 		SecretKey: "MockSecretKey",
@@ -129,25 +131,40 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 		// 		UserAgentProducts: []*UserAgentProduct{{}},
 		// 		AssumeRoleARN: "arn:aws:iam::222222222222:user/Alice"},
 		// 	"222222222222", "aws"},
+		{"NoCredentialProviders_Config", &Config{
+			AccessKey:         "",
+			SecretKey:         "",
+			Region:            "us-west-2",
+			UserAgentProducts: []*UserAgentProduct{{}},
+			StsEndpoint:       ts.URL},
+			"", "", "No valid credential sources found for AWS Provider."},
 	}
 
 	for _, tc := range tt {
 		t.Run(tc.desc, func(t *testing.T) {
 			sess, acctID, part, err := GetSessionWithAccountIDAndPartition(tc.config)
 			if err != nil {
-				t.Fatalf("GetSessionWithAccountIDAndPartition(&Config{...}) should return a valid session, but got the error %s", err)
-			}
+				if tc.expectedError == "" {
+					t.Fatalf("GetSessionWithAccountIDAndPartition(&Config{...}) should return a valid session, but got the error %s", err)
+				} else {
+					if !strings.Contains(err.Error(), tc.expectedError) {
+						t.Fatalf("GetSession(c) expected error %q and got %q", tc.expectedError, err)
+					} else {
+						t.Logf("Found error message %q", err)
+					}
+				}
+			} else {
+				if sess == nil {
+					t.Error("GetSession(c) resulted in a nil session")
+				}
 
-			if sess == nil {
-				t.Error("GetSession(c) resulted in a nil session")
-			}
+				if acctID != tc.expectedAcctID {
+					t.Errorf("GetSession(c) returned an incorrect AWS account ID, expected %q but got %q", tc.expectedAcctID, acctID)
+				}
 
-			if acctID != tc.expectedAcctID {
-				t.Errorf("GetSession(c) returned an incorrect AWS account ID, expected %q but got %q", tc.expectedAcctID, acctID)
-			}
-
-			if part != tc.expectedPartition {
-				t.Errorf("GetSession(c) returned an incorrect AWS partition, expected %q but got %q", tc.expectedPartition, part)
+				if part != tc.expectedPartition {
+					t.Errorf("GetSession(c) returned an incorrect AWS partition, expected %q but got %q", tc.expectedPartition, part)
+				}
 			}
 		})
 	}
