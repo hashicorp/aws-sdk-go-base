@@ -8,3 +8,5 @@ require (
 	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd // indirect
 	golang.org/x/text v0.3.0 // indirect
 )
+
+go 1.13

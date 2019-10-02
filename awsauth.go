@@ -29,6 +29,13 @@ const (
 	providing credentials for the AWS Provider`
 )
 
+var (
+	// ErrNoValidCredentialSources indicates that no credentials source could be found
+	ErrNoValidCredentialSources = errNoValidCredentialSources()
+)
+
+func errNoValidCredentialSources() error { return errors.New(errMsgNoValidCredentialSources) }
+
 // GetAccountIDAndPartition gets the account ID and associated partition.
 func GetAccountIDAndPartition(iamconn *iam.IAM, stsconn *sts.STS, authProviderName string) (string, string, error) {
 	var accountID, partition string
@@ -175,7 +182,7 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	if c.Profile == "" {
 		sess, err = session.NewSession()
 		if err != nil {
-			return nil, errors.New(errMsgNoValidCredentialSources)
+			return nil, ErrNoValidCredentialSources
 		}
 	} else {
 		options := &session.Options{
@@ -191,7 +198,7 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 		sess, err = session.NewSessionWithOptions(*options)
 		if err != nil {
 			if IsAWSErr(err, "NoCredentialProviders", "") {
-				return nil, errors.New(errMsgNoValidCredentialSources)
+				return nil, ErrNoValidCredentialSources
 			}
 			return nil, fmt.Errorf("Error creating AWS session: %s", err)
 		}
@@ -200,7 +207,7 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	creds := sess.Config.Credentials
 	cp, err := sess.Config.Credentials.Get()
 	if err != nil {
-		return nil, errors.New(errMsgNoValidCredentialSources)
+		return nil, ErrNoValidCredentialSources
 	}
 
 	log.Printf("[INFO] Successfully derived credentials from session")

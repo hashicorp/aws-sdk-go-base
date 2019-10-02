@@ -2,7 +2,6 @@ package awsbase
 
 import (
 	"crypto/tls"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -63,7 +62,7 @@ func GetSession(c *Config) (*session.Session, error) {
 	sess, err := session.NewSessionWithOptions(*options)
 	if err != nil {
 		if IsAWSErr(err, "NoCredentialProviders", "") {
-			return nil, errors.New(errMsgNoValidCredentialSources)
+			return nil, ErrNoValidCredentialSources
 		}
 		return nil, fmt.Errorf("Error creating AWS session: %s", err)
 	}
