@@ -228,23 +228,3 @@ const iamResponse_ListRoles_unauthorized = `<ErrorResponse xmlns="https://iam.am
   </Error>
   <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
 </ErrorResponse>`
-
-const assumeRoleRespMsg = `
-<AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
-  <AssumeRoleResult>
-    <AssumedRoleUser>
-      <Arn>arn:aws:sts::account_id:assumed-role/role/session_name</Arn>
-      <AssumedRoleId>AKID:session_name</AssumedRoleId>
-    </AssumedRoleUser>
-    <Credentials>
-      <AccessKeyId>AKID</AccessKeyId>
-      <SecretAccessKey>SECRET</SecretAccessKey>
-      <SessionToken>SESSION_TOKEN</SessionToken>
-      <Expiration>%s</Expiration>
-    </Credentials>
-  </AssumeRoleResult>
-  <ResponseMetadata>
-    <RequestId>request-id</RequestId>
-  </ResponseMetadata>
-</AssumeRoleResponse>
-`

@@ -4,13 +4,11 @@ import (
 	"os"
 	"strings"
 	"testing"
-
-	"github.com/aws/aws-sdk-go/awstesting"
 )
 
 func TestGetSessionOptions(t *testing.T) {
 	oldEnv := initSessionTestEnv()
-	defer awstesting.PopEnv(oldEnv)
+	defer PopEnv(oldEnv)
 
 	tt := []struct {
 		desc        string
@@ -52,7 +50,7 @@ func TestGetSessionOptions(t *testing.T) {
 
 func TestGetSessionWithBlankConfig(t *testing.T) {
 	oldEnv := initSessionTestEnv()
-	defer awstesting.PopEnv(oldEnv)
+	defer PopEnv(oldEnv)
 
 	_, err := GetSession(&Config{})
 	if err == nil {
@@ -62,7 +60,7 @@ func TestGetSessionWithBlankConfig(t *testing.T) {
 
 func TestGetSessionWithCreds(t *testing.T) {
 	oldEnv := initSessionTestEnv()
-	defer awstesting.PopEnv(oldEnv)
+	defer PopEnv(oldEnv)
 
 	sess, err := GetSession(&Config{
 		AccessKey:            "MockAccessKey",
@@ -83,7 +81,7 @@ func TestGetSessionWithCreds(t *testing.T) {
 
 func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 	oldEnv := initSessionTestEnv()
-	defer awstesting.PopEnv(oldEnv)
+	defer PopEnv(oldEnv)
 
 	ts := MockAwsApiServer("STS", []*MockEndpoint{
 		{
@@ -170,8 +168,27 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 	}
 }
 
+func StashEnv() []string {
+	env := os.Environ()
+	os.Clearenv()
+	return env
+}
+
+func PopEnv(env []string) {
+	os.Clearenv()
+
+	for _, e := range env {
+		p := strings.SplitN(e, "=", 2)
+		k, v := p[0], ""
+		if len(p) > 1 {
+			v = p[1]
+		}
+		os.Setenv(k, v)
+	}
+}
+
 func initSessionTestEnv() (oldEnv []string) {
-	oldEnv = awstesting.StashEnv()
+	oldEnv = StashEnv()
 	os.Setenv("AWS_CONFIG_FILE", "file_not_exists")
 	os.Setenv("AWS_SHARED_CREDENTIALS_FILE", "file_not_exists")
 
