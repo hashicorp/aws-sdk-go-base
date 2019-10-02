@@ -425,20 +425,20 @@ func TestAWSGetCredentials_shouldErrorWhenBlank(t *testing.T) {
 	cfg := Config{}
 	c, err := GetCredentials(&cfg)
 
-	if err == nil {
-		_, err = c.Get()
-		if awsErr, ok := err.(awserr.Error); ok {
-			if awsErr.Code() != "NoCredentialProviders" {
-				t.Fatal("Expected NoCredentialProviders error")
-			}
-		} else {
-			t.Fatal("Expected AWS error")
-		}
-		if err == nil {
-			t.Fatal("Expected an error given empty env, keys, and IAM in AWS Config")
+	if err != nil {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	_, err = c.Get()
+	if awsErr, ok := err.(awserr.Error); ok {
+		if awsErr.Code() != "NoCredentialProviders" {
+			t.Fatal("Expected NoCredentialProviders error")
 		}
 	} else {
-		t.Fatalf("Unexpected error: %s", err)
+		t.Fatal("Expected AWS error")
+	}
+	if err == nil {
+		t.Fatal("Expected an error given empty env, keys, and IAM in AWS Config")
 	}
 }
 
