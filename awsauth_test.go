@@ -7,7 +7,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -423,20 +422,12 @@ func TestAWSGetCredentials_shouldErrorWhenBlank(t *testing.T) {
 	defer resetEnv()
 
 	cfg := Config{}
-	c, err := GetCredentials(&cfg)
+	_, err := GetCredentials(&cfg)
 
-	if err != nil {
+	if err != ErrNoValidCredentialSources {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
-	_, err = c.Get()
-	if awsErr, ok := err.(awserr.Error); ok {
-		if awsErr.Code() != "NoCredentialProviders" {
-			t.Fatal("Expected NoCredentialProviders error")
-		}
-	} else {
-		t.Fatal("Expected AWS error")
-	}
 	if err == nil {
 		t.Fatal("Expected an error given empty env, keys, and IAM in AWS Config")
 	}
@@ -586,21 +577,13 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEndpoint(t *testing.T) {
 	ts := invalidAwsEnv(t)
 	defer ts()
 
-	creds, err := GetCredentials(&Config{})
-	if err != nil {
+	_, err := GetCredentials(&Config{})
+	if err != ErrNoValidCredentialSources {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
-	if creds == nil {
-		t.Fatal("Expected a static creds provider to be returned")
-	}
 
-	v, err := creds.Get()
 	if err == nil {
 		t.Fatal("Expected error returned when getting creds w/ invalid EC2 endpoint")
-	}
-
-	if v.ProviderName != "" {
-		t.Fatalf("Expected provider name to be empty, %q given", v.ProviderName)
 	}
 }
 
