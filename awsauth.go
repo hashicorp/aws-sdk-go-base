@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -265,6 +266,22 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 	if uri := os.Getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"); len(uri) > 0 {
 		providers = append(providers, defaults.RemoteCredProvider(*cfg, defaults.Handlers()))
 		log.Print("[INFO] ECS container credentials detected, RemoteCredProvider added to auth chain")
+	}
+
+	if filePath := os.Getenv("AWS_WEB_IDENTITY_TOKEN_FILE"); len(filePath) > 0 {
+		stsSession, err := session.NewSession(cfg)
+		if err != nil {
+			return nil, fmt.Errorf("error creating sts session: %s", err)
+		}
+		stsClient := sts.New(stsSession)
+
+		providers = append(providers, stscreds.NewWebIdentityRoleProvider(
+			stsClient,
+			os.Getenv("AWS_ROLE_ARN"),
+			strconv.FormatInt(time.Now().UnixNano(), 10),
+			filePath,
+		))
+		log.Print("[INFO] EKS IRSA credentials detected, WebIdentityRoleProvider added to auth chain")
 	}
 
 	if !c.SkipMetadataApiCheck {
