@@ -34,11 +34,14 @@ func IsAWSErrExtended(err error, code string, message string, origErrMessage str
 		return false
 	}
 
+	if origErrMessage == "" {
+		return true
+	}
+
 	// Ensure OrigErr() is non-nil, to prevent panics
 	if origErr := err.(awserr.Error).OrigErr(); origErr != nil {
 		return strings.Contains(origErr.Error(), origErrMessage)
 	}
 
-	// Allow missing OrigErr() with missing origErrMessage
-	return origErrMessage == ""
+	return false
 }
