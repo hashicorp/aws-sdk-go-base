@@ -215,24 +215,11 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	return creds, nil
 }
 
-// GetCredentials gets credentials from the environment, shared credentials,
-// or the session (which may include a credential process). GetCredentials also
-// validates the credentials and the ability to assume a role or will return an
-// error if unsuccessful.
-func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
-	// build a chain provider, lazy-evaluated by aws-sdk
-	providers := []awsCredentials.Provider{
-		&awsCredentials.StaticProvider{Value: awsCredentials.Value{
-			AccessKeyID:     c.AccessKey,
-			SecretAccessKey: c.SecretKey,
-			SessionToken:    c.Token,
-		}},
-		&awsCredentials.EnvProvider{},
-		&awsCredentials.SharedCredentialsProvider{
-			Filename: c.CredsFilename,
-			Profile:  c.Profile,
-		},
-	}
+// GetCredentialsFromMetadata returns credentials derived from and ECS or ECS
+// metadata endpoint.
+func GetCredentialsFromMetadata(c *Config) (*awsCredentials.Credentials, error) {
+	log.Printf("[INFO] Attempting to use metadata-derived credentials")
+	providers := []awsCredentials.Provider{}
 
 	// Build isolated HTTP client to avoid issues with globally-shared settings
 	client := cleanhttp.DefaultClient()
@@ -298,9 +285,46 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 	cp, err := creds.Get()
 	if err != nil {
 		if IsAWSErr(err, "NoCredentialProviders", "") {
+			return nil, ErrNoValidCredentialSources
+		}
+		return nil, fmt.Errorf("Error deriving credentials from metadata: %s", err)
+	}
+
+	log.Printf("[INFO] Successfully derived credentials from metadata")
+	log.Printf("[INFO] AWS Auth provider used: %q", cp.ProviderName)
+	return creds, nil
+}
+
+// GetCredentials gets credentials from the environment, shared credentials,
+// the session (which may include a credential process), or ECS/EC2 metadata endpoints.
+// GetCredentials also validates the credentials and the ability to assume a role
+// or will return an error if unsuccessful.
+func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
+	// build a chain provider, lazy-evaluated by aws-sdk
+	providers := []awsCredentials.Provider{
+		&awsCredentials.StaticProvider{Value: awsCredentials.Value{
+			AccessKeyID:     c.AccessKey,
+			SecretAccessKey: c.SecretKey,
+			SessionToken:    c.Token,
+		}},
+		&awsCredentials.EnvProvider{},
+		&awsCredentials.SharedCredentialsProvider{
+			Filename: c.CredsFilename,
+			Profile:  c.Profile,
+		},
+	}
+
+	// Validate the credentials before returning them
+	creds := awsCredentials.NewChainCredentials(providers)
+	cp, err := creds.Get()
+	if err != nil {
+		if IsAWSErr(err, "NoCredentialProviders", "") {
 			creds, err = GetCredentialsFromSession(c)
 			if err != nil {
-				return nil, err
+				creds, err = GetCredentialsFromMetadata(c)
+				if err != nil {
+					return nil, err
+				}
 			}
 		} else {
 			return nil, fmt.Errorf("Error loading credentials for AWS Provider: %s", err)
