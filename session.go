@@ -117,6 +117,18 @@ func GetSession(c *Config) (*session.Session, error) {
 		}
 	})
 
+	if c.StopOnExpiredCreds {
+		sess.Handlers.Retry.PushFrontNamed(request.NamedHandler{
+			Name: "aws.ExpiredCreds",
+			Fn: func(r *request.Request) {
+				if r.IsErrorExpired() {
+					log.Printf("[WARN] Credentials expired. Stop retrying")
+					r.Retryable = aws.Bool(false)
+				}
+			},
+		})
+	}
+
 	if !c.SkipCredsValidation {
 		if _, _, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(sts.New(sess)); err != nil {
 			return nil, fmt.Errorf("error validating provider credentials: %w", err)
