@@ -35,6 +35,5 @@ jobs:
     - uses: actions/setup-go@v2
       with:
         go-version: ${{ env.GO_VERSION }}
-    - run: |
-        go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.27.0
-        golangci-lint run ./...
+    - run: go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.27.0
+    - run: golangci-lint run ./...
