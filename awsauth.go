@@ -27,6 +27,10 @@ const (
 	errMsgNoValidCredentialSources = `No valid credential sources found for AWS Provider.
 	Please see https://terraform.io/docs/providers/aws/index.html for more information on
 	providing credentials for the AWS Provider`
+
+	// Default amount of time for EC2/ECS metadata client operations.
+	// Keep this value low to prevent long delays in non-EC2/ECS environments.
+	DefaultMetadataClientTimeout = 100 * time.Millisecond
 )
 
 var (
@@ -236,9 +240,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 
 	// Build isolated HTTP client to avoid issues with globally-shared settings
 	client := cleanhttp.DefaultClient()
-
-	// Keep the default timeout (100ms) low as we don't want to wait in non-EC2 environments
-	client.Timeout = 100 * time.Millisecond
+	client.Timeout = DefaultMetadataClientTimeout
 
 	const userTimeoutEnvVar = "AWS_METADATA_TIMEOUT"
 	userTimeout := os.Getenv(userTimeoutEnvVar)

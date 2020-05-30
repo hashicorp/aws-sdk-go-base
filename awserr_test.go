@@ -103,6 +103,8 @@ func TestIsAwsErr(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := IsAWSErr(testCase.Err, testCase.Code, testCase.Message)
 
@@ -329,6 +331,8 @@ func TestIsAwsErrExtended(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := IsAWSErrExtended(testCase.Err, testCase.Code, testCase.Message, testCase.ExtendedMessage)
 

@@ -10,7 +10,7 @@ func TestGetSessionOptions(t *testing.T) {
 	oldEnv := initSessionTestEnv()
 	defer PopEnv(oldEnv)
 
-	tt := []struct {
+	testCases := []struct {
 		desc        string
 		config      *Config
 		expectError bool
@@ -29,7 +29,9 @@ func TestGetSessionOptions(t *testing.T) {
 		},
 	}
 
-	for _, tc := range tt {
+	for _, testCase := range testCases {
+		tc := testCase
+
 		t.Run(tc.desc, func(t *testing.T) {
 			opts, err := GetSessionOptions(tc.config)
 			if err != nil && tc.expectError == false {
@@ -91,7 +93,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 	})
 	defer ts.Close()
 
-	tt := []struct {
+	testCases := []struct {
 		desc              string
 		config            *Config
 		expectedAcctID    string
@@ -138,7 +140,9 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			"", "", "No valid credential sources found for AWS Provider."},
 	}
 
-	for _, tc := range tt {
+	for _, testCase := range testCases {
+		tc := testCase
+
 		t.Run(tc.desc, func(t *testing.T) {
 			sess, acctID, part, err := GetSessionWithAccountIDAndPartition(tc.config)
 			if err != nil {
