@@ -135,7 +135,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			Region:            "us-west-2",
 			UserAgentProducts: []*UserAgentProduct{{}},
 			StsEndpoint:       ts.URL},
-			"", "", "No valid credential sources found for AWS Provider."},
+			"", "", "No valid credential sources found for AWS."},
 	}
 
 	for _, tc := range tt {
