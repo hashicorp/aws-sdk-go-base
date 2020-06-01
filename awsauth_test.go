@@ -120,6 +120,8 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Description, func(t *testing.T) {
 			resetEnv := unsetEnv(t)
 			defer resetEnv()
@@ -223,6 +225,8 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Description, func(t *testing.T) {
 			closeIam, iamSess, err := GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
@@ -281,6 +285,8 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Description, func(t *testing.T) {
 			closeIam, iamSess, err := GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
@@ -339,6 +345,8 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Description, func(t *testing.T) {
 			closeSts, stsSess, err := GetMockedAwsApiSession("STS", testCase.MockEndpoints)
 			defer closeSts()
@@ -399,6 +407,8 @@ func TestAWSParseAccountIDAndPartitionFromARN(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.InputARN, func(t *testing.T) {
 			accountID, partition, err := parseAccountIDAndPartitionFromARN(testCase.InputARN)
 			if err != nil && testCase.ErrCount == 0 {
@@ -434,7 +444,7 @@ func TestAWSGetCredentials_shouldErrorWhenBlank(t *testing.T) {
 }
 
 func TestAWSGetCredentials_shouldBeStatic(t *testing.T) {
-	simple := []struct {
+	testCases := []struct {
 		Key, Secret, Token string
 	}{
 		{
@@ -447,7 +457,9 @@ func TestAWSGetCredentials_shouldBeStatic(t *testing.T) {
 		},
 	}
 
-	for _, c := range simple {
+	for _, testCase := range testCases {
+		c := testCase
+
 		cfg := Config{
 			AccessKey: c.Key,
 			SecretKey: c.Secret,
@@ -526,7 +538,7 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 	// capture the test server's close method, to call after the test returns
 	ts := awsMetadataApiMock(append(ec2metadata_securityCredentialsEndpoints, ec2metadata_instanceIdEndpoint, ec2metadata_iamInfoEndpoint))
 	defer ts()
-	simple := []struct {
+	testCases := []struct {
 		Key, Secret, Token string
 	}{
 		{
@@ -539,7 +551,9 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 		},
 	}
 
-	for _, c := range simple {
+	for _, testCase := range testCases {
+		c := testCase
+
 		cfg := Config{
 			AccessKey: c.Key,
 			SecretKey: c.Secret,
@@ -574,7 +588,7 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEndpoint(t *testing.T) {
 	resetEnv := unsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := invalidAwsEnv(t)
+	ts := invalidAwsEnv()
 	defer ts()
 
 	_, err := GetCredentials(&Config{})
@@ -591,7 +605,7 @@ func TestAWSGetCredentials_shouldIgnoreInvalidEndpoint(t *testing.T) {
 	resetEnv := unsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := invalidAwsEnv(t)
+	ts := invalidAwsEnv()
 	defer ts()
 
 	creds, err := GetCredentials(&Config{AccessKey: "accessKey", SecretKey: "secretKey"})
@@ -732,7 +746,7 @@ func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
 
 // invalidAwsEnv establishes a httptest server to simulate behaviour
 // when endpoint doesn't respond as expected
-func invalidAwsEnv(t *testing.T) func() {
+func invalidAwsEnv() func() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(400)
 	}))

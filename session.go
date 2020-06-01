@@ -15,6 +15,15 @@ import (
 	"github.com/hashicorp/go-cleanhttp"
 )
 
+const (
+	// Maximum network retries.
+	// We depend on the AWS Go SDK DefaultRetryer exponential backoff.
+	// Ensure that if the AWS Config MaxRetries is set high (which it is by
+	// default), that we only retry for a few seconds with typically
+	// unrecoverable network errors, such as DNS lookup failures.
+	MaxNetworkRetryCount = 9
+)
+
 // GetSessionOptions attempts to return valid AWS Go SDK session authentication
 // options based on pre-existing credential provider, configured profile, or
 // fallback to automatically a determined session via the AWS Go SDK.
@@ -82,9 +91,7 @@ func GetSession(c *Config) (*session.Session, error) {
 	// NOTE: This logic can be fooled by other request errors raising the retry count
 	//       before any networking error occurs
 	sess.Handlers.Retry.PushBack(func(r *request.Request) {
-		// We currently depend on the DefaultRetryer exponential backoff here.
-		// ~10 retries gives a fair backoff of a few seconds.
-		if r.RetryCount < 9 {
+		if r.RetryCount < MaxNetworkRetryCount {
 			return
 		}
 		// RequestError: send request failed

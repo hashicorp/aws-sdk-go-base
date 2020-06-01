@@ -19,7 +19,7 @@ func MockAwsApiServer(svcName string, endpoints []*MockEndpoint) *httptest.Serve
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		buf := new(bytes.Buffer)
 		if _, err := buf.ReadFrom(r.Body); err != nil {
-			w.WriteHeader(500)
+			w.WriteHeader(http.StatusInternalServerError)
 			fmt.Fprintf(w, "Error reading from HTTP Request Body: %s", err)
 			return
 		}
@@ -43,7 +43,7 @@ func MockAwsApiServer(svcName string, endpoints []*MockEndpoint) *httptest.Serve
 			}
 		}
 
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 	}))
 
 	return ts
@@ -80,7 +80,7 @@ func awsMetadataApiMock(responses []*MetadataResponse) func() {
 				return
 			}
 		}
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 	}))
 
 	os.Setenv("AWS_METADATA_URL", ts.URL+"/latest")
