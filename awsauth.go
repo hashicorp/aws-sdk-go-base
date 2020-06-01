@@ -24,9 +24,9 @@ import (
 
 const (
 	// errMsgNoValidCredentialSources error getting credentials
-	errMsgNoValidCredentialSources = `No valid credential sources found for AWS Provider.
+	errMsgNoValidCredentialSources = `No valid credential sources found for AWS.
 	Please see https://terraform.io/docs/providers/aws/index.html for more information on
-	providing credentials for the AWS Provider`
+	providing credentials for the AWS Provider and Backend.`
 )
 
 var (
