@@ -144,6 +144,10 @@ var ec2metadata_instanceIdEndpoint = &MetadataResponse{
 
 var ec2metadata_securityCredentialsEndpoints = []*MetadataResponse{
 	{
+		Uri:  "/latest/api/token",
+		Body: "Ec2MetadataApiToken",
+	},
+	{
 		Uri:  "/latest/meta-data/iam/security-credentials/",
 		Body: "test_role",
 	},
