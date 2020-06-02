@@ -476,6 +476,8 @@ func TestIsAwsErrCode(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := IsAWSErrCode(testCase.Err, testCase.Code)
 
@@ -567,6 +569,8 @@ func TestIsAwsErrCodeContains(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := IsAWSErrCodeContains(testCase.Err, testCase.Code)
 
@@ -738,6 +742,8 @@ func TestIsAWSErrCodeMessageContains(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := IsAWSErrCodeMessageContains(testCase.Err, testCase.Code, testCase.Message)
 
@@ -807,6 +813,8 @@ func TestIsAWSErrRequestFailureStatusCode(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := IsAWSErrRequestFailureStatusCode(testCase.Err, testCase.StatusCode)
 
