@@ -181,32 +181,24 @@ func parseAccountIDAndPartitionFromARN(inputARN string) (string, string, error) 
 func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	log.Printf("[INFO] Attempting to use session-derived credentials")
 
-	var sess *session.Session
-	var err error
-	if c.Profile == "" {
-		sess, err = session.NewSession(&aws.Config{EndpointResolver: c.EndpointResolver()})
-		if err != nil {
+	// Avoid setting HTTPClient here as it will prevent the ec2metadata
+	// client from automatically lowering the timeout to 1 second.
+	options := &session.Options{
+		Config: aws.Config{
+			EndpointResolver: c.EndpointResolver(),
+			MaxRetries:       aws.Int(0),
+			Region:           aws.String(c.Region),
+		},
+		Profile:           c.Profile,
+		SharedConfigState: session.SharedConfigEnable,
+	}
+
+	sess, err := session.NewSessionWithOptions(*options)
+	if err != nil {
+		if IsAWSErr(err, "NoCredentialProviders", "") {
 			return nil, ErrNoValidCredentialSources
 		}
-	} else {
-		options := &session.Options{
-			Config: aws.Config{
-				EndpointResolver: c.EndpointResolver(),
-				HTTPClient:       cleanhttp.DefaultClient(),
-				MaxRetries:       aws.Int(0),
-				Region:           aws.String(c.Region),
-			},
-		}
-		options.Profile = c.Profile
-		options.SharedConfigState = session.SharedConfigEnable
-
-		sess, err = session.NewSessionWithOptions(*options)
-		if err != nil {
-			if IsAWSErr(err, "NoCredentialProviders", "") {
-				return nil, ErrNoValidCredentialSources
-			}
-			return nil, fmt.Errorf("Error creating AWS session: %w", err)
-		}
+		return nil, fmt.Errorf("Error creating AWS session: %w", err)
 	}
 
 	creds := sess.Config.Credentials
