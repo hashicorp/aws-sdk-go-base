@@ -1,3 +1,10 @@
+# v0.5.0 (Unreleased)
+
+BUG FIXES
+
+* Properly use custom STS endpoint during AssumeRole API calls triggered by Terraform AWS Provider and S3 Backend configurations #32
+* Properly use custom EC2 metadata endpoint during API calls triggered by fallback credentials lookup #32
+
 # v0.4.0 (October 3, 2019)
 
 BUG FIXES
