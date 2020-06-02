@@ -35,6 +35,7 @@ func GetSessionOptions(c *Config) (*session.Options, error) {
 			MaxRetries:       aws.Int(0),
 			Region:           aws.String(c.Region),
 		},
+		Profile: c.Profile,
 	}
 
 	// get and validate credentials
