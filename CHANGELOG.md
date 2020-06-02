@@ -1,9 +1,15 @@
 # v0.5.0 (Unreleased)
 
+BREAKING CHANGES
+
+* Credential ordering has changed from static, environment, shared credentials, EC2 metadata, default AWS Go SDK (shared configuration, web identity, ECS, etc.) to static, environment, shared credentials, default AWS Go SDK (shared configuration, web identity, ECS, etc.), ECS metadata, EC2 metadata. #20
+
 BUG FIXES
 
 * Properly use custom STS endpoint during AssumeRole API calls triggered by Terraform AWS Provider and S3 Backend configurations #32
 * Properly use custom EC2 metadata endpoint during API calls triggered by fallback credentials lookup #32
+* Prefer shared configuration handling over EC2 metadata #20
+* Prefer ECS credentials over EC2 metadata #20
 
 # v0.4.0 (October 3, 2019)
 
