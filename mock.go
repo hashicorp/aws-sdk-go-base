@@ -189,6 +189,24 @@ const iamResponse_GetUser_unauthorized = `<ErrorResponse xmlns="https://iam.amaz
   <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
 </ErrorResponse>`
 
+var stsResponse_AssumeRole_valid = fmt.Sprintf(`<AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+<AssumeRoleResult>
+  <AssumedRoleUser>
+    <Arn>arn:aws:sts::555555555555:assumed-role/role/AssumeRoleSessionName</Arn>
+    <AssumedRoleId>AKID:AssumeRoleSessionName</AssumedRoleId>
+  </AssumedRoleUser>
+  <Credentials>
+    <AccessKeyId>AssumeRoleAccessKey</AccessKeyId>
+    <SecretAccessKey>AssumeRoleSecretKey</SecretAccessKey>
+    <SessionToken>AssumeRoleSessionToken</SessionToken>
+    <Expiration>%s</Expiration>
+  </Credentials>
+</AssumeRoleResult>
+<ResponseMetadata>
+  <RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>
+</ResponseMetadata>
+</AssumeRoleResponse>`, time.Now().UTC().Format(time.RFC3339))
+
 const stsResponse_GetCallerIdentity_valid = `<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
   <GetCallerIdentityResult>
    <Arn>arn:aws:iam::222222222222:user/Alice</Arn>
