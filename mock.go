@@ -74,7 +74,7 @@ func awsMetadataApiMock(responses []*MetadataResponse) func() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Add("Server", "MockEC2")
-		log.Printf("[DEBUG] Mocker server received request to %q", r.RequestURI)
+		log.Printf("[DEBUG] Mock EC2 metadata server received request: %s", r.RequestURI)
 		for _, e := range responses {
 			if r.RequestURI == e.Uri {
 				fmt.Fprintln(w, e.Body)
