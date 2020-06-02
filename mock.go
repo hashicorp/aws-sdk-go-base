@@ -93,14 +93,14 @@ func ecsCredentialsApiMock() func() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Add("Server", "MockECS")
-		log.Printf("[DEBUG] Mock ECS metadata server received request: %s", r.RequestURI)
+		log.Printf("[DEBUG] Mock ECS credentials server received request: %s", r.RequestURI)
 		if r.RequestURI == "/creds" {
 			_ = json.NewEncoder(w).Encode(map[string]string{
-				"AccessKeyId":     "EcsMetadataAccessKey",
+				"AccessKeyId":     "EcsCredentialsAccessKey",
 				"Expiration":      time.Now().UTC().Format(time.RFC3339),
-				"RoleArn":         "arn:aws:iam::000000000000:role/EcsMetadata",
-				"SecretAccessKey": "EcsMetadataSecretKey",
-				"Token":           "EcsMetadataSessionToken",
+				"RoleArn":         "arn:aws:iam::000000000000:role/EcsCredentials",
+				"SecretAccessKey": "EcsCredentialsSecretKey",
+				"Token":           "EcsCredentialsSessionToken",
 			})
 			return
 		}
