@@ -158,9 +158,8 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 		},
 		{
 			Config: &Config{
-				Profile:              "SharedConfigurationProfile",
-				Region:               "us-east-1",
-				SkipMetadataApiCheck: true, // TODO: Should not be necessary
+				Profile: "SharedConfigurationProfile",
+				Region:  "us-east-1",
 			},
 			Description: "config Profile shared configuration credential_source Ec2InstanceMetadata",
 			EnvironmentVariables: map[string]string{
@@ -193,9 +192,8 @@ role_session_name = AssumeRoleSessionName
 		},
 		{
 			Config: &Config{
-				Profile:              "SharedConfigurationProfile",
-				Region:               "us-east-1",
-				SkipMetadataApiCheck: true, // TODO: Should not be necessary
+				Profile: "SharedConfigurationProfile",
+				Region:  "us-east-1",
 			},
 			Description: "config Profile shared configuration credential_source EcsContainer",
 			EnvironmentVariables: map[string]string{
@@ -204,11 +202,11 @@ role_session_name = AssumeRoleSessionName
 			},
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue: credentials.Value{ // TODO: Expected credentials should be assume role credentials
-				AccessKeyID:     "EcsCredentialsAccessKey",
-				ProviderName:    endpointcreds.ProviderName,
-				SecretAccessKey: "EcsCredentialsSecretKey",
-				SessionToken:    "EcsCredentialsSessionToken",
+			ExpectedCredentialsValue: credentials.Value{
+				AccessKeyID:     "AssumeRoleAccessKey",
+				ProviderName:    stscreds.ProviderName,
+				SecretAccessKey: "AssumeRoleSecretKey",
+				SessionToken:    "AssumeRoleSessionToken",
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
@@ -348,8 +346,7 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 		},
 		{
 			Config: &Config{
-				Region:               "us-east-1",
-				SkipMetadataApiCheck: true, // TODO: Should not be necessary
+				Region: "us-east-1",
 			},
 			Description:             "environment AWS_PROFILE shared configuration credential_source Ec2InstanceMetadata",
 			EnableEc2MetadataServer: true,
@@ -383,8 +380,7 @@ role_session_name = AssumeRoleSessionName
 		},
 		{
 			Config: &Config{
-				Region:               "us-east-1",
-				SkipMetadataApiCheck: true, // TODO: Should not be necessary
+				Region: "us-east-1",
 			},
 			Description:                "environment AWS_PROFILE shared configuration credential_source EcsContainer",
 			EnableEc2MetadataServer:    true,
@@ -394,11 +390,11 @@ role_session_name = AssumeRoleSessionName
 				"AWS_PROFILE":                            "SharedConfigurationProfile",
 				"AWS_SDK_LOAD_CONFIG":                    "1",
 			},
-			ExpectedCredentialsValue: credentials.Value{ // TODO: Expected credentials should be assume role credentials
-				AccessKeyID:     "EcsCredentialsAccessKey",
-				ProviderName:    endpointcreds.ProviderName,
-				SecretAccessKey: "EcsCredentialsSecretKey",
-				SessionToken:    "EcsCredentialsSessionToken",
+			ExpectedCredentialsValue: credentials.Value{
+				AccessKeyID:     "AssumeRoleAccessKey",
+				ProviderName:    stscreds.ProviderName,
+				SecretAccessKey: "AssumeRoleSecretKey",
+				SessionToken:    "AssumeRoleSessionToken",
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
@@ -580,8 +576,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		{
 			Config: &Config{
-				Region:               "us-east-1",
-				SkipMetadataApiCheck: true, // TODO: Should not be necessary
+				Region: "us-east-1",
 			},
 			Description:                "ECS credentials access key",
 			EnableEc2MetadataServer:    true,
@@ -605,7 +600,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				AssumeRoleARN:         "arn:aws:iam::555555555555:role/AssumeRole",
 				AssumeRoleSessionName: "AssumeRoleSessionName",
 				Region:                "us-east-1",
-				SkipMetadataApiCheck:  true, // TODO: Should not be necessary
 			},
 			Description:                "ECS credentials access key config AssumeRoleARN access key",
 			EnableEc2MetadataServer:    true,
@@ -847,14 +841,14 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Config: &Config{
 				Region: "us-east-1",
 			},
-			Description:                "EC2 metadata access key over ECS credentials access key",
+			Description:                "ECS credentials access key over EC2 metadata access key",
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "Ec2MetadataAccessKey",
-				ProviderName:    ec2rolecreds.ProviderName,
-				SecretAccessKey: "Ec2MetadataSecretKey",
-				SessionToken:    "Ec2MetadataSessionToken",
+				AccessKeyID:     "EcsCredentialsAccessKey",
+				ProviderName:    endpointcreds.ProviderName,
+				SecretAccessKey: "EcsCredentialsSecretKey",
+				SessionToken:    "EcsCredentialsSessionToken",
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
@@ -916,7 +910,9 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				"AWS_SDK_LOAD_CONFIG": "1",
 			},
 			ExpectedError: func(err error) bool {
-				return IsAWSErr(err, "CredentialRequiresARNError", "")
+				// TODO: Return wrapped error
+				//return IsAWSErr(err, "CredentialRequiresARNError", "")
+				return err.Error() == errMsgNoValidCredentialSources
 			},
 			SharedConfigurationFile: `
 [profile SharedConfigurationProfile]
