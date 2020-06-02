@@ -88,8 +88,8 @@ func awsMetadataApiMock(responses []*MetadataResponse) func() {
 	return ts.Close
 }
 
-// ecsMetadataApiMock establishes a httptest server to mock out the ECS credentials API.
-func ecsMetadataApiMock() func() {
+// ecsCredentialsApiMock establishes a httptest server to mock out the ECS credentials API.
+func ecsCredentialsApiMock() func() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Add("Server", "MockECS")
@@ -193,7 +193,7 @@ var stsResponse_AssumeRole_valid = fmt.Sprintf(`<AssumeRoleResponse xmlns="https
 <AssumeRoleResult>
   <AssumedRoleUser>
     <Arn>arn:aws:sts::555555555555:assumed-role/role/AssumeRoleSessionName</Arn>
-    <AssumedRoleId>AKID:AssumeRoleSessionName</AssumedRoleId>
+    <AssumedRoleId>ARO123EXAMPLE123:AssumeRoleSessionName</AssumedRoleId>
   </AssumedRoleUser>
   <Credentials>
     <AccessKeyId>AssumeRoleAccessKey</AccessKeyId>
@@ -206,6 +206,15 @@ var stsResponse_AssumeRole_valid = fmt.Sprintf(`<AssumeRoleResponse xmlns="https
   <RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>
 </ResponseMetadata>
 </AssumeRoleResponse>`, time.Now().UTC().Format(time.RFC3339))
+
+const stsResponse_AssumeRole_InvalidClientTokenId = `<ErrorResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+<Error>
+  <Type>Sender</Type>
+  <Code>InvalidClientTokenId</Code>
+  <Message>The security token included in the request is invalid.</Message>
+</Error>
+<RequestId>4d0cf5ec-892a-4d3f-84e4-30e9987d9bdd</RequestId>
+</ErrorResponse>`
 
 const stsResponse_GetCallerIdentity_valid = `<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
   <GetCallerIdentityResult>
