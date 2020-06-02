@@ -342,8 +342,8 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 
 	// Otherwise we need to construct an STS client with the main credentials, and verify
 	// that we can assume the defined role.
-	log.Printf("[INFO] Attempting to AssumeRole %s (SessionName: %q, ExternalId: %q, Policy: %q)",
-		c.AssumeRoleARN, c.AssumeRoleSessionName, c.AssumeRoleExternalID, c.AssumeRolePolicy)
+	log.Printf("[INFO] Attempting to AssumeRole %s (SessionName: %q, ExternalId: %q)",
+		c.AssumeRoleARN, c.AssumeRoleSessionName, c.AssumeRoleExternalID)
 
 	awsConfig := &aws.Config{
 		Credentials:      creds,
@@ -364,14 +364,52 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		Client:  stsclient,
 		RoleARN: c.AssumeRoleARN,
 	}
-	if c.AssumeRoleSessionName != "" {
-		assumeRoleProvider.RoleSessionName = c.AssumeRoleSessionName
+
+	if c.AssumeRoleDurationSeconds > 0 {
+		assumeRoleProvider.Duration = time.Duration(c.AssumeRoleDurationSeconds) * time.Second
 	}
+
 	if c.AssumeRoleExternalID != "" {
 		assumeRoleProvider.ExternalID = aws.String(c.AssumeRoleExternalID)
 	}
+
 	if c.AssumeRolePolicy != "" {
 		assumeRoleProvider.Policy = aws.String(c.AssumeRolePolicy)
+	}
+
+	if len(c.AssumeRolePolicyARNs) > 0 {
+		var policyDescriptorTypes []*sts.PolicyDescriptorType
+
+		for _, policyARN := range c.AssumeRolePolicyARNs {
+			policyDescriptorType := &sts.PolicyDescriptorType{
+				Arn: aws.String(policyARN),
+			}
+			policyDescriptorTypes = append(policyDescriptorTypes, policyDescriptorType)
+		}
+
+		assumeRoleProvider.PolicyArns = policyDescriptorTypes
+	}
+
+	if c.AssumeRoleSessionName != "" {
+		assumeRoleProvider.RoleSessionName = c.AssumeRoleSessionName
+	}
+
+	if len(c.AssumeRoleTags) > 0 {
+		var tags []*sts.Tag
+
+		for k, v := range c.AssumeRoleTags {
+			tag := &sts.Tag{
+				Key:   aws.String(k),
+				Value: aws.String(v),
+			}
+			tags = append(tags, tag)
+		}
+
+		assumeRoleProvider.Tags = tags
+	}
+
+	if len(c.AssumeRoleTransitiveTagKeys) > 0 {
+		assumeRoleProvider.TransitiveTagKeys = aws.StringSlice(c.AssumeRoleTransitiveTagKeys)
 	}
 
 	providers = []awsCredentials.Provider{assumeRoleProvider}
