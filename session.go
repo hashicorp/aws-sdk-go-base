@@ -30,9 +30,10 @@ const (
 func GetSessionOptions(c *Config) (*session.Options, error) {
 	options := &session.Options{
 		Config: aws.Config{
-			HTTPClient: cleanhttp.DefaultClient(),
-			MaxRetries: aws.Int(0),
-			Region:     aws.String(c.Region),
+			EndpointResolver: c.EndpointResolver(),
+			HTTPClient:       cleanhttp.DefaultClient(),
+			MaxRetries:       aws.Int(0),
+			Region:           aws.String(c.Region),
 		},
 	}
 
@@ -73,7 +74,7 @@ func GetSession(c *Config) (*session.Session, error) {
 		if IsAWSErr(err, "NoCredentialProviders", "") {
 			return nil, ErrNoValidCredentialSources
 		}
-		return nil, fmt.Errorf("Error creating AWS session: %s", err)
+		return nil, fmt.Errorf("Error creating AWS session: %w", err)
 	}
 
 	if c.MaxRetries > 0 {
@@ -109,9 +110,8 @@ func GetSession(c *Config) (*session.Session, error) {
 	})
 
 	if !c.SkipCredsValidation {
-		stsClient := sts.New(sess.Copy(&aws.Config{Endpoint: aws.String(c.StsEndpoint)}))
-		if _, _, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(stsClient); err != nil {
-			return nil, fmt.Errorf("error using credentials to get account ID: %s", err)
+		if _, _, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(sts.New(sess)); err != nil {
+			return nil, fmt.Errorf("error validating provider credentials: %w", err)
 		}
 	}
 
@@ -132,14 +132,14 @@ func GetSessionWithAccountIDAndPartition(c *Config) (*session.Session, string, s
 		return sess, accountID, partition, nil
 	}
 
-	iamClient := iam.New(sess.Copy(&aws.Config{Endpoint: aws.String(c.IamEndpoint)}))
-	stsClient := sts.New(sess.Copy(&aws.Config{Endpoint: aws.String(c.StsEndpoint)}))
+	iamClient := iam.New(sess)
+	stsClient := sts.New(sess)
 
 	if !c.SkipCredsValidation {
 		accountID, partition, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(stsClient)
 
 		if err != nil {
-			return nil, "", "", fmt.Errorf("error validating provider credentials: %s", err)
+			return nil, "", "", fmt.Errorf("error validating provider credentials: %w", err)
 		}
 
 		return sess, accountID, partition, nil
@@ -161,7 +161,7 @@ func GetSessionWithAccountIDAndPartition(c *Config) (*session.Session, string, s
 		return nil, "", "", fmt.Errorf(
 			"AWS account ID not previously found and failed retrieving via all available methods. "+
 				"See https://www.terraform.io/docs/providers/aws/index.html#skip_requesting_account_id for workaround and implications. "+
-				"Errors: %s", err)
+				"Errors: %w", err)
 	}
 
 	var partition string

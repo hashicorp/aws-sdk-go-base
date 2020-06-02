@@ -518,14 +518,14 @@ func TestAWSGetCredentials_shouldIAM(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
-	if v.AccessKeyID != "somekey" {
-		t.Fatalf("AccessKeyID mismatch, expected: (somekey), got (%s)", v.AccessKeyID)
+	if expected, actual := "Ec2MetadataAccessKey", v.AccessKeyID; expected != actual {
+		t.Fatalf("expected access key (%s), got: %s", expected, actual)
 	}
-	if v.SecretAccessKey != "somesecret" {
-		t.Fatalf("SecretAccessKey mismatch, expected: (somesecret), got (%s)", v.SecretAccessKey)
+	if expected, actual := "Ec2MetadataSecretKey", v.SecretAccessKey; expected != actual {
+		t.Fatalf("expected secret key (%s), got: %s", expected, actual)
 	}
-	if v.SessionToken != "sometoken" {
-		t.Fatalf("SessionToken mismatch, expected: (sometoken), got (%s)", v.SessionToken)
+	if expected, actual := "Ec2MetadataSessionToken", v.SessionToken; expected != actual {
+		t.Fatalf("expected session token (%s), got: %s", expected, actual)
 	}
 }
 

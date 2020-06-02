@@ -2,6 +2,7 @@ package awsbase
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -73,7 +74,7 @@ func awsMetadataApiMock(responses []*MetadataResponse) func() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Add("Server", "MockEC2")
-		log.Printf("[DEBUG] Mocker server received request to %q", r.RequestURI)
+		log.Printf("[DEBUG] Mock EC2 metadata server received request: %s", r.RequestURI)
 		for _, e := range responses {
 			if r.RequestURI == e.Uri {
 				fmt.Fprintln(w, e.Body)
@@ -84,6 +85,29 @@ func awsMetadataApiMock(responses []*MetadataResponse) func() {
 	}))
 
 	os.Setenv("AWS_METADATA_URL", ts.URL+"/latest")
+	return ts.Close
+}
+
+// ecsCredentialsApiMock establishes a httptest server to mock out the ECS credentials API.
+func ecsCredentialsApiMock() func() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Add("Server", "MockECS")
+		log.Printf("[DEBUG] Mock ECS credentials server received request: %s", r.RequestURI)
+		if r.RequestURI == "/creds" {
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"AccessKeyId":     "EcsCredentialsAccessKey",
+				"Expiration":      time.Now().UTC().Format(time.RFC3339),
+				"RoleArn":         "arn:aws:iam::000000000000:role/EcsCredentials",
+				"SecretAccessKey": "EcsCredentialsSecretKey",
+				"Token":           "EcsCredentialsSessionToken",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+
+	os.Setenv("AWS_CONTAINER_CREDENTIALS_FULL_URI", ts.URL+"/creds")
 	return ts.Close
 }
 
@@ -125,7 +149,7 @@ var ec2metadata_securityCredentialsEndpoints = []*MetadataResponse{
 	},
 	{
 		Uri:  "/latest/meta-data/iam/security-credentials/test_role",
-		Body: "{\"Code\":\"Success\",\"LastUpdated\":\"2015-12-11T17:17:25Z\",\"Type\":\"AWS-HMAC\",\"AccessKeyId\":\"somekey\",\"SecretAccessKey\":\"somesecret\",\"Token\":\"sometoken\"}",
+		Body: "{\"Code\":\"Success\",\"LastUpdated\":\"2015-12-11T17:17:25Z\",\"Type\":\"AWS-HMAC\",\"AccessKeyId\":\"Ec2MetadataAccessKey\",\"SecretAccessKey\":\"Ec2MetadataSecretKey\",\"Token\":\"Ec2MetadataSessionToken\"}",
 	},
 }
 
@@ -163,6 +187,33 @@ const iamResponse_GetUser_unauthorized = `<ErrorResponse xmlns="https://iam.amaz
     <Message>User: arn:aws:iam::123456789012:user/Bob is not authorized to perform: iam:GetUser on resource: arn:aws:iam::123456789012:user/Bob</Message>
   </Error>
   <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
+</ErrorResponse>`
+
+var stsResponse_AssumeRole_valid = fmt.Sprintf(`<AssumeRoleResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+<AssumeRoleResult>
+  <AssumedRoleUser>
+    <Arn>arn:aws:sts::555555555555:assumed-role/role/AssumeRoleSessionName</Arn>
+    <AssumedRoleId>ARO123EXAMPLE123:AssumeRoleSessionName</AssumedRoleId>
+  </AssumedRoleUser>
+  <Credentials>
+    <AccessKeyId>AssumeRoleAccessKey</AccessKeyId>
+    <SecretAccessKey>AssumeRoleSecretKey</SecretAccessKey>
+    <SessionToken>AssumeRoleSessionToken</SessionToken>
+    <Expiration>%s</Expiration>
+  </Credentials>
+</AssumeRoleResult>
+<ResponseMetadata>
+  <RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>
+</ResponseMetadata>
+</AssumeRoleResponse>`, time.Now().UTC().Format(time.RFC3339))
+
+const stsResponse_AssumeRole_InvalidClientTokenId = `<ErrorResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+<Error>
+  <Type>Sender</Type>
+  <Code>InvalidClientTokenId</Code>
+  <Message>The security token included in the request is invalid.</Message>
+</Error>
+<RequestId>4d0cf5ec-892a-4d3f-84e4-30e9987d9bdd</RequestId>
 </ErrorResponse>`
 
 const stsResponse_GetCallerIdentity_valid = `<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
