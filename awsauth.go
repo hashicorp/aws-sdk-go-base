@@ -334,7 +334,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		return nil, fmt.Errorf("error creating assume role session: %w", err)
 	}
 
-	stsclient := sts.New(assumeRoleSession)
+	stsclient := sts.New(assumeRoleSession.Copy(&aws.Config{Endpoint: aws.String(c.StsEndpoint)}))
 	assumeRoleProvider := &stscreds.AssumeRoleProvider{
 		Client:  stsclient,
 		RoleARN: c.AssumeRoleARN,
