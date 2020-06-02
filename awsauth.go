@@ -184,16 +184,17 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	var sess *session.Session
 	var err error
 	if c.Profile == "" {
-		sess, err = session.NewSession()
+		sess, err = session.NewSession(&aws.Config{EndpointResolver: c.EndpointResolver()})
 		if err != nil {
 			return nil, ErrNoValidCredentialSources
 		}
 	} else {
 		options := &session.Options{
 			Config: aws.Config{
-				HTTPClient: cleanhttp.DefaultClient(),
-				MaxRetries: aws.Int(0),
-				Region:     aws.String(c.Region),
+				EndpointResolver: c.EndpointResolver(),
+				HTTPClient:       cleanhttp.DefaultClient(),
+				MaxRetries:       aws.Int(0),
+				Region:           aws.String(c.Region),
 			},
 		}
 		options.Profile = c.Profile
@@ -322,10 +323,11 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		c.AssumeRoleARN, c.AssumeRoleSessionName, c.AssumeRoleExternalID, c.AssumeRolePolicy)
 
 	awsConfig := &aws.Config{
-		Credentials: creds,
-		Region:      aws.String(c.Region),
-		MaxRetries:  aws.Int(c.MaxRetries),
-		HTTPClient:  cleanhttp.DefaultClient(),
+		Credentials:      creds,
+		EndpointResolver: c.EndpointResolver(),
+		Region:           aws.String(c.Region),
+		MaxRetries:       aws.Int(c.MaxRetries),
+		HTTPClient:       cleanhttp.DefaultClient(),
 	}
 
 	assumeRoleSession, err := session.NewSession(awsConfig)
@@ -334,7 +336,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		return nil, fmt.Errorf("error creating assume role session: %w", err)
 	}
 
-	stsclient := sts.New(assumeRoleSession.Copy(&aws.Config{Endpoint: aws.String(c.StsEndpoint)}))
+	stsclient := sts.New(assumeRoleSession)
 	assumeRoleProvider := &stscreds.AssumeRoleProvider{
 		Client:  stsclient,
 		RoleARN: c.AssumeRoleARN,

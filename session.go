@@ -30,9 +30,10 @@ const (
 func GetSessionOptions(c *Config) (*session.Options, error) {
 	options := &session.Options{
 		Config: aws.Config{
-			HTTPClient: cleanhttp.DefaultClient(),
-			MaxRetries: aws.Int(0),
-			Region:     aws.String(c.Region),
+			EndpointResolver: c.EndpointResolver(),
+			HTTPClient:       cleanhttp.DefaultClient(),
+			MaxRetries:       aws.Int(0),
+			Region:           aws.String(c.Region),
 		},
 	}
 
@@ -109,8 +110,7 @@ func GetSession(c *Config) (*session.Session, error) {
 	})
 
 	if !c.SkipCredsValidation {
-		stsClient := sts.New(sess.Copy(&aws.Config{Endpoint: aws.String(c.StsEndpoint)}))
-		if _, _, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(stsClient); err != nil {
+		if _, _, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(sts.New(sess)); err != nil {
 			return nil, fmt.Errorf("error validating provider credentials: %w", err)
 		}
 	}
@@ -132,8 +132,8 @@ func GetSessionWithAccountIDAndPartition(c *Config) (*session.Session, string, s
 		return sess, accountID, partition, nil
 	}
 
-	iamClient := iam.New(sess.Copy(&aws.Config{Endpoint: aws.String(c.IamEndpoint)}))
-	stsClient := sts.New(sess.Copy(&aws.Config{Endpoint: aws.String(c.StsEndpoint)}))
+	iamClient := iam.New(sess)
+	stsClient := sts.New(sess)
 
 	if !c.SkipCredsValidation {
 		accountID, partition, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(stsClient)
