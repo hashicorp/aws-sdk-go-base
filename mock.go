@@ -2,6 +2,7 @@ package awsbase
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -87,6 +88,29 @@ func awsMetadataApiMock(responses []*MetadataResponse) func() {
 	return ts.Close
 }
 
+// ecsMetadataApiMock establishes a httptest server to mock out the ECS credentials API.
+func ecsMetadataApiMock() func() {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Add("Server", "MockECS")
+		log.Printf("[DEBUG] Mock ECS metadata server received request: %s", r.RequestURI)
+		if r.RequestURI == "/creds" {
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"AccessKeyId":     "EcsMetadataAccessKey",
+				"Expiration":      time.Now().UTC().Format(time.RFC3339),
+				"RoleArn":         "arn:aws:iam::000000000000:role/EcsMetadata",
+				"SecretAccessKey": "EcsMetadataSecretKey",
+				"Token":           "EcsMetadataSessionToken",
+			})
+			return
+		}
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+
+	os.Setenv("AWS_CONTAINER_CREDENTIALS_FULL_URI", ts.URL+"/creds")
+	return ts.Close
+}
+
 // MockEndpoint represents a basic request and response that can be used for creating simple httptest server routes.
 type MockEndpoint struct {
 	Request  *MockRequest
@@ -125,7 +149,7 @@ var ec2metadata_securityCredentialsEndpoints = []*MetadataResponse{
 	},
 	{
 		Uri:  "/latest/meta-data/iam/security-credentials/test_role",
-		Body: "{\"Code\":\"Success\",\"LastUpdated\":\"2015-12-11T17:17:25Z\",\"Type\":\"AWS-HMAC\",\"AccessKeyId\":\"somekey\",\"SecretAccessKey\":\"somesecret\",\"Token\":\"sometoken\"}",
+		Body: "{\"Code\":\"Success\",\"LastUpdated\":\"2015-12-11T17:17:25Z\",\"Type\":\"AWS-HMAC\",\"AccessKeyId\":\"Ec2MetadataAccessKey\",\"SecretAccessKey\":\"Ec2MetadataSecretKey\",\"Token\":\"Ec2MetadataSessionToken\"}",
 	},
 }
 
