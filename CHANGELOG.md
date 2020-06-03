@@ -9,6 +9,7 @@ ENHANCEMENTS
 * Always enable AWS shared configuration file support (no longer require `AWS_SDK_LOAD_CONFIG` environment variable) #38
 * Automatically expand `~` prefix for home directories in shared credentials filename handling #40
 * Support assume role duration, policy ARNs, tags, and transitive tag keys via configuration #39
+* Add `CannotAssumeRoleError` and `NoValidCredentialSourcesError` error types with helpers #42
 
 BUG FIXES
 
@@ -16,6 +17,7 @@ BUG FIXES
 * Properly use custom EC2 metadata endpoint during API calls triggered by fallback credentials lookup #32
 * Prefer shared configuration handling over EC2 metadata #20
 * Prefer ECS credentials over EC2 metadata #20
+* Remove hardcoded AWS Provider messaging in error messages #31 / #42
 
 # v0.4.0 (October 3, 2019)
 
