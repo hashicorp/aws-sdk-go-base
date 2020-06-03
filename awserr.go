@@ -74,6 +74,8 @@ func IsAWSErrCodeMessageContains(err error, code string, message string) bool {
 // IsAWSErrRequestFailureStatusCode returns true if the error matches all these conditions:
 //  * err is of type awserr.RequestFailure
 //  * RequestFailure.StatusCode() equals statusCode
+// It is always preferable to use IsAWSErr() except in older APIs (e.g. S3)
+// that sometimes only respond with status codes.
 func IsAWSErrRequestFailureStatusCode(err error, statusCode int) bool {
 	var awsErr awserr.RequestFailure
 	if errors.As(err, &awsErr) {
