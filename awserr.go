@@ -1,6 +1,7 @@
 package awsbase
 
 import (
+	"errors"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -11,17 +12,13 @@ import (
 //  * Error.Code() matches code
 //  * Error.Message() contains message
 func IsAWSErr(err error, code string, message string) bool {
-	awsErr, ok := err.(awserr.Error)
+	var awsErr awserr.Error
 
-	if !ok {
-		return false
+	if errors.As(err, &awsErr) {
+		return awsErr.Code() == code && strings.Contains(awsErr.Message(), message)
 	}
 
-	if awsErr.Code() != code {
-		return false
-	}
-
-	return strings.Contains(awsErr.Message(), message)
+	return false
 }
 
 // IsAWSErrExtended returns true if the error matches all these conditions:

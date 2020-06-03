@@ -50,6 +50,8 @@ func TestValidateAccountID(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Description, func(t *testing.T) {
 			err := ValidateAccountID(testCase.AccountID, testCase.AllowedAccountIDs, testCase.ForbiddenAccountIDs)
 			if err != nil && !testCase.ExpectError {
@@ -86,6 +88,8 @@ func TestValidateRegion(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		testCase := testCase
+
 		t.Run(testCase.Region, func(t *testing.T) {
 			err := ValidateRegion(testCase.Region)
 			if err != nil && !testCase.ExpectError {
