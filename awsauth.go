@@ -13,7 +13,6 @@ import (
 	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/defaults"
 	"github.com/aws/aws-sdk-go/aws/ec2metadata"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
@@ -201,84 +200,6 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	return creds, nil
 }
 
-// GetCredentialsFromMetadata returns credentials derived from and ECS or ECS
-// metadata endpoint.
-func GetCredentialsFromMetadata(c *Config) (*awsCredentials.Credentials, error) {
-	log.Printf("[INFO] Attempting to use metadata-derived credentials")
-	providers := []awsCredentials.Provider{}
-
-	// Build isolated HTTP client to avoid issues with globally-shared settings
-	client := cleanhttp.DefaultClient()
-	client.Timeout = DefaultMetadataClientTimeout
-
-	const userTimeoutEnvVar = "AWS_METADATA_TIMEOUT"
-	userTimeout := os.Getenv(userTimeoutEnvVar)
-	if userTimeout != "" {
-		newTimeout, err := time.ParseDuration(userTimeout)
-		if err == nil {
-			if newTimeout.Nanoseconds() > 0 {
-				client.Timeout = newTimeout
-			} else {
-				log.Printf("[WARN] Non-positive value of %s (%s) is meaningless, ignoring", userTimeoutEnvVar, newTimeout.String())
-			}
-		} else {
-			log.Printf("[WARN] Error converting %s to time.Duration: %s", userTimeoutEnvVar, err)
-		}
-	}
-
-	log.Printf("[INFO] Setting AWS metadata API timeout to %s", client.Timeout.String())
-	cfg := &aws.Config{
-		HTTPClient: client,
-	}
-	usedEndpoint := setOptionalEndpoint(cfg)
-
-	// Add the default AWS provider for ECS Task Roles if the relevant env variable is set
-	if uri := os.Getenv("AWS_CONTAINER_CREDENTIALS_RELATIVE_URI"); len(uri) > 0 {
-		providers = append(providers, defaults.RemoteCredProvider(*cfg, defaults.Handlers()))
-		log.Print("[INFO] ECS container credentials detected, RemoteCredProvider added to auth chain")
-	}
-
-	if !c.SkipMetadataApiCheck {
-		// Real AWS should reply to a simple metadata request.
-		// We check it actually does to ensure something else didn't just
-		// happen to be listening on the same IP:Port
-		ec2Session, err := session.NewSession(cfg)
-
-		if err != nil {
-			return nil, fmt.Errorf("error creating EC2 Metadata session: %w", err)
-		}
-
-		metadataClient := ec2metadata.New(ec2Session)
-		if metadataClient.Available() {
-			providers = append(providers, &ec2rolecreds.EC2RoleProvider{
-				Client: metadataClient,
-			})
-			log.Print("[INFO] AWS EC2 instance detected via default metadata" +
-				" API endpoint, EC2RoleProvider added to the auth chain")
-		} else {
-			if usedEndpoint == "" {
-				usedEndpoint = "default location"
-			}
-			log.Printf("[INFO] Ignoring AWS metadata API endpoint at %s "+
-				"as it doesn't return any instance-id", usedEndpoint)
-		}
-	}
-
-	// Validate the credentials before returning them
-	creds := awsCredentials.NewChainCredentials(providers)
-	cp, err := creds.Get()
-	if err != nil {
-		if IsAWSErr(err, "NoCredentialProviders", "") {
-			return nil, c.NewNoValidCredentialSourcesError(err)
-		}
-		return nil, fmt.Errorf("Error deriving credentials from metadata: %s", err)
-	}
-
-	log.Printf("[INFO] Successfully derived credentials from metadata")
-	log.Printf("[INFO] AWS Auth provider used: %q", cp.ProviderName)
-	return creds, nil
-}
-
 // GetCredentials gets credentials from the environment, shared credentials,
 // the session (which may include a credential process), or ECS/EC2 metadata endpoints.
 // GetCredentials also validates the credentials and the ability to assume a role
@@ -311,10 +232,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		if IsAWSErr(err, "NoCredentialProviders", "") {
 			creds, err = GetCredentialsFromSession(c)
 			if err != nil {
-				creds, err = GetCredentialsFromMetadata(c)
-				if err != nil {
-					return nil, err
-				}
+				return nil, err
 			}
 		} else {
 			return nil, fmt.Errorf("Error loading credentials for AWS Provider: %w", err)
