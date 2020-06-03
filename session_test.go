@@ -161,10 +161,7 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 				Profile: "SharedConfigurationProfile",
 				Region:  "us-east-1",
 			},
-			Description: "config Profile shared configuration credential_source Ec2InstanceMetadata",
-			EnvironmentVariables: map[string]string{
-				"AWS_SDK_LOAD_CONFIG": "1",
-			},
+			Description:             "config Profile shared configuration credential_source Ec2InstanceMetadata",
 			EnableEc2MetadataServer: true,
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "AssumeRoleAccessKey",
@@ -198,7 +195,6 @@ role_session_name = AssumeRoleSessionName
 			Description: "config Profile shared configuration credential_source EcsContainer",
 			EnvironmentVariables: map[string]string{
 				"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "/creds",
-				"AWS_SDK_LOAD_CONFIG":                    "1",
 			},
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
@@ -232,9 +228,6 @@ role_session_name = AssumeRoleSessionName
 				Region:  "us-east-1",
 			},
 			Description: "config Profile shared configuration source_profile",
-			EnvironmentVariables: map[string]string{
-				"AWS_SDK_LOAD_CONFIG": "1",
-			},
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "AssumeRoleAccessKey",
 				ProviderName:    stscreds.ProviderName,
@@ -351,8 +344,7 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 			Description:             "environment AWS_PROFILE shared configuration credential_source Ec2InstanceMetadata",
 			EnableEc2MetadataServer: true,
 			EnvironmentVariables: map[string]string{
-				"AWS_PROFILE":         "SharedConfigurationProfile",
-				"AWS_SDK_LOAD_CONFIG": "1",
+				"AWS_PROFILE": "SharedConfigurationProfile",
 			},
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "AssumeRoleAccessKey",
@@ -388,7 +380,6 @@ role_session_name = AssumeRoleSessionName
 			EnvironmentVariables: map[string]string{
 				"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "/creds",
 				"AWS_PROFILE":                            "SharedConfigurationProfile",
-				"AWS_SDK_LOAD_CONFIG":                    "1",
 			},
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "AssumeRoleAccessKey",
@@ -420,8 +411,7 @@ role_session_name = AssumeRoleSessionName
 			},
 			Description: "environment AWS_PROFILE shared configuration source_profile",
 			EnvironmentVariables: map[string]string{
-				"AWS_PROFILE":         "SharedConfigurationProfile",
-				"AWS_SDK_LOAD_CONFIG": "1",
+				"AWS_PROFILE": "SharedConfigurationProfile",
 			},
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "AssumeRoleAccessKey",
@@ -906,9 +896,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region:  "us-east-1",
 			},
 			Description: "session creation error",
-			EnvironmentVariables: map[string]string{
-				"AWS_SDK_LOAD_CONFIG": "1",
-			},
 			ExpectedError: func(err error) bool {
 				// TODO: Return wrapped error
 				//return IsAWSErr(err, "CredentialRequiresARNError", "")
