@@ -1,6 +1,7 @@
 package awsbase
 
 import (
+	"errors"
 	"fmt"
 )
 
@@ -30,6 +31,12 @@ func (e CannotAssumeRoleError) Unwrap() error {
 	return e.Err
 }
 
+// IsCannotAssumeRoleError returns true if the error contains the CannotAssumeRoleError type.
+func IsCannotAssumeRoleError(err error) bool {
+	var e CannotAssumeRoleError
+	return errors.As(err, &e)
+}
+
 func (c *Config) NewCannotAssumeRoleError(err error) CannotAssumeRoleError {
 	return CannotAssumeRoleError{Config: c, Err: err}
 }
@@ -56,6 +63,12 @@ Error: %s
 
 func (e NoValidCredentialSourcesError) Unwrap() error {
 	return e.Err
+}
+
+// IsNoValidCredentialSourcesError returns true if the error contains the NoValidCredentialSourcesError type.
+func IsNoValidCredentialSourcesError(err error) bool {
+	var e NoValidCredentialSourcesError
+	return errors.As(err, &e)
 }
 
 func (c *Config) NewNoValidCredentialSourcesError(err error) NoValidCredentialSourcesError {

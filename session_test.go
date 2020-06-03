@@ -1,7 +1,6 @@
 package awsbase
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -79,8 +78,7 @@ func TestGetSession(t *testing.T) {
 			Config:      &Config{},
 			Description: "no configuration or credentials",
 			ExpectedError: func(err error) bool {
-				var credentialError NoValidCredentialSourcesError
-				return errors.As(err, &credentialError)
+				return IsNoValidCredentialSourcesError(err)
 			},
 		},
 		{
@@ -886,8 +884,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "assume role error",
 			ExpectedError: func(err error) bool {
-				var assumeRoleError CannotAssumeRoleError
-				return errors.As(err, &assumeRoleError)
+				return IsCannotAssumeRoleError(err)
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
@@ -1144,8 +1141,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 					t.Fatalf("expected no error, got: %s", err)
 				}
 
-				var credentialError NoValidCredentialSourcesError
-				if !errors.As(err, &credentialError) {
+				if !IsNoValidCredentialSourcesError(err) {
 					t.Fatalf("expected no valid credential sources error, got: %s", err)
 				}
 
