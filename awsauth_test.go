@@ -1,6 +1,7 @@
 package awsbase
 
 import (
+	"errors"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -434,7 +435,8 @@ func TestAWSGetCredentials_shouldErrorWhenBlank(t *testing.T) {
 	cfg := Config{}
 	_, err := GetCredentials(&cfg)
 
-	if err != ErrNoValidCredentialSources {
+	var credentialError NoValidCredentialSourcesError
+	if !errors.As(err, &credentialError) {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
@@ -592,7 +594,9 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEndpoint(t *testing.T) {
 	defer ts()
 
 	_, err := GetCredentials(&Config{})
-	if err != ErrNoValidCredentialSources {
+
+	var credentialError NoValidCredentialSourcesError
+	if !errors.As(err, &credentialError) {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
 

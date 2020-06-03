@@ -24,22 +24,10 @@ import (
 )
 
 const (
-	// errMsgNoValidCredentialSources error getting credentials
-	errMsgNoValidCredentialSources = `No valid credential sources found for AWS.
-	Please see https://terraform.io/docs/providers/aws/index.html for more information on
-	providing credentials for the AWS Provider and Backend.`
-
 	// Default amount of time for EC2/ECS metadata client operations.
 	// Keep this value low to prevent long delays in non-EC2/ECS environments.
 	DefaultMetadataClientTimeout = 100 * time.Millisecond
 )
-
-var (
-	// ErrNoValidCredentialSources indicates that no credentials source could be found
-	ErrNoValidCredentialSources = errNoValidCredentialSources()
-)
-
-func errNoValidCredentialSources() error { return errors.New(errMsgNoValidCredentialSources) }
 
 // GetAccountIDAndPartition gets the account ID and associated partition.
 func GetAccountIDAndPartition(iamconn *iam.IAM, stsconn *sts.STS, authProviderName string) (string, string, error) {
@@ -197,7 +185,7 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	sess, err := session.NewSessionWithOptions(*options)
 	if err != nil {
 		if IsAWSErr(err, "NoCredentialProviders", "") {
-			return nil, ErrNoValidCredentialSources
+			return nil, c.NewNoValidCredentialSourcesError(err)
 		}
 		return nil, fmt.Errorf("Error creating AWS session: %w", err)
 	}
@@ -205,7 +193,7 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	creds := sess.Config.Credentials
 	cp, err := sess.Config.Credentials.Get()
 	if err != nil {
-		return nil, ErrNoValidCredentialSources
+		return nil, c.NewNoValidCredentialSourcesError(err)
 	}
 
 	log.Printf("[INFO] Successfully derived credentials from session")
@@ -281,7 +269,7 @@ func GetCredentialsFromMetadata(c *Config) (*awsCredentials.Credentials, error) 
 	cp, err := creds.Get()
 	if err != nil {
 		if IsAWSErr(err, "NoCredentialProviders", "") {
-			return nil, ErrNoValidCredentialSources
+			return nil, c.NewNoValidCredentialSourcesError(err)
 		}
 		return nil, fmt.Errorf("Error deriving credentials from metadata: %s", err)
 	}
@@ -417,16 +405,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 	assumeRoleCreds := awsCredentials.NewChainCredentials(providers)
 	_, err = assumeRoleCreds.Get()
 	if err != nil {
-		if IsAWSErr(err, "NoCredentialProviders", "") {
-			return nil, fmt.Errorf("The role %q cannot be assumed.\n\n"+
-				"  There are a number of possible causes of this - the most common are:\n"+
-				"    * The credentials used in order to assume the role are invalid\n"+
-				"    * The credentials do not have appropriate permission to assume the role\n"+
-				"    * The role ARN is not valid",
-				c.AssumeRoleARN)
-		}
-
-		return nil, fmt.Errorf("Error loading credentials for AWS Provider: %w", err)
+		return nil, c.NewCannotAssumeRoleError(err)
 	}
 
 	return assumeRoleCreds, nil
