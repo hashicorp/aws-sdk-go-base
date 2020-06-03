@@ -10,6 +10,8 @@ type Config struct {
 	AssumeRoleSessionName       string
 	AssumeRoleTags              map[string]string
 	AssumeRoleTransitiveTagKeys []string
+	CallerDocumentationURL      string
+	CallerName                  string
 	CredsFilename               string
 	DebugLogging                bool
 	IamEndpoint                 string

@@ -1,7 +1,6 @@
 package awsbase
 
 import (
-	"errors"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -79,7 +78,7 @@ func TestGetSession(t *testing.T) {
 			Config:      &Config{},
 			Description: "no configuration or credentials",
 			ExpectedError: func(err error) bool {
-				return errors.Is(err, ErrNoValidCredentialSources)
+				return IsNoValidCredentialSourcesError(err)
 			},
 		},
 		{
@@ -885,7 +884,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "assume role error",
 			ExpectedError: func(err error) bool {
-				return strings.Contains(err.Error(), "The role \"arn:aws:iam::555555555555:role/AssumeRole\" cannot be assumed.")
+				return IsCannotAssumeRoleError(err)
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
@@ -923,9 +922,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "session creation error",
 			ExpectedError: func(err error) bool {
-				// TODO: Return wrapped error
-				//return IsAWSErr(err, "CredentialRequiresARNError", "")
-				return err.Error() == errMsgNoValidCredentialSources
+				return IsAWSErr(err, "NoCredentialProviders", "")
 			},
 			SharedConfigurationFile: `
 [profile SharedConfigurationProfile]
@@ -1050,6 +1047,7 @@ source_profile = SourceSharedCredentials
 					t.Fatalf("unexpected GetSession() error: %s", err)
 				}
 
+				t.Logf("received expected error: %s", err)
 				return
 			}
 
@@ -1091,7 +1089,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 		config            *Config
 		expectedAcctID    string
 		expectedPartition string
-		expectedError     string
+		expectedError     bool
 	}{
 		{"StandardProvider_Config", &Config{
 			AccessKey:         "MockAccessKey",
@@ -1099,7 +1097,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			Region:            "us-west-2",
 			UserAgentProducts: []*UserAgentProduct{{}},
 			StsEndpoint:       ts.URL},
-			"222222222222", "aws", ""},
+			"222222222222", "aws", false},
 		{"SkipCredsValidation_Config", &Config{
 			AccessKey:           "MockAccessKey",
 			SecretKey:           "MockSecretKey",
@@ -1107,7 +1105,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			SkipCredsValidation: true,
 			UserAgentProducts:   []*UserAgentProduct{{}},
 			StsEndpoint:         ts.URL},
-			"222222222222", "aws", ""},
+			"222222222222", "aws", false},
 		{"SkipRequestingAccountId_Config", &Config{
 			AccessKey:               "MockAccessKey",
 			SecretKey:               "MockSecretKey",
@@ -1116,7 +1114,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			SkipRequestingAccountId: true,
 			UserAgentProducts:       []*UserAgentProduct{{}},
 			StsEndpoint:             ts.URL},
-			"", "aws", ""},
+			"", "aws", false},
 		// {"WithAssumeRole", &Config{
 		// 		AccessKey: "MockAccessKey",
 		// 		SecretKey: "MockSecretKey",
@@ -1130,7 +1128,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			Region:            "us-west-2",
 			UserAgentProducts: []*UserAgentProduct{{}},
 			StsEndpoint:       ts.URL},
-			"", "", "No valid credential sources found for AWS."},
+			"", "", true},
 	}
 
 	for _, testCase := range testCases {
@@ -1139,27 +1137,28 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			sess, acctID, part, err := GetSessionWithAccountIDAndPartition(tc.config)
 			if err != nil {
-				if tc.expectedError == "" {
-					t.Fatalf("GetSessionWithAccountIDAndPartition(&Config{...}) should return a valid session, but got the error %s", err)
-				} else {
-					if !strings.Contains(err.Error(), tc.expectedError) {
-						t.Fatalf("GetSession(c) expected error %q and got %q", tc.expectedError, err)
-					} else {
-						t.Logf("Found error message %q", err)
-					}
-				}
-			} else {
-				if sess == nil {
-					t.Error("GetSession(c) resulted in a nil session")
+				if !tc.expectedError {
+					t.Fatalf("expected no error, got: %s", err)
 				}
 
-				if acctID != tc.expectedAcctID {
-					t.Errorf("GetSession(c) returned an incorrect AWS account ID, expected %q but got %q", tc.expectedAcctID, acctID)
+				if !IsNoValidCredentialSourcesError(err) {
+					t.Fatalf("expected no valid credential sources error, got: %s", err)
 				}
 
-				if part != tc.expectedPartition {
-					t.Errorf("GetSession(c) returned an incorrect AWS partition, expected %q but got %q", tc.expectedPartition, part)
-				}
+				t.Logf("received expected error: %s", err)
+				return
+			}
+
+			if sess == nil {
+				t.Error("unexpected empty session")
+			}
+
+			if acctID != tc.expectedAcctID {
+				t.Errorf("expected account ID (%s), got: %s", tc.expectedAcctID, acctID)
+			}
+
+			if part != tc.expectedPartition {
+				t.Errorf("expected partition (%s), got: %s", tc.expectedPartition, part)
 			}
 		})
 	}
