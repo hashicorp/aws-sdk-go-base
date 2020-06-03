@@ -66,6 +66,7 @@ func TestGetSession(t *testing.T) {
 		Description                string
 		EnableEc2MetadataServer    bool
 		EnableEcsCredentialsServer bool
+		EnableWebIdentityToken     bool
 		EnvironmentVariables       map[string]string
 		ExpectedCredentialsValue   credentials.Value
 		ExpectedRegion             string
@@ -522,6 +523,31 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Config: &Config{
 				Region: "us-east-1",
 			},
+			Description:             "web identity token access key",
+			EnableEc2MetadataServer: true,
+			EnableWebIdentityToken:  true,
+			ExpectedCredentialsValue: credentials.Value{
+				AccessKeyID:     "AssumeRoleWithWebIdentityAccessKey",
+				ProviderName:    stscreds.WebIdentityProviderName,
+				SecretAccessKey: "AssumeRoleWithWebIdentitySecretKey",
+				SessionToken:    "AssumeRoleWithWebIdentitySessionToken",
+			},
+			ExpectedRegion: "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				{
+					Request:  &MockRequest{"POST", "/", "Action=AssumeRoleWithWebIdentity&RoleArn=arn%3Aaws%3Aiam%3A%3A666666666666%3Arole%2FWebIdentityToken&RoleSessionName=AssumeRoleWithWebIdentitySessionName&Version=2011-06-15&WebIdentityToken=WebIdentityToken"},
+					Response: &MockResponse{200, stsResponse_AssumeRoleWithWebIdentity_valid, "text/xml"},
+				},
+				{
+					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
+					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
+				},
+			},
+		},
+		{
+			Config: &Config{
+				Region: "us-east-1",
+			},
 			Description:             "EC2 metadata access key",
 			EnableEc2MetadataServer: true,
 			ExpectedCredentialsValue: credentials.Value{
@@ -938,6 +964,26 @@ source_profile = SourceSharedCredentials
 			if testCase.EnableEcsCredentialsServer {
 				closeEcsCredentials := ecsCredentialsApiMock()
 				defer closeEcsCredentials()
+			}
+
+			if testCase.EnableWebIdentityToken {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(file.Name(), []byte(webIdentityToken), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				os.Setenv("AWS_ROLE_ARN", "arn:aws:iam::666666666666:role/WebIdentityToken")
+				os.Setenv("AWS_ROLE_SESSION_NAME", "AssumeRoleWithWebIdentitySessionName")
+				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
 			}
 
 			closeSts, mockStsSession, err := GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)

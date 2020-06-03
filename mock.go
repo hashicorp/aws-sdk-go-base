@@ -220,6 +220,27 @@ const stsResponse_AssumeRole_InvalidClientTokenId = `<ErrorResponse xmlns="https
 <RequestId>4d0cf5ec-892a-4d3f-84e4-30e9987d9bdd</RequestId>
 </ErrorResponse>`
 
+var stsResponse_AssumeRoleWithWebIdentity_valid = fmt.Sprintf(`<AssumeRoleWithWebIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+<AssumeRoleWithWebIdentityResult>
+  <SubjectFromWebIdentityToken>amzn1.account.AF6RHO7KZU5XRVQJGXK6HB56KR2A</SubjectFromWebIdentityToken>
+  <Audience>client.6666666666666666666.6666@apps.example.com</Audience>
+  <AssumedRoleUser>
+    <Arn>arn:aws:sts::666666666666:assumed-role/FederatedWebIdentityRole/AssumeRoleWithWebIdentitySessionName</Arn>
+    <AssumedRoleId>ARO123EXAMPLE123:AssumeRoleWithWebIdentitySessionName</AssumedRoleId>
+  </AssumedRoleUser>
+  <Credentials>
+    <SessionToken>AssumeRoleWithWebIdentitySessionToken</SessionToken>
+    <SecretAccessKey>AssumeRoleWithWebIdentitySecretKey</SecretAccessKey>
+    <Expiration>%s</Expiration>
+    <AccessKeyId>AssumeRoleWithWebIdentityAccessKey</AccessKeyId>
+  </Credentials>
+  <Provider>www.amazon.com</Provider>
+</AssumeRoleWithWebIdentityResult>
+<ResponseMetadata>
+  <RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>
+</ResponseMetadata>
+</AssumeRoleWithWebIdentityResponse>`, time.Now().UTC().Format(time.RFC3339))
+
 const stsResponse_GetCallerIdentity_valid = `<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
   <GetCallerIdentityResult>
    <Arn>arn:aws:iam::222222222222:user/Alice</Arn>
@@ -283,3 +304,5 @@ const iamResponse_ListRoles_unauthorized = `<ErrorResponse xmlns="https://iam.am
   </Error>
   <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
 </ErrorResponse>`
+
+const webIdentityToken = `WebIdentityToken`
