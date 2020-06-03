@@ -8,6 +8,7 @@ ENHANCEMENTS
 
 * Always enable AWS shared configuration file support (no longer require `AWS_SDK_LOAD_CONFIG` environment variable) #38
 * Automatically expand `~` prefix for home directories in shared credentials filename handling #40
+* Support assume role duration, policy ARNs, tags, and transitive tag keys via configuration #39
 
 BUG FIXES
 
