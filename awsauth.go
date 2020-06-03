@@ -20,6 +20,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-multierror"
+	homedir "github.com/mitchellh/go-homedir"
 )
 
 const (
@@ -295,6 +296,12 @@ func GetCredentialsFromMetadata(c *Config) (*awsCredentials.Credentials, error) 
 // GetCredentials also validates the credentials and the ability to assume a role
 // or will return an error if unsuccessful.
 func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
+	sharedCredentialsFilename, err := homedir.Expand(c.CredsFilename)
+
+	if err != nil {
+		return nil, fmt.Errorf("error expanding shared credentials filename: %w", err)
+	}
+
 	// build a chain provider, lazy-evaluated by aws-sdk
 	providers := []awsCredentials.Provider{
 		&awsCredentials.StaticProvider{Value: awsCredentials.Value{
@@ -304,7 +311,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		}},
 		&awsCredentials.EnvProvider{},
 		&awsCredentials.SharedCredentialsProvider{
-			Filename: c.CredsFilename,
+			Filename: sharedCredentialsFilename,
 			Profile:  c.Profile,
 		},
 	}
