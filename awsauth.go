@@ -17,10 +17,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-multierror"
 	homedir "github.com/mitchellh/go-homedir"
-	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 )
 
 const (
