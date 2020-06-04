@@ -922,7 +922,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "session creation error",
 			ExpectedError: func(err error) bool {
-				return IsAWSErr(err, "NoCredentialProviders", "")
+				return IsAWSErr(err, "CredentialRequiresARNError", "")
 			},
 			SharedConfigurationFile: `
 [profile SharedConfigurationProfile]
@@ -941,6 +941,18 @@ source_profile = SourceSharedCredentials
 				AccessKeyID:     "StaticAccessKey",
 				ProviderName:    credentials.StaticProviderName,
 				SecretAccessKey: "StaticSecretKey",
+			},
+			ExpectedRegion: "us-east-1",
+		},
+		{
+			Config: &Config{
+				Region:               "us-east-1",
+				SkipMetadataApiCheck: true,
+			},
+			Description:             "skip EC2 metadata API check",
+			EnableEc2MetadataServer: true,
+			ExpectedError: func(err error) bool {
+				return IsNoValidCredentialSourcesError(err)
 			},
 			ExpectedRegion: "us-east-1",
 		},

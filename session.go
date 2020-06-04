@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
@@ -65,6 +66,10 @@ func GetSessionOptions(c *Config) (*session.Options, error) {
 
 // GetSession attempts to return valid AWS Go SDK session.
 func GetSession(c *Config) (*session.Session, error) {
+	if c.SkipMetadataApiCheck {
+		os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	}
+
 	options, err := GetSessionOptions(c)
 
 	if err != nil {
