@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
+	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 )
 
 func TestGetSessionOptions(t *testing.T) {
@@ -906,7 +907,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "credential validation error",
 			ExpectedError: func(err error) bool {
-				return IsAWSErr(err, "AccessDenied", "")
+				return tfawserr.ErrMessageContains(err, "AccessDenied", "")
 			},
 			MockStsEndpoints: []*MockEndpoint{
 				{
@@ -922,7 +923,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "session creation error",
 			ExpectedError: func(err error) bool {
-				return IsAWSErr(err, "CredentialRequiresARNError", "")
+				return tfawserr.ErrMessageContains(err, "CredentialRequiresARNError", "")
 			},
 			SharedConfigurationFile: `
 [profile SharedConfigurationProfile]
