@@ -2,7 +2,7 @@
 
 BREAKING CHANGES
 
-* Credential ordering has changed from static, environment, shared credentials, EC2 metadata, default AWS Go SDK (shared configuration, web identity, ECS, etc.) to static, environment, shared credentials, default AWS Go SDK (shared configuration, web identity, ECS, etc.), ECS metadata, EC2 metadata. #20
+* Credential ordering has changed from static, environment, shared credentials, EC2 metadata, default AWS Go SDK (shared configuration, web identity, ECS, EC2 Metadata) to static, environment, shared credentials, default AWS Go SDK (shared configuration, web identity, ECS, EC2 Metadata). #20
 * The `AWS_METADATA_TIMEOUT` environment variable no longer has any effect as we now depend on the default AWS Go SDK EC2 Metadata client timeout of one second with two retries. #20 / #44
 
 ENHANCEMENTS
