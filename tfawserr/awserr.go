@@ -1,4 +1,4 @@
-package awsbase
+package tfawserr
 
 import (
 	"errors"
@@ -7,21 +7,13 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
-var (
-	// IsAWSErr returns true if the error matches all these conditions:
-	//  * err is of type awserr.Error
-	//  * Error.Code() matches code
-	//  * Error.Message() contains message
-	IsAWSErr = IsAWSErrCodeMessageContains
-)
-
-// IsAWSErrExtended returns true if the error matches all these conditions:
+// ErrMessageAndOrigErrContains returns true if the error matches all these conditions:
 //  * err is of type awserr.Error
 //  * Error.Code() matches code
 //  * Error.Message() contains message
 //  * Error.OrigErr() contains origErrMessage
-func IsAWSErrExtended(err error, code string, message string, origErrMessage string) bool {
-	if !IsAWSErr(err, code, message) {
+func ErrMessageAndOrigErrContains(err error, code string, message string, origErrMessage string) bool {
+	if !ErrMessageContains(err, code, message) {
 		return false
 	}
 
@@ -37,10 +29,10 @@ func IsAWSErrExtended(err error, code string, message string, origErrMessage str
 	return false
 }
 
-// IsAWSErrCode returns true if the error matches all these conditions:
+// ErrCodeEquals returns true if the error matches all these conditions:
 //  * err is of type awserr.Error
 //  * Error.Code() equals code
-func IsAWSErrCode(err error, code string) bool {
+func ErrCodeEquals(err error, code string) bool {
 	var awsErr awserr.Error
 	if errors.As(err, &awsErr) {
 		return awsErr.Code() == code
@@ -48,10 +40,10 @@ func IsAWSErrCode(err error, code string) bool {
 	return false
 }
 
-// IsAWSErrCodeContains returns true if the error matches all these conditions:
+// ErrCodeContains returns true if the error matches all these conditions:
 //  * err is of type awserr.Error
 //  * Error.Code() contains code
-func IsAWSErrCodeContains(err error, code string) bool {
+func ErrCodeContains(err error, code string) bool {
 	var awsErr awserr.Error
 	if errors.As(err, &awsErr) {
 		return strings.Contains(awsErr.Code(), code)
@@ -59,11 +51,11 @@ func IsAWSErrCodeContains(err error, code string) bool {
 	return false
 }
 
-// IsAWSErrCodeMessageContains returns true if the error matches all these conditions:
+// ErrMessageContains returns true if the error matches all these conditions:
 //  * err is of type awserr.Error
 //  * Error.Code() equals code
 //  * Error.Message() contains message
-func IsAWSErrCodeMessageContains(err error, code string, message string) bool {
+func ErrMessageContains(err error, code string, message string) bool {
 	var awsErr awserr.Error
 	if errors.As(err, &awsErr) {
 		return awsErr.Code() == code && strings.Contains(awsErr.Message(), message)
@@ -71,12 +63,12 @@ func IsAWSErrCodeMessageContains(err error, code string, message string) bool {
 	return false
 }
 
-// IsAWSErrRequestFailureStatusCode returns true if the error matches all these conditions:
+// ErrStatusCodeEquals returns true if the error matches all these conditions:
 //  * err is of type awserr.RequestFailure
 //  * RequestFailure.StatusCode() equals statusCode
-// It is always preferable to use IsAWSErr() except in older APIs (e.g. S3)
+// It is always preferable to use ErrMessageContains() except in older APIs (e.g. S3)
 // that sometimes only respond with status codes.
-func IsAWSErrRequestFailureStatusCode(err error, statusCode int) bool {
+func ErrStatusCodeEquals(err error, statusCode int) bool {
 	var awsErr awserr.RequestFailure
 	if errors.As(err, &awsErr) {
 		return awsErr.StatusCode() == statusCode
