@@ -105,13 +105,13 @@ func GetSession(c *Config) (*session.Session, error) {
 		}
 		// RequestError: send request failed
 		// caused by: Post https://FQDN/: dial tcp: lookup FQDN: no such host
-		if tfawserr.ErrMessageAndOrigErrContains(r.Error, "RequestError", "send request failed", "no such host") {
+		if tfawserr.ErrMessageAndOrigErrContain(r.Error, "RequestError", "send request failed", "no such host") {
 			log.Printf("[WARN] Disabling retries after next request due to networking issue")
 			r.Retryable = aws.Bool(false)
 		}
 		// RequestError: send request failed
 		// caused by: Post https://FQDN/: dial tcp IPADDRESS:443: connect: connection refused
-		if tfawserr.ErrMessageAndOrigErrContains(r.Error, "RequestError", "send request failed", "connection refused") {
+		if tfawserr.ErrMessageAndOrigErrContain(r.Error, "RequestError", "send request failed", "connection refused") {
 			log.Printf("[WARN] Disabling retries after next request due to networking issue")
 			r.Retryable = aws.Bool(false)
 		}

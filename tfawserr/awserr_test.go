@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
-func TestErrMessageAndOrigErrContains(t *testing.T) {
+func TestErrMessageAndOrigErrContain(t *testing.T) {
 	testCases := []struct {
 		Name            string
 		Err             error
@@ -227,7 +227,7 @@ func TestErrMessageAndOrigErrContains(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Name, func(t *testing.T) {
-			got := ErrMessageAndOrigErrContains(testCase.Err, testCase.Code, testCase.Message, testCase.ExtendedMessage)
+			got := ErrMessageAndOrigErrContain(testCase.Err, testCase.Code, testCase.Message, testCase.ExtendedMessage)
 
 			if got != testCase.Expected {
 				t.Errorf("got %t, expected %t", got, testCase.Expected)

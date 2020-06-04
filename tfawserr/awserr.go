@@ -7,12 +7,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
-// ErrMessageAndOrigErrContains returns true if the error matches all these conditions:
+// ErrMessageAndOrigErrContain returns true if the error matches all these conditions:
 //  * err is of type awserr.Error
 //  * Error.Code() matches code
 //  * Error.Message() contains message
 //  * Error.OrigErr() contains origErrMessage
-func ErrMessageAndOrigErrContains(err error, code string, message string, origErrMessage string) bool {
+func ErrMessageAndOrigErrContain(err error, code string, message string, origErrMessage string) bool {
 	if !ErrMessageContains(err, code, message) {
 		return false
 	}
