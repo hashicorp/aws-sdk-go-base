@@ -184,7 +184,7 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 
 	sess, err := session.NewSessionWithOptions(*options)
 	if err != nil {
-		if tfawserr.ErrMessageContains(err, "NoCredentialProviders", "") {
+		if tfawserr.ErrCodeEquals(err, "NoCredentialProviders") {
 			return nil, c.NewNoValidCredentialSourcesError(err)
 		}
 		return nil, fmt.Errorf("Error creating AWS session: %w", err)
@@ -230,7 +230,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 	creds := awsCredentials.NewChainCredentials(providers)
 	cp, err := creds.Get()
 	if err != nil {
-		if tfawserr.ErrMessageContains(err, "NoCredentialProviders", "") {
+		if tfawserr.ErrCodeEquals(err, "NoCredentialProviders") {
 			creds, err = GetCredentialsFromSession(c)
 			if err != nil {
 				return nil, err

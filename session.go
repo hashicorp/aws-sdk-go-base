@@ -79,7 +79,7 @@ func GetSession(c *Config) (*session.Session, error) {
 
 	sess, err := session.NewSessionWithOptions(*options)
 	if err != nil {
-		if tfawserr.ErrMessageContains(err, "NoCredentialProviders", "") {
+		if tfawserr.ErrCodeEquals(err, "NoCredentialProviders") {
 			return nil, c.NewNoValidCredentialSourcesError(err)
 		}
 		return nil, fmt.Errorf("Error creating AWS session: %w", err)

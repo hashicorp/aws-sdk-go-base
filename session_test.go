@@ -907,7 +907,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "credential validation error",
 			ExpectedError: func(err error) bool {
-				return tfawserr.ErrMessageContains(err, "AccessDenied", "")
+				return tfawserr.ErrCodeEquals(err, "AccessDenied")
 			},
 			MockStsEndpoints: []*MockEndpoint{
 				{
@@ -923,7 +923,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "session creation error",
 			ExpectedError: func(err error) bool {
-				return tfawserr.ErrMessageContains(err, "CredentialRequiresARNError", "")
+				return tfawserr.ErrCodeEquals(err, "CredentialRequiresARNError")
 			},
 			SharedConfigurationFile: `
 [profile SharedConfigurationProfile]
