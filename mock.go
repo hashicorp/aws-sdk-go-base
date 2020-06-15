@@ -470,8 +470,6 @@ const iamResponse_GetUser_unauthorized = `<ErrorResponse xmlns="https://iam.amaz
   <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
 </ErrorResponse>`
 
-const stsResponse_GetCallerIdentity_valid_expectedPartition = `aws`
-
 const iamResponse_GetUser_federatedFailure = `<ErrorResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
   <Error>
     <Type>Sender</Type>
