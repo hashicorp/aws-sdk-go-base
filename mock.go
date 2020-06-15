@@ -37,6 +37,7 @@ const (
 
 	MockStsAssumeRoleAccessKey                               = `AssumeRoleAccessKey`
 	MockStsAssumeRoleArn                                     = `arn:aws:iam::555555555555:role/AssumeRole`
+	MockStsAssumeRoleExternalId                              = `AssumeRoleExternalId`
 	MockStsAssumeRoleInvalidResponseBodyInvalidClientTokenId = `<ErrorResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
 <Error>
   <Type>Sender</Type>
@@ -357,6 +358,34 @@ func ecsCredentialsApiMock() func() {
 
 	os.Setenv("AWS_CONTAINER_CREDENTIALS_FULL_URI", ts.URL+"/creds")
 	return ts.Close
+}
+
+// MockStsAssumeRoleValidEndpointWithOptions returns a valid STS AssumeRole response with configurable request options.
+func MockStsAssumeRoleValidEndpointWithOptions(options map[string]string) *MockEndpoint {
+	urlValues := url.Values{
+		"Action":          []string{"AssumeRole"},
+		"DurationSeconds": []string{"900"},
+		"RoleArn":         []string{MockStsAssumeRoleArn},
+		"RoleSessionName": []string{MockStsAssumeRoleSessionName},
+		"Version":         []string{"2011-06-15"},
+	}
+
+	for k, v := range options {
+		urlValues.Set(k, v)
+	}
+
+	return &MockEndpoint{
+		Request: &MockRequest{
+			Body:   urlValues.Encode(),
+			Method: http.MethodPost,
+			Uri:    "/",
+		},
+		Response: &MockResponse{
+			Body:        MockStsAssumeRoleValidResponseBody,
+			ContentType: "text/xml",
+			StatusCode:  http.StatusOK,
+		},
+	}
 }
 
 // MockEndpoint represents a basic request and response that can be used for creating simple httptest server routes.

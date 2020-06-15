@@ -111,6 +111,113 @@ func TestGetSession(t *testing.T) {
 		},
 		{
 			Config: &Config{
+				AccessKey:                 MockStaticAccessKey,
+				AssumeRoleARN:             MockStsAssumeRoleArn,
+				AssumeRoleDurationSeconds: 3600,
+				AssumeRoleSessionName:     MockStsAssumeRoleSessionName,
+				Region:                    "us-east-1",
+				SecretKey:                 MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleDurationSeconds",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"DurationSeconds": "3600"}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleExternalID:  MockStsAssumeRoleExternalId,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				Region:                "us-east-1",
+				SecretKey:             MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleExternalID",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"ExternalId": MockStsAssumeRoleExternalId}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRolePolicy:      MockStsAssumeRolePolicy,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				Region:                "us-east-1",
+				SecretKey:             MockStaticSecretKey,
+			},
+			Description:              "config AssumeRolePolicy",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Policy": MockStsAssumeRolePolicy}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRolePolicyARNs:  []string{MockStsAssumeRolePolicyArn},
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				Region:                "us-east-1",
+				SecretKey:             MockStaticSecretKey,
+			},
+			Description:              "config AssumeRolePolicyARNs",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"PolicyArns.member.1.arn": MockStsAssumeRolePolicyArn}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				AssumeRoleTags: map[string]string{
+					MockStsAssumeRoleTagKey: MockStsAssumeRoleTagValue,
+				},
+				Region:    "us-east-1",
+				SecretKey: MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleTags",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Tags.member.1.Key": MockStsAssumeRoleTagKey, "Tags.member.1.Value": MockStsAssumeRoleTagValue}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				AssumeRoleTags: map[string]string{
+					MockStsAssumeRoleTagKey: MockStsAssumeRoleTagValue,
+				},
+				AssumeRoleTransitiveTagKeys: []string{MockStsAssumeRoleTagKey},
+				Region:                      "us-east-1",
+				SecretKey:                   MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleTransitiveTagKeys",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Tags.member.1.Key": MockStsAssumeRoleTagKey, "Tags.member.1.Value": MockStsAssumeRoleTagValue, "TransitiveTagKeys.member.1": MockStsAssumeRoleTagKey}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
 				Profile: "SharedCredentialsProfile",
 				Region:  "us-east-1",
 			},
