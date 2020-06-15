@@ -47,13 +47,10 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 				},
 			},
 			STSEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
-			ExpectedAccountID: stsResponse_GetCallerIdentity_valid_expectedAccountID,
-			ExpectedPartition: stsResponse_GetCallerIdentity_valid_expectedPartition,
+			ExpectedAccountID: MockStsGetCallerIdentityAccountID,
+			ExpectedPartition: MockStsGetCallerIdentityPartition,
 		},
 		{
 			Description: "iam:ListRoles if iam:GetUser AccessDenied and sts:GetCallerIdentity fails",
@@ -68,10 +65,7 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 				},
 			},
 			STSEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
-				},
+				MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
 			ExpectedAccountID: iamResponse_ListRoles_valid_expectedAccountID,
 			ExpectedPartition: iamResponse_ListRoles_valid_expectedPartition,
@@ -89,10 +83,7 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 				},
 			},
 			STSEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
-				},
+				MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
 			ExpectedAccountID: iamResponse_ListRoles_valid_expectedAccountID,
 			ExpectedPartition: iamResponse_ListRoles_valid_expectedPartition,
@@ -110,10 +101,7 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 				},
 			},
 			STSEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
-				},
+				MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
 			ErrCount: 1,
 		},
@@ -324,23 +312,17 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		{
 			Description: "sts:GetCallerIdentity unauthorized",
 			MockEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
-				},
+				MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
 			ErrCount: 1,
 		},
 		{
 			Description: "sts:GetCallerIdentity success",
 			MockEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
-			ExpectedAccountID: stsResponse_GetCallerIdentity_valid_expectedAccountID,
-			ExpectedPartition: stsResponse_GetCallerIdentity_valid_expectedPartition,
+			ExpectedAccountID: MockStsGetCallerIdentityAccountID,
+			ExpectedPartition: MockStsGetCallerIdentityPartition,
 		},
 	}
 
