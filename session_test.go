@@ -1,6 +1,7 @@
 package awsbase
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"reflect"
@@ -9,9 +10,6 @@ import (
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/credentials/endpointcreds"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 )
 
@@ -84,49 +82,138 @@ func TestGetSession(t *testing.T) {
 		},
 		{
 			Config: &Config{
-				AccessKey: "StaticAccessKey",
+				AccessKey: MockStaticAccessKey,
 				Region:    "us-east-1",
-				SecretKey: "StaticSecretKey",
+				SecretKey: MockStaticSecretKey,
 			},
-			Description: "config AccessKey",
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "StaticAccessKey",
-				ProviderName:    credentials.StaticProviderName,
-				SecretAccessKey: "StaticSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "config AccessKey",
+			ExpectedCredentialsValue: MockStaticCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
-				AccessKey:             "StaticAccessKey",
-				AssumeRoleARN:         "arn:aws:iam::555555555555:role/AssumeRole",
-				AssumeRoleSessionName: "AssumeRoleSessionName",
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
 				Region:                "us-east-1",
-				SecretKey:             "StaticSecretKey",
+				SecretKey:             MockStaticSecretKey,
 			},
-			Description: "config AccessKey config AssumeRoleARN access key",
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "config AccessKey config AssumeRoleARN access key",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:                 MockStaticAccessKey,
+				AssumeRoleARN:             MockStsAssumeRoleArn,
+				AssumeRoleDurationSeconds: 3600,
+				AssumeRoleSessionName:     MockStsAssumeRoleSessionName,
+				Region:                    "us-east-1",
+				SecretKey:                 MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleDurationSeconds",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"DurationSeconds": "3600"}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleExternalID:  MockStsAssumeRoleExternalId,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				Region:                "us-east-1",
+				SecretKey:             MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleExternalID",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"ExternalId": MockStsAssumeRoleExternalId}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRolePolicy:      MockStsAssumeRolePolicy,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				Region:                "us-east-1",
+				SecretKey:             MockStaticSecretKey,
+			},
+			Description:              "config AssumeRolePolicy",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Policy": MockStsAssumeRolePolicy}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRolePolicyARNs:  []string{MockStsAssumeRolePolicyArn},
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				Region:                "us-east-1",
+				SecretKey:             MockStaticSecretKey,
+			},
+			Description:              "config AssumeRolePolicyARNs",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"PolicyArns.member.1.arn": MockStsAssumeRolePolicyArn}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				AssumeRoleTags: map[string]string{
+					MockStsAssumeRoleTagKey: MockStsAssumeRoleTagValue,
 				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
+				Region:    "us-east-1",
+				SecretKey: MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleTags",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Tags.member.1.Key": MockStsAssumeRoleTagKey, "Tags.member.1.Value": MockStsAssumeRoleTagValue}),
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
+				AssumeRoleTags: map[string]string{
+					MockStsAssumeRoleTagKey: MockStsAssumeRoleTagValue,
 				},
+				AssumeRoleTransitiveTagKeys: []string{MockStsAssumeRoleTagKey},
+				Region:                      "us-east-1",
+				SecretKey:                   MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleTransitiveTagKeys",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Tags.member.1.Key": MockStsAssumeRoleTagKey, "Tags.member.1.Value": MockStsAssumeRoleTagValue, "TransitiveTagKeys.member.1": MockStsAssumeRoleTagKey}),
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
@@ -142,10 +229,7 @@ func TestGetSession(t *testing.T) {
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
 [default]
@@ -162,31 +246,20 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 				Profile: "SharedConfigurationProfile",
 				Region:  "us-east-1",
 			},
-			Description:             "config Profile shared configuration credential_source Ec2InstanceMetadata",
-			EnableEc2MetadataServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "config Profile shared configuration credential_source Ec2InstanceMetadata",
+			EnableEc2MetadataServer:  true,
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
-			SharedConfigurationFile: `
+			SharedConfigurationFile: fmt.Sprintf(`
 [profile SharedConfigurationProfile]
 credential_source = Ec2InstanceMetadata
-role_arn = arn:aws:iam::555555555555:role/AssumeRole
-role_session_name = AssumeRoleSessionName
-`,
+role_arn = %[1]s
+role_session_name = %[2]s
+`, MockStsAssumeRoleArn, MockStsAssumeRoleSessionName),
 		},
 		{
 			Config: &Config{
@@ -199,63 +272,41 @@ role_session_name = AssumeRoleSessionName
 			},
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue:   MockStsAssumeRoleCredentials,
+			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
-			SharedConfigurationFile: `
+			SharedConfigurationFile: fmt.Sprintf(`
 [profile SharedConfigurationProfile]
 credential_source = EcsContainer
-role_arn = arn:aws:iam::555555555555:role/AssumeRole
-role_session_name = AssumeRoleSessionName
-`,
+role_arn = %[1]s
+role_session_name = %[2]s
+`, MockStsAssumeRoleArn, MockStsAssumeRoleSessionName),
 		},
 		{
 			Config: &Config{
 				Profile: "SharedConfigurationProfile",
 				Region:  "us-east-1",
 			},
-			Description: "config Profile shared configuration source_profile",
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "config Profile shared configuration source_profile",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
-			SharedConfigurationFile: `
+			SharedConfigurationFile: fmt.Sprintf(`
 [profile SharedConfigurationProfile]
-role_arn = arn:aws:iam::555555555555:role/AssumeRole
-role_session_name = AssumeRoleSessionName
+role_arn = %[1]s
+role_session_name = %[2]s
 source_profile = SharedConfigurationSourceProfile
 
 [profile SharedConfigurationSourceProfile]
 aws_access_key_id = SharedConfigurationSourceAccessKey
 aws_secret_access_key = SharedConfigurationSourceSecretKey
-`,
+`, MockStsAssumeRoleArn, MockStsAssumeRoleSessionName),
 		},
 		{
 			Config: &Config{
@@ -263,49 +314,31 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			},
 			Description: "environment AWS_ACCESS_KEY_ID",
 			EnvironmentVariables: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "EnvAccessKey",
-				"AWS_SECRET_ACCESS_KEY": "EnvSecretKey",
+				"AWS_ACCESS_KEY_ID":     MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": MockEnvSecretKey,
 			},
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "EnvAccessKey",
-				ProviderName:    credentials.EnvProviderName,
-				SecretAccessKey: "EnvSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue: MockEnvCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
-				AssumeRoleARN:         "arn:aws:iam::555555555555:role/AssumeRole",
-				AssumeRoleSessionName: "AssumeRoleSessionName",
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
 				Region:                "us-east-1",
 			},
 			Description: "environment AWS_ACCESS_KEY_ID config AssumeRoleARN access key",
 			EnvironmentVariables: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "EnvAccessKey",
-				"AWS_SECRET_ACCESS_KEY": "EnvSecretKey",
+				"AWS_ACCESS_KEY_ID":     MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": MockEnvSecretKey,
 			},
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
@@ -323,10 +356,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
 [default]
@@ -347,29 +377,18 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 			EnvironmentVariables: map[string]string{
 				"AWS_PROFILE": "SharedConfigurationProfile",
 			},
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
-			SharedConfigurationFile: `
+			SharedConfigurationFile: fmt.Sprintf(`
 [profile SharedConfigurationProfile]
 credential_source = Ec2InstanceMetadata
-role_arn = arn:aws:iam::555555555555:role/AssumeRole
-role_session_name = AssumeRoleSessionName
-`,
+role_arn = %[1]s
+role_session_name = %[2]s
+`, MockStsAssumeRoleArn, MockStsAssumeRoleSessionName),
 		},
 		{
 			Config: &Config{
@@ -382,29 +401,18 @@ role_session_name = AssumeRoleSessionName
 				"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "/creds",
 				"AWS_PROFILE":                            "SharedConfigurationProfile",
 			},
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
-			SharedConfigurationFile: `
+			SharedConfigurationFile: fmt.Sprintf(`
 [profile SharedConfigurationProfile]
 credential_source = EcsContainer
-role_arn = arn:aws:iam::555555555555:role/AssumeRole
-role_session_name = AssumeRoleSessionName
-`,
+role_arn = %[1]s
+role_session_name = %[2]s
+`, MockStsAssumeRoleArn, MockStsAssumeRoleSessionName),
 		},
 		{
 			Config: &Config{
@@ -414,33 +422,22 @@ role_session_name = AssumeRoleSessionName
 			EnvironmentVariables: map[string]string{
 				"AWS_PROFILE": "SharedConfigurationProfile",
 			},
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
-			SharedConfigurationFile: `
+			SharedConfigurationFile: fmt.Sprintf(`
 [profile SharedConfigurationProfile]
-role_arn = arn:aws:iam::555555555555:role/AssumeRole
-role_session_name = AssumeRoleSessionName
+role_arn = %[1]s
+role_session_name = %[2]s
 source_profile = SharedConfigurationSourceProfile
 
 [profile SharedConfigurationSourceProfile]
 aws_access_key_id = SharedConfigurationSourceAccessKey
 aws_secret_access_key = SharedConfigurationSourceSecretKey
-`,
+`, MockStsAssumeRoleArn, MockStsAssumeRoleSessionName),
 		},
 		{
 			Config: &Config{
@@ -448,22 +445,14 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			},
 			Description: "environment AWS_SESSION_TOKEN",
 			EnvironmentVariables: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "EnvAccessKey",
-				"AWS_SECRET_ACCESS_KEY": "EnvSecretKey",
-				"AWS_SESSION_TOKEN":     "EnvSessionToken",
+				"AWS_ACCESS_KEY_ID":     MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": MockEnvSecretKey,
+				"AWS_SESSION_TOKEN":     MockEnvSessionToken,
 			},
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "EnvAccessKey",
-				ProviderName:    credentials.EnvProviderName,
-				SecretAccessKey: "EnvSecretKey",
-				SessionToken:    "EnvSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue: MockEnvCredentialsWithSessionToken,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
@@ -478,10 +467,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
 [default]
@@ -491,27 +477,16 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		{
 			Config: &Config{
-				AssumeRoleARN:         "arn:aws:iam::555555555555:role/AssumeRole",
-				AssumeRoleSessionName: "AssumeRoleSessionName",
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
 				Region:                "us-east-1",
 			},
-			Description: "shared credentials default aws_access_key_id config AssumeRoleARN access key",
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "shared credentials default aws_access_key_id config AssumeRoleARN access key",
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
 [default]
@@ -523,71 +498,41 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Config: &Config{
 				Region: "us-east-1",
 			},
-			Description:             "web identity token access key",
-			EnableEc2MetadataServer: true,
-			EnableWebIdentityToken:  true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleWithWebIdentityAccessKey",
-				ProviderName:    stscreds.WebIdentityProviderName,
-				SecretAccessKey: "AssumeRoleWithWebIdentitySecretKey",
-				SessionToken:    "AssumeRoleWithWebIdentitySessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "web identity token access key",
+			EnableEc2MetadataServer:  true,
+			EnableWebIdentityToken:   true,
+			ExpectedCredentialsValue: MockStsAssumeRoleWithWebIdentityCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRoleWithWebIdentity&RoleArn=arn%3Aaws%3Aiam%3A%3A666666666666%3Arole%2FWebIdentityToken&RoleSessionName=AssumeRoleWithWebIdentitySessionName&Version=2011-06-15&WebIdentityToken=WebIdentityToken"},
-					Response: &MockResponse{200, stsResponse_AssumeRoleWithWebIdentity_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleWithWebIdentityValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
 				Region: "us-east-1",
 			},
-			Description:             "EC2 metadata access key",
-			EnableEc2MetadataServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "Ec2MetadataAccessKey",
-				ProviderName:    ec2rolecreds.ProviderName,
-				SecretAccessKey: "Ec2MetadataSecretKey",
-				SessionToken:    "Ec2MetadataSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "EC2 metadata access key",
+			EnableEc2MetadataServer:  true,
+			ExpectedCredentialsValue: MockEc2MetadataCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
-				AssumeRoleARN:         "arn:aws:iam::555555555555:role/AssumeRole",
-				AssumeRoleSessionName: "AssumeRoleSessionName",
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
 				Region:                "us-east-1",
 			},
-			Description:             "EC2 metadata access key config AssumeRoleARN access key",
-			EnableEc2MetadataServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "EC2 metadata access key config AssumeRoleARN access key",
+			EnableEc2MetadataServer:  true,
+			ExpectedCredentialsValue: MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
@@ -597,89 +542,56 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Description:                "ECS credentials access key",
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "EcsCredentialsAccessKey",
-				ProviderName:    endpointcreds.ProviderName,
-				SecretAccessKey: "EcsCredentialsSecretKey",
-				SessionToken:    "EcsCredentialsSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue:   MockEcsCredentialsCredentials,
+			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
-				AssumeRoleARN:         "arn:aws:iam::555555555555:role/AssumeRole",
-				AssumeRoleSessionName: "AssumeRoleSessionName",
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
 				Region:                "us-east-1",
 			},
 			Description:                "ECS credentials access key config AssumeRoleARN access key",
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "AssumeRoleAccessKey",
-				ProviderName:    stscreds.ProviderName,
-				SecretAccessKey: "AssumeRoleSecretKey",
-				SessionToken:    "AssumeRoleSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue:   MockStsAssumeRoleCredentials,
+			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_AssumeRole_valid, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
-				AccessKey: "StaticAccessKey",
+				AccessKey: MockStaticAccessKey,
 				Region:    "us-east-1",
-				SecretKey: "StaticSecretKey",
+				SecretKey: MockStaticSecretKey,
 			},
 			Description: "config AccessKey over environment AWS_ACCESS_KEY_ID",
 			EnvironmentVariables: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "EnvAccessKey",
-				"AWS_SECRET_ACCESS_KEY": "EnvSecretKey",
+				"AWS_ACCESS_KEY_ID":     MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": MockEnvSecretKey,
 			},
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "StaticAccessKey",
-				ProviderName:    credentials.StaticProviderName,
-				SecretAccessKey: "StaticSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue: MockStaticCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
-				AccessKey: "StaticAccessKey",
+				AccessKey: MockStaticAccessKey,
 				Region:    "us-east-1",
-				SecretKey: "StaticSecretKey",
+				SecretKey: MockStaticSecretKey,
 			},
-			Description: "config AccessKey over shared credentials default aws_access_key_id",
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "StaticAccessKey",
-				ProviderName:    credentials.StaticProviderName,
-				SecretAccessKey: "StaticSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "config AccessKey over shared credentials default aws_access_key_id",
+			ExpectedCredentialsValue: MockStaticCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
 [default]
@@ -689,45 +601,31 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		{
 			Config: &Config{
-				AccessKey: "StaticAccessKey",
+				AccessKey: MockStaticAccessKey,
 				Region:    "us-east-1",
-				SecretKey: "StaticSecretKey",
+				SecretKey: MockStaticSecretKey,
 			},
-			Description:             "config AccessKey over EC2 metadata access key",
-			EnableEc2MetadataServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "StaticAccessKey",
-				ProviderName:    credentials.StaticProviderName,
-				SecretAccessKey: "StaticSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "config AccessKey over EC2 metadata access key",
+			EnableEc2MetadataServer:  true,
+			ExpectedCredentialsValue: MockStaticCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
-				AccessKey: "StaticAccessKey",
+				AccessKey: MockStaticAccessKey,
 				Region:    "us-east-1",
-				SecretKey: "StaticSecretKey",
+				SecretKey: MockStaticSecretKey,
 			},
 			Description:                "config AccessKey over ECS credentials access key",
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "StaticAccessKey",
-				ProviderName:    credentials.StaticProviderName,
-				SecretAccessKey: "StaticSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue:   MockStaticCredentials,
+			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
@@ -736,20 +634,13 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "environment AWS_ACCESS_KEY_ID over shared credentials default aws_access_key_id",
 			EnvironmentVariables: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "EnvAccessKey",
-				"AWS_SECRET_ACCESS_KEY": "EnvSecretKey",
+				"AWS_ACCESS_KEY_ID":     MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": MockEnvSecretKey,
 			},
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "EnvAccessKey",
-				ProviderName:    credentials.EnvProviderName,
-				SecretAccessKey: "EnvSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue: MockEnvCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
 [default]
@@ -763,21 +654,14 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "environment AWS_ACCESS_KEY_ID over EC2 metadata access key",
 			EnvironmentVariables: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "EnvAccessKey",
-				"AWS_SECRET_ACCESS_KEY": "EnvSecretKey",
+				"AWS_ACCESS_KEY_ID":     MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": MockEnvSecretKey,
 			},
-			EnableEc2MetadataServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "EnvAccessKey",
-				ProviderName:    credentials.EnvProviderName,
-				SecretAccessKey: "EnvSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			EnableEc2MetadataServer:  true,
+			ExpectedCredentialsValue: MockEnvCredentials,
+			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
@@ -786,22 +670,15 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description: "environment AWS_ACCESS_KEY_ID over ECS credentials access key",
 			EnvironmentVariables: map[string]string{
-				"AWS_ACCESS_KEY_ID":     "EnvAccessKey",
-				"AWS_SECRET_ACCESS_KEY": "EnvSecretKey",
+				"AWS_ACCESS_KEY_ID":     MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": MockEnvSecretKey,
 			},
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "EnvAccessKey",
-				ProviderName:    credentials.EnvProviderName,
-				SecretAccessKey: "EnvSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue:   MockEnvCredentials,
+			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
@@ -817,10 +694,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
 [default]
@@ -842,10 +716,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
 [default]
@@ -860,28 +731,20 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Description:                "ECS credentials access key over EC2 metadata access key",
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "EcsCredentialsAccessKey",
-				ProviderName:    endpointcreds.ProviderName,
-				SecretAccessKey: "EcsCredentialsSecretKey",
-				SessionToken:    "EcsCredentialsSessionToken",
-			},
-			ExpectedRegion: "us-east-1",
+			ExpectedCredentialsValue:   MockEcsCredentialsCredentials,
+			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
-				AccessKey:             "StaticAccessKey",
-				AssumeRoleARN:         "arn:aws:iam::555555555555:role/AssumeRole",
-				AssumeRoleSessionName: "AssumeRoleSessionName",
+				AccessKey:             MockStaticAccessKey,
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName,
 				DebugLogging:          true,
 				Region:                "us-east-1",
-				SecretKey:             "StaticSecretKey",
+				SecretKey:             MockStaticSecretKey,
 			},
 			Description: "assume role error",
 			ExpectedError: func(err error) bool {
@@ -889,31 +752,22 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=AssumeRole&DurationSeconds=900&RoleArn=arn%3Aaws%3Aiam%3A%3A555555555555%3Arole%2FAssumeRole&RoleSessionName=AssumeRoleSessionName&Version=2011-06-15"},
-					Response: &MockResponse{403, stsResponse_AssumeRole_InvalidClientTokenId, "text/xml"},
-				},
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-				},
+				MockStsAssumeRoleInvalidEndpointInvalidClientTokenId,
+				MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
 			Config: &Config{
-				AccessKey: "StaticAccessKey",
+				AccessKey: MockStaticAccessKey,
 				Region:    "us-east-1",
-				SecretKey: "StaticSecretKey",
+				SecretKey: MockStaticSecretKey,
 			},
 			Description: "credential validation error",
 			ExpectedError: func(err error) bool {
 				return tfawserr.ErrCodeEquals(err, "AccessDenied")
 			},
 			MockStsEndpoints: []*MockEndpoint{
-				{
-					Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-					Response: &MockResponse{403, stsResponse_GetCallerIdentity_unauthorized, "text/xml"},
-				},
+				MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
 		},
 		{
@@ -932,18 +786,14 @@ source_profile = SourceSharedCredentials
 		},
 		{
 			Config: &Config{
-				AccessKey:           "StaticAccessKey",
+				AccessKey:           MockStaticAccessKey,
 				Region:              "us-east-1",
-				SecretKey:           "StaticSecretKey",
+				SecretKey:           MockStaticSecretKey,
 				SkipCredsValidation: true,
 			},
-			Description: "skip credentials validation",
-			ExpectedCredentialsValue: credentials.Value{
-				AccessKeyID:     "StaticAccessKey",
-				ProviderName:    credentials.StaticProviderName,
-				SecretAccessKey: "StaticSecretKey",
-			},
-			ExpectedRegion: "us-east-1",
+			Description:              "skip credentials validation",
+			ExpectedCredentialsValue: MockStaticCredentials,
+			ExpectedRegion:           "us-east-1",
 		},
 		{
 			Config: &Config{
@@ -985,14 +835,14 @@ source_profile = SourceSharedCredentials
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(webIdentityToken), 0600)
+				err = ioutil.WriteFile(file.Name(), []byte(MockWebIdentityToken), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
 				}
 
-				os.Setenv("AWS_ROLE_ARN", "arn:aws:iam::666666666666:role/WebIdentityToken")
-				os.Setenv("AWS_ROLE_SESSION_NAME", "AssumeRoleWithWebIdentitySessionName")
+				os.Setenv("AWS_ROLE_ARN", MockStsAssumeRoleWithWebIdentityArn)
+				os.Setenv("AWS_ROLE_SESSION_NAME", MockStsAssumeRoleWithWebIdentitySessionName)
 				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
 			}
 
@@ -1090,10 +940,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 	defer PopEnv(oldEnv)
 
 	ts := MockAwsApiServer("STS", []*MockEndpoint{
-		{
-			Request:  &MockRequest{"POST", "/", "Action=GetCallerIdentity&Version=2011-06-15"},
-			Response: &MockResponse{200, stsResponse_GetCallerIdentity_valid, "text/xml"},
-		},
+		MockStsGetCallerIdentityValidEndpoint,
 	})
 	defer ts.Close()
 
