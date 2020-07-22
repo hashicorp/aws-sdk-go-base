@@ -34,6 +34,14 @@ func TestGetSessionOptions(t *testing.T) {
 			&Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey", Insecure: true, DebugLogging: true},
 			false,
 		},
+		{"ConfigWithHTTPProxy",
+			&Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey", HTTPProxy: "https://127.0.0.1:8888"},
+			false,
+		},
+		{"ConfigWithHTTPBadProxy",
+			&Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey", HTTPProxy: "127.0.0.1:8888"},
+			true,
+		},
 	}
 
 	for _, testCase := range testCases {

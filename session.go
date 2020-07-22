@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -50,11 +51,20 @@ func GetSessionOptions(c *Config) (*session.Options, error) {
 	// add the validated credentials to the session options
 	options.Config.Credentials = creds
 
+	transport := options.Config.HTTPClient.Transport.(*http.Transport)
 	if c.Insecure {
-		transport := options.Config.HTTPClient.Transport.(*http.Transport)
 		transport.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true,
 		}
+	}
+
+	if c.HTTPProxy != "" {
+		proxyUrl, err := url.Parse(c.HTTPProxy)
+		if err != nil {
+			return nil, err
+		}
+
+		transport.Proxy = http.ProxyURL(proxyUrl)
 	}
 
 	if c.DebugLogging {
