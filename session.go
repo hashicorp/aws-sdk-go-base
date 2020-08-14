@@ -18,6 +18,11 @@ import (
 )
 
 const (
+	// AppendUserAgentEnvVar is a conventionally used environment variable
+	// containing additional HTTP User-Agent information.
+	// If present and its value is non-empty, it is directly appended to the
+	// User-Agent header for HTTP requests.
+	AppendUserAgentEnvVar = "TF_APPEND_USER_AGENT"
 	// Maximum network retries.
 	// We depend on the AWS Go SDK DefaultRetryer exponential backoff.
 	// Ensure that if the AWS Config MaxRetries is set high (which it is by
@@ -91,6 +96,13 @@ func GetSession(c *Config) (*session.Session, error) {
 
 	for _, product := range c.UserAgentProducts {
 		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentHandler(product.Name, product.Version, product.Extra...))
+	}
+
+	// Add custom input from ENV to the User-Agent request header
+	// Reference: https://github.com/terraform-providers/terraform-provider-aws/issues/9149
+	if v := os.Getenv(AppendUserAgentEnvVar); v != "" {
+		log.Printf("[DEBUG] Using additional User-Agent Info: %s", v)
+		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(v))
 	}
 
 	// Generally, we want to configure a lower retry theshold for networking issues
