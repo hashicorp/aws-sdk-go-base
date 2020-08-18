@@ -29,6 +29,7 @@ $ make lint
 ## Release Process
 
 - Push a new `vX.Y.Z` tag to the repository
+- Close associated `vX.Y.Z` milestone
 - For Terraform AWS Provider: Renovate will automatically detect the update and submit a dependency pull request (usually within an hour)
 - For Terraform S3 Backend: Submit a new dependency pull request by running:
 
