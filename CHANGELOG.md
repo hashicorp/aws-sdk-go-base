@@ -7,7 +7,7 @@ BREAKING CHANGES
 ENHANCEMENTS
 
 * Additional AWS error checking function have been added to the `tfawserr` package - `ErrCodeEquals`, `ErrCodeContains` and `ErrStatusCodeEquals`.
-* Support for appending data to User-Agent request header with the `TF_APPEND_USER_AGENT` environment variable
+* Support for appending data to User-Agent request header with the `TF_APPEND_USER_AGENT` environment variable. #47
 
 # v0.5.0 (June 4, 2020)
 
