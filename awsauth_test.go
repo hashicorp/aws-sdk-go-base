@@ -643,12 +643,17 @@ func TestAWSGetCredentials_shouldCatchEC2RoleProvider(t *testing.T) {
 	}
 }
 
-var credentialsFileContents = `[myprofile]
-aws_access_key_id = accesskey
-aws_secret_access_key = secretkey
+var credentialsFileContentsEnv = `[myprofile]
+aws_access_key_id = accesskey1
+aws_secret_access_key = secretkey1
 `
 
-func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
+var credentialsFileContentsParam = `[myprofile]
+aws_access_key_id = accesskey2
+aws_secret_access_key = secretkey2
+`
+
+func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
 	file, err := ioutil.TempFile(os.TempDir(), "terraform_aws_cred")
 	if err != nil {
 		t.Fatalf("Error writing temporary credentials file: %s", err)
@@ -661,28 +666,40 @@ func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error closing temporary credentials file: %s", err)
 	}
+	return file.Name()
+}
 
-	defer os.Remove(file.Name())
-
+func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
 	resetEnv := unsetEnv(t)
 	defer resetEnv()
 
 	if err := os.Setenv("AWS_PROFILE", "myprofile"); err != nil {
 		t.Fatalf("Error resetting env var AWS_PROFILE: %s", err)
 	}
-	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", file.Name()); err != nil {
+
+	fileEnvName := writeCredentialsFile(credentialsFileContentsEnv, t)
+	defer os.Remove(fileEnvName)
+
+	fileParamName := writeCredentialsFile(credentialsFileContentsParam, t)
+	defer os.Remove(fileParamName)
+
+	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", fileEnvName); err != nil {
 		t.Fatalf("Error resetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
 	}
 
-	creds, err := GetCredentials(&Config{Profile: "myprofile", CredsFilename: file.Name()})
+	// Confirm AWS_SHARED_CREDENTIALS_FILE is working
+	credsEnv, err := GetCredentials(&Config{Profile: "myprofile"})
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
-	if creds == nil {
-		t.Fatal("Expected a provider chain to be returned")
-	}
+	validateCredentials(credsEnv, "accesskey1", "secretkey1", "", t)
 
-	validateCredentials(creds, "accesskey", "secretkey", "", t)
+	// Confirm CredsFilename overwrites AWS_SHARED_CREDENTIALS_FILE
+	credsParam, err := GetCredentials(&Config{Profile: "myprofile", CredsFilename: fileParamName})
+	if err != nil {
+		t.Fatalf("Error gettings creds: %s", err)
+	}
+	validateCredentials(credsParam, "accesskey2", "secretkey2", "", t)
 }
 
 func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
@@ -838,4 +855,3 @@ func validateCredentials(creds *awsCredentials.Credentials, accesskey string, se
 type currentEnv struct {
 	Key, Secret, Token, Profile, CredsFilename, Home string
 }
-
