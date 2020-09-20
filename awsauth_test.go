@@ -691,7 +691,7 @@ func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
 	}
 
 	if v.SecretAccessKey != "secretkey" {
-		t.Fatalf("SecretAccessKey mismatch, expected (%s), got (%s)", "accesskey", v.AccessKeyID)
+		t.Fatalf("SecretAccessKey mismatch, expected (%s), got (%s)", "secretkey", v.SecretAccessKey)
 	}
 }
 
