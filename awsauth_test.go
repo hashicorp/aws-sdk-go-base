@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -681,18 +682,7 @@ func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
 		t.Fatal("Expected a provider chain to be returned")
 	}
 
-	v, err := creds.Get()
-	if err != nil {
-		t.Fatalf("Error gettings creds: %s", err)
-	}
-
-	if v.AccessKeyID != "accesskey" {
-		t.Fatalf("AccessKeyID mismatch, expected (%s), got (%s)", "accesskey", v.AccessKeyID)
-	}
-
-	if v.SecretAccessKey != "secretkey" {
-		t.Fatalf("SecretAccessKey mismatch, expected (%s), got (%s)", "secretkey", v.SecretAccessKey)
-	}
+	validateCredentials(creds, "accesskey", "secretkey", "", t)
 }
 
 func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
@@ -712,19 +702,7 @@ func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
 		t.Fatalf("Expected a static creds provider to be returned")
 	}
 
-	v, err := creds.Get()
-	if err != nil {
-		t.Fatalf("Error gettings creds: %s", err)
-	}
-	if v.AccessKeyID != s {
-		t.Fatalf("AccessKeyID mismatch, expected: (%s), got (%s)", s, v.AccessKeyID)
-	}
-	if v.SecretAccessKey != s {
-		t.Fatalf("SecretAccessKey mismatch, expected: (%s), got (%s)", s, v.SecretAccessKey)
-	}
-	if v.SessionToken != s {
-		t.Fatalf("SessionToken mismatch, expected: (%s), got (%s)", s, v.SessionToken)
-	}
+	validateCredentials(creds, s, s, s, t)
 }
 
 // invalidAwsEnv establishes a httptest server to simulate behaviour
@@ -839,7 +817,25 @@ func getEnv() *currentEnv {
 	}
 }
 
+func validateCredentials(creds *awsCredentials.Credentials, accesskey string, secretkey string, token string, t *testing.T) {
+	v, err := creds.Get()
+	if err != nil {
+		t.Fatalf("Error gettings creds: %s", err)
+	}
+
+	if v.AccessKeyID != accesskey {
+		t.Fatalf("AccessKeyID mismatch, expected: (%s), got (%s)", accesskey, v.AccessKeyID)
+	}
+	if v.SecretAccessKey != secretkey {
+		t.Fatalf("SecretAccessKey mismatch, expected: (%s), got (%s)", secretkey, v.SecretAccessKey)
+	}
+	if v.SessionToken != token {
+		t.Fatalf("SessionToken mismatch, expected: (%s), got (%s)", token, v.SessionToken)
+	}
+}
+
 // struct to preserve the current environment
 type currentEnv struct {
 	Key, Secret, Token, Profile, CredsFilename, Home string
 }
+
