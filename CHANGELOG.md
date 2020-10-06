@@ -1,4 +1,9 @@
 # v0.7.0 (Unreleased)
+
+ENHANCEMENTS
+
+* Optionally log the STS API calls when assuming a role #51
+
 # v0.6.0 (August 18, 2020)
 
 BREAKING CHANGES
