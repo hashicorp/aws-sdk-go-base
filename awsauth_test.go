@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 
+	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
@@ -642,12 +643,17 @@ func TestAWSGetCredentials_shouldCatchEC2RoleProvider(t *testing.T) {
 	}
 }
 
-var credentialsFileContents = `[myprofile]
-aws_access_key_id = accesskey
-aws_secret_access_key = secretkey
+var credentialsFileContentsEnv = `[myprofile]
+aws_access_key_id = accesskey1
+aws_secret_access_key = secretkey1
 `
 
-func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
+var credentialsFileContentsParam = `[myprofile]
+aws_access_key_id = accesskey2
+aws_secret_access_key = secretkey2
+`
+
+func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
 	file, err := ioutil.TempFile(os.TempDir(), "terraform_aws_cred")
 	if err != nil {
 		t.Fatalf("Error writing temporary credentials file: %s", err)
@@ -660,39 +666,40 @@ func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error closing temporary credentials file: %s", err)
 	}
+	return file.Name()
+}
 
-	defer os.Remove(file.Name())
-
+func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
 	resetEnv := unsetEnv(t)
 	defer resetEnv()
 
 	if err := os.Setenv("AWS_PROFILE", "myprofile"); err != nil {
 		t.Fatalf("Error resetting env var AWS_PROFILE: %s", err)
 	}
-	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", file.Name()); err != nil {
+
+	fileEnvName := writeCredentialsFile(credentialsFileContentsEnv, t)
+	defer os.Remove(fileEnvName)
+
+	fileParamName := writeCredentialsFile(credentialsFileContentsParam, t)
+	defer os.Remove(fileParamName)
+
+	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", fileEnvName); err != nil {
 		t.Fatalf("Error resetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
 	}
 
-	creds, err := GetCredentials(&Config{Profile: "myprofile", CredsFilename: file.Name()})
+	// Confirm AWS_SHARED_CREDENTIALS_FILE is working
+	credsEnv, err := GetCredentials(&Config{Profile: "myprofile"})
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
-	if creds == nil {
-		t.Fatal("Expected a provider chain to be returned")
-	}
+	validateCredentials(credsEnv, "accesskey1", "secretkey1", "", t)
 
-	v, err := creds.Get()
+	// Confirm CredsFilename overwrites AWS_SHARED_CREDENTIALS_FILE
+	credsParam, err := GetCredentials(&Config{Profile: "myprofile", CredsFilename: fileParamName})
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
-
-	if v.AccessKeyID != "accesskey" {
-		t.Fatalf("AccessKeyID mismatch, expected (%s), got (%s)", "accesskey", v.AccessKeyID)
-	}
-
-	if v.SecretAccessKey != "secretkey" {
-		t.Fatalf("SecretAccessKey mismatch, expected (%s), got (%s)", "accesskey", v.AccessKeyID)
-	}
+	validateCredentials(credsParam, "accesskey2", "secretkey2", "", t)
 }
 
 func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
@@ -712,19 +719,7 @@ func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
 		t.Fatalf("Expected a static creds provider to be returned")
 	}
 
-	v, err := creds.Get()
-	if err != nil {
-		t.Fatalf("Error gettings creds: %s", err)
-	}
-	if v.AccessKeyID != s {
-		t.Fatalf("AccessKeyID mismatch, expected: (%s), got (%s)", s, v.AccessKeyID)
-	}
-	if v.SecretAccessKey != s {
-		t.Fatalf("SecretAccessKey mismatch, expected: (%s), got (%s)", s, v.SecretAccessKey)
-	}
-	if v.SessionToken != s {
-		t.Fatalf("SessionToken mismatch, expected: (%s), got (%s)", s, v.SessionToken)
-	}
+	validateCredentials(creds, s, s, s, t)
 }
 
 // invalidAwsEnv establishes a httptest server to simulate behaviour
@@ -836,6 +831,23 @@ func getEnv() *currentEnv {
 		Profile:       os.Getenv("AWS_PROFILE"),
 		CredsFilename: os.Getenv("AWS_SHARED_CREDENTIALS_FILE"),
 		Home:          os.Getenv("HOME"),
+	}
+}
+
+func validateCredentials(creds *awsCredentials.Credentials, accesskey string, secretkey string, token string, t *testing.T) {
+	v, err := creds.Get()
+	if err != nil {
+		t.Fatalf("Error gettings creds: %s", err)
+	}
+
+	if v.AccessKeyID != accesskey {
+		t.Fatalf("AccessKeyID mismatch, expected: (%s), got (%s)", accesskey, v.AccessKeyID)
+	}
+	if v.SecretAccessKey != secretkey {
+		t.Fatalf("SecretAccessKey mismatch, expected: (%s), got (%s)", secretkey, v.SecretAccessKey)
+	}
+	if v.SessionToken != token {
+		t.Fatalf("SessionToken mismatch, expected: (%s), got (%s)", token, v.SessionToken)
 	}
 }
 
