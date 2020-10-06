@@ -1,4 +1,5 @@
-# v0.7.0 (Unreleased)
+# v0.8.0 (Unreleased)
+# v0.7.0 (October 6, 2020)
 
 ENHANCEMENTS
 
