@@ -1,4 +1,5 @@
-# v0.6.0 (unreleased)
+# v0.7.0 (Unreleased)
+# v0.6.0 (August 18, 2020)
 
 BREAKING CHANGES
 
