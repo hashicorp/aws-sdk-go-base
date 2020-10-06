@@ -260,6 +260,11 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		HTTPClient:       cleanhttp.DefaultClient(),
 	}
 
+	if c.DebugLogging {
+		awsConfig.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
+		awsConfig.Logger = DebugLogger{}
+	}
+
 	assumeRoleSession, err := session.NewSession(awsConfig)
 
 	if err != nil {
