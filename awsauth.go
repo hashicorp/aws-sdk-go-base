@@ -171,7 +171,7 @@ func GetCredentialsFromSession(c *Config, sharedCredentialsFilename string) (*aw
         log.Printf("[INFO] Attempting to use session-derived credentials")
 
         var sharedConfig []string
-        
+
         if sharedCredentialsFilename != "" {
                 sharedConfig = []string{sharedCredentialsFilename}
         }
@@ -185,7 +185,7 @@ func GetCredentialsFromSession(c *Config, sharedCredentialsFilename string) (*aw
                         Region:           aws.String(c.Region),
                 },
                 Profile:           c.Profile,
-                SharedConfigFiles: sharedConfig, 
+                SharedConfigFiles: sharedConfig,
                 SharedConfigState: session.SharedConfigEnable,
         }
 	sess, err := session.NewSessionWithOptions(*options)
