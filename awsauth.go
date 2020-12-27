@@ -168,26 +168,26 @@ func parseAccountIDAndPartitionFromARN(inputARN string) (string, string, error) 
 // session uses the AWS SDK Go chain of providers so may use a provider (e.g.,
 // ProcessProvider) that is not part of the Terraform provider chain.
 func GetCredentialsFromSession(c *Config, sharedCredentialsFilename string) (*awsCredentials.Credentials, error) {
-        log.Printf("[INFO] Attempting to use session-derived credentials")
+	log.Printf("[INFO] Attempting to use session-derived credentials")
 
-        var sharedConfig []string
+	var sharedConfig []string
 
-        if sharedCredentialsFilename != "" {
-                sharedConfig = []string{sharedCredentialsFilename}
-        }
+	if sharedCredentialsFilename != "" {
+		sharedConfig = []string{sharedCredentialsFilename}
+	}
 
-        // Avoid setting HTTPClient here as it will prevent the ec2metadata
-        // client from automatically lowering the timeout to 1 second.
-        options := &session.Options{
-                Config: aws.Config{
-                        EndpointResolver: c.EndpointResolver(),
-                        MaxRetries:       aws.Int(0),
-                        Region:           aws.String(c.Region),
-                },
-                Profile:           c.Profile,
-                SharedConfigFiles: sharedConfig,
-                SharedConfigState: session.SharedConfigEnable,
-        }
+	// Avoid setting HTTPClient here as it will prevent the ec2metadata
+	// client from automatically lowering the timeout to 1 second.
+	options := &session.Options{
+		Config: aws.Config{
+			EndpointResolver: c.EndpointResolver(),
+			MaxRetries:       aws.Int(0),
+			Region:           aws.String(c.Region),
+		},
+		Profile:           c.Profile,
+		SharedConfigFiles: sharedConfig,
+		SharedConfigState: session.SharedConfigEnable,
+	}
 	sess, err := session.NewSessionWithOptions(*options)
 	if err != nil {
 		if tfawserr.ErrCodeEquals(err, "NoCredentialProviders") {
