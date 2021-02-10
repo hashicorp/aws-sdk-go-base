@@ -40,6 +40,21 @@ func ErrCodeEquals(err error, code string) bool {
 	return false
 }
 
+// ErrCodeIn returns true if the error matches all these conditions:
+//  * err is of type awserr.Error
+//  * Error.Code() equals one of the passed codes
+func ErrCodeIn(err error, codes ...string) bool {
+	var awsErr awserr.Error
+	if errors.As(err, &awsErr) {
+		for _, code := range codes {
+			if awsErr.Code() == code {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // ErrCodeContains returns true if the error matches all these conditions:
 //  * err is of type awserr.Error
 //  * Error.Code() contains code
