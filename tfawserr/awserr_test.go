@@ -240,85 +240,6 @@ func TestErrCodeEquals(t *testing.T) {
 	testCases := []struct {
 		Name     string
 		Err      error
-		Code     string
-		Expected bool
-	}{
-		{
-			Name: "nil error",
-			Err:  nil,
-		},
-		{
-			Name: "nil error code",
-			Err:  nil,
-			Code: "test",
-		},
-		{
-			Name: "other error",
-			Err:  errors.New("test"),
-		},
-		{
-			Name: "other error code",
-			Err:  errors.New("test"),
-			Code: "test",
-		},
-		{
-			Name:     "awserr error matching code",
-			Err:      awserr.New("TestCode", "TestMessage", nil),
-			Code:     "TestCode",
-			Expected: true,
-		},
-		{
-			Name: "awserr error no code",
-			Err:  awserr.New("TestCode", "TestMessage", nil),
-		},
-		{
-			Name: "awserr error non-matching code",
-			Err:  awserr.New("TestCode", "TestMessage", nil),
-			Code: "NotMatching",
-		},
-		{
-			Name: "wrapped other error",
-			Err:  fmt.Errorf("test: %w", errors.New("test")),
-		},
-		{
-			Name: "wrapped other error code",
-			Err:  fmt.Errorf("test: %w", errors.New("test")),
-			Code: "test",
-		},
-		{
-			Name:     "wrapped awserr error matching code",
-			Err:      fmt.Errorf("test: %w", awserr.New("TestCode", "TestMessage", nil)),
-			Code:     "TestCode",
-			Expected: true,
-		},
-		{
-			Name: "wrapped awserr error no code",
-			Err:  fmt.Errorf("test: %w", awserr.New("TestCode", "TestMessage", nil)),
-		},
-		{
-			Name: "wrapped awserr error non-matching code",
-			Err:  fmt.Errorf("test: %w", awserr.New("TestCode", "TestMessage", nil)),
-			Code: "NotMatching",
-		},
-	}
-
-	for _, testCase := range testCases {
-		testCase := testCase
-
-		t.Run(testCase.Name, func(t *testing.T) {
-			got := ErrCodeEquals(testCase.Err, testCase.Code)
-
-			if got != testCase.Expected {
-				t.Errorf("got %t, expected %t", got, testCase.Expected)
-			}
-		})
-	}
-}
-
-func TestErrCodeIn(t *testing.T) {
-	testCases := []struct {
-		Name     string
-		Err      error
 		Codes    []string
 		Expected bool
 	}{
@@ -343,7 +264,7 @@ func TestErrCodeIn(t *testing.T) {
 		{
 			Name:     "awserr error matching first code",
 			Err:      awserr.New("TestCode", "TestMessage", nil),
-			Codes:    []string{"TestCode", "NotMatching"},
+			Codes:    []string{"TestCode"},
 			Expected: true,
 		},
 		{
@@ -355,6 +276,11 @@ func TestErrCodeIn(t *testing.T) {
 		{
 			Name: "awserr error no code",
 			Err:  awserr.New("TestCode", "TestMessage", nil),
+		},
+		{
+			Name:  "awserr error non-matching code",
+			Err:   awserr.New("TestCode", "TestMessage", nil),
+			Codes: []string{"NotMatching"},
 		},
 		{
 			Name:  "awserr error non-matching codes",
@@ -387,6 +313,11 @@ func TestErrCodeIn(t *testing.T) {
 			Err:  fmt.Errorf("test: %w", awserr.New("TestCode", "TestMessage", nil)),
 		},
 		{
+			Name:  "wrapped awserr error non-matching code",
+			Err:   fmt.Errorf("test: %w", awserr.New("TestCode", "TestMessage", nil)),
+			Codes: []string{"NotMatching"},
+		},
+		{
 			Name:  "wrapped awserr error non-matching codes",
 			Err:   fmt.Errorf("test: %w", awserr.New("TestCode", "TestMessage", nil)),
 			Codes: []string{"NotMatching", "AlsoNotMatching"},
@@ -397,7 +328,7 @@ func TestErrCodeIn(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Name, func(t *testing.T) {
-			got := ErrCodeIn(testCase.Err, testCase.Codes...)
+			got := ErrCodeEquals(testCase.Err, testCase.Codes...)
 
 			if got != testCase.Expected {
 				t.Errorf("got %t, expected %t", got, testCase.Expected)

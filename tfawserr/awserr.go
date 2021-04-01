@@ -31,19 +31,8 @@ func ErrMessageAndOrigErrContain(err error, code string, message string, origErr
 
 // ErrCodeEquals returns true if the error matches all these conditions:
 //  * err is of type awserr.Error
-//  * Error.Code() equals code
-func ErrCodeEquals(err error, code string) bool {
-	var awsErr awserr.Error
-	if errors.As(err, &awsErr) {
-		return awsErr.Code() == code
-	}
-	return false
-}
-
-// ErrCodeIn returns true if the error matches all these conditions:
-//  * err is of type awserr.Error
 //  * Error.Code() equals one of the passed codes
-func ErrCodeIn(err error, codes ...string) bool {
+func ErrCodeEquals(err error, codes ...string) bool {
 	var awsErr awserr.Error
 	if errors.As(err, &awsErr) {
 		for _, code := range codes {
