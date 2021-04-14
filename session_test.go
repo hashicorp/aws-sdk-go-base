@@ -5,11 +5,15 @@ import (
 	"io/ioutil"
 	"os"
 	"reflect"
+	"runtime"
 	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/client"
+	"github.com/aws/aws-sdk-go/aws/client/metadata"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 )
 
@@ -68,6 +72,7 @@ func TestGetSession(t *testing.T) {
 		EnvironmentVariables       map[string]string
 		ExpectedCredentialsValue   credentials.Value
 		ExpectedRegion             string
+		ExpectedUserAgent          string
 		ExpectedError              func(err error) bool
 		MockStsEndpoints           []*MockEndpoint
 		SharedConfigurationFile    string
@@ -807,6 +812,45 @@ source_profile = SourceSharedCredentials
 			},
 			ExpectedRegion: "us-east-1",
 		},
+		{
+			Config: &Config{
+				AccessKey: MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: MockStaticSecretKey,
+			},
+			Description:              "standard User-Agent",
+			ExpectedCredentialsValue: MockStaticCredentials,
+			ExpectedRegion:           "us-east-1",
+			ExpectedUserAgent:        awsSdkGoUserAgent(),
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey: MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: MockStaticSecretKey,
+				UserAgentProducts: []*UserAgentProduct{
+					{
+						Name:    "first",
+						Version: "1.0",
+					},
+					{
+						Name:    "second",
+						Version: "1.2.3",
+						Extra:   []string{"+https://www.example.com/"},
+					},
+				},
+			},
+			Description:              "customized User-Agent",
+			ExpectedCredentialsValue: MockStaticCredentials,
+			ExpectedRegion:           "us-east-1",
+			ExpectedUserAgent:        "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent(),
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -931,6 +975,24 @@ source_profile = SourceSharedCredentials
 			if expected, actual := testCase.ExpectedRegion, aws.StringValue(actualSession.Config.Region); expected != actual {
 				t.Fatalf("expected region (%s), got: %s", expected, actual)
 			}
+
+			if testCase.ExpectedUserAgent != "" {
+				clientInfo := metadata.ClientInfo{
+					Endpoint:    "http://endpoint",
+					SigningName: "",
+				}
+				conn := client.New(*actualSession.Config, clientInfo, actualSession.Handlers)
+
+				req := conn.NewRequest(&request.Operation{Name: "Operation"}, nil, nil)
+
+				if err := req.Build(); err != nil {
+					t.Fatalf("expect no Request.Build() error, got %s", err)
+				}
+
+				if e, a := testCase.ExpectedUserAgent, req.HTTPRequest.Header.Get("User-Agent"); e != a {
+					t.Errorf("expected User-Agent (%s), got: %s", e, a)
+				}
+			}
 		})
 	}
 }
@@ -1041,6 +1103,10 @@ func PopEnv(env []string) {
 		}
 		os.Setenv(k, v)
 	}
+}
+
+func awsSdkGoUserAgent() string {
+	return fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
 }
 
 func initSessionTestEnv() (oldEnv []string) {
