@@ -1,4 +1,9 @@
-# v0.8.0 (Unreleased)
+# v0.7.1 (April 14, 2021)
+
+BUG FIXES
+
+* session: Reorder User-Agent header so configuration products take precedence over AWS SDK Go product #56
+
 # v0.7.0 (October 6, 2020)
 
 ENHANCEMENTS
