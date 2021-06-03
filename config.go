@@ -26,6 +26,7 @@ type Config struct {
 	StsEndpoint                 string
 	Token                       string
 	UserAgentProducts           []*UserAgentProduct
+	StopOnExpiredCreds          bool
 }
 
 type UserAgentProduct struct {
