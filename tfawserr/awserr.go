@@ -31,11 +31,15 @@ func ErrMessageAndOrigErrContain(err error, code string, message string, origErr
 
 // ErrCodeEquals returns true if the error matches all these conditions:
 //  * err is of type awserr.Error
-//  * Error.Code() equals code
-func ErrCodeEquals(err error, code string) bool {
+//  * Error.Code() equals one of the passed codes
+func ErrCodeEquals(err error, codes ...string) bool {
 	var awsErr awserr.Error
 	if errors.As(err, &awsErr) {
-		return awsErr.Code() == code
+		for _, code := range codes {
+			if awsErr.Code() == code {
+				return true
+			}
+		}
 	}
 	return false
 }
