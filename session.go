@@ -63,6 +63,7 @@ func GetSessionOptions(c *Config) (*session.Options, error) {
 	}
 
 	if c.DebugLogging {
+		options.Config.CredentialsChainVerboseErrors = aws.Bool(true)
 		options.Config.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
 		options.Config.Logger = DebugLogger{}
 	}
