@@ -261,6 +261,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 	}
 
 	if c.DebugLogging {
+		awsConfig.CredentialsChainVerboseErrors = aws.Bool(true)
 		awsConfig.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
 		awsConfig.Logger = DebugLogger{}
 	}
