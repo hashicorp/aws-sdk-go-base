@@ -37,10 +37,11 @@ const (
 func GetSessionOptions(c *Config) (*session.Options, error) {
 	options := &session.Options{
 		Config: aws.Config{
-			EndpointResolver: c.EndpointResolver(),
-			HTTPClient:       cleanhttp.DefaultClient(),
-			MaxRetries:       aws.Int(0),
-			Region:           aws.String(c.Region),
+			CredentialsChainVerboseErrors: aws.Bool(true),
+			EndpointResolver:              c.EndpointResolver(),
+			HTTPClient:                    cleanhttp.DefaultClient(),
+			MaxRetries:                    aws.Int(0),
+			Region:                        aws.String(c.Region),
 		},
 		Profile:           c.Profile,
 		SharedConfigState: session.SharedConfigEnable,

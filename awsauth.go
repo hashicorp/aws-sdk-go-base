@@ -174,9 +174,10 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	// client from automatically lowering the timeout to 1 second.
 	options := &session.Options{
 		Config: aws.Config{
-			EndpointResolver: c.EndpointResolver(),
-			MaxRetries:       aws.Int(0),
-			Region:           aws.String(c.Region),
+			CredentialsChainVerboseErrors: aws.Bool(true),
+			EndpointResolver:              c.EndpointResolver(),
+			MaxRetries:                    aws.Int(0),
+			Region:                        aws.String(c.Region),
 		},
 		Profile:           c.Profile,
 		SharedConfigState: session.SharedConfigEnable,
@@ -253,11 +254,12 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 		c.AssumeRoleARN, c.AssumeRoleSessionName, c.AssumeRoleExternalID)
 
 	awsConfig := &aws.Config{
-		Credentials:      creds,
-		EndpointResolver: c.EndpointResolver(),
-		Region:           aws.String(c.Region),
-		MaxRetries:       aws.Int(c.MaxRetries),
-		HTTPClient:       cleanhttp.DefaultClient(),
+		CredentialsChainVerboseErrors: aws.Bool(true),
+		Credentials:                   creds,
+		EndpointResolver:              c.EndpointResolver(),
+		Region:                        aws.String(c.Region),
+		MaxRetries:                    aws.Int(c.MaxRetries),
+		HTTPClient:                    cleanhttp.DefaultClient(),
 	}
 
 	if c.DebugLogging {
