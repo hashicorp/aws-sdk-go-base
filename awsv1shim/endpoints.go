@@ -1,4 +1,4 @@
-package awsbase
+package awsv1shim
 
 import (
 	"log"
@@ -8,9 +8,10 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
+	awsbase "github.com/hashicorp/aws-sdk-go-base"
 )
 
-func (c *Config) EndpointResolver() endpoints.Resolver {
+func endpointResolver(c *awsbase.Config) endpoints.Resolver {
 	resolver := func(service, region string, optFns ...func(*endpoints.Options)) (endpoints.ResolvedEndpoint, error) {
 		// Ensure we pass all existing information (e.g. SigningRegion) and
 		// only override the URL, otherwise a MissingRegion error can occur

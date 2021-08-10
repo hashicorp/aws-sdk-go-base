@@ -1,4 +1,4 @@
-package awsbase
+package awsv1shim
 
 import (
 	"errors"
@@ -17,40 +17,35 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
+	awsbase "github.com/hashicorp/aws-sdk-go-base"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 	"github.com/hashicorp/go-cleanhttp"
 	"github.com/hashicorp/go-multierror"
 	homedir "github.com/mitchellh/go-homedir"
 )
 
-const (
-	// Default amount of time for EC2/ECS metadata client operations.
-	// Keep this value low to prevent long delays in non-EC2/ECS environments.
-	DefaultMetadataClientTimeout = 100 * time.Millisecond
-)
-
-// GetAccountIDAndPartition gets the account ID and associated partition.
-func GetAccountIDAndPartition(iamconn *iam.IAM, stsconn *sts.STS, authProviderName string) (string, string, error) {
+// getAccountIDAndPartition gets the account ID and associated partition.
+func getAccountIDAndPartition(iamconn *iam.IAM, stsconn *sts.STS, authProviderName string) (string, string, error) {
 	var accountID, partition string
 	var err, errors error
 
 	if authProviderName == ec2rolecreds.ProviderName {
-		accountID, partition, err = GetAccountIDAndPartitionFromEC2Metadata()
+		accountID, partition, err = getAccountIDAndPartitionFromEC2Metadata()
 	} else {
-		accountID, partition, err = GetAccountIDAndPartitionFromIAMGetUser(iamconn)
+		accountID, partition, err = getAccountIDAndPartitionFromIAMGetUser(iamconn)
 	}
 	if accountID != "" {
 		return accountID, partition, nil
 	}
 	errors = multierror.Append(errors, err)
 
-	accountID, partition, err = GetAccountIDAndPartitionFromSTSGetCallerIdentity(stsconn)
+	accountID, partition, err = getAccountIDAndPartitionFromSTSGetCallerIdentity(stsconn)
 	if accountID != "" {
 		return accountID, partition, nil
 	}
 	errors = multierror.Append(errors, err)
 
-	accountID, partition, err = GetAccountIDAndPartitionFromIAMListRoles(iamconn)
+	accountID, partition, err = getAccountIDAndPartitionFromIAMListRoles(iamconn)
 	if accountID != "" {
 		return accountID, partition, nil
 	}
@@ -59,9 +54,9 @@ func GetAccountIDAndPartition(iamconn *iam.IAM, stsconn *sts.STS, authProviderNa
 	return accountID, partition, errors
 }
 
-// GetAccountIDAndPartitionFromEC2Metadata gets the account ID and associated
+// getAccountIDAndPartitionFromEC2Metadata gets the account ID and associated
 // partition from EC2 metadata.
-func GetAccountIDAndPartitionFromEC2Metadata() (string, string, error) {
+func getAccountIDAndPartitionFromEC2Metadata() (string, string, error) {
 	log.Println("[DEBUG] Trying to get account information via EC2 Metadata")
 
 	cfg := &aws.Config{}
@@ -85,9 +80,9 @@ func GetAccountIDAndPartitionFromEC2Metadata() (string, string, error) {
 	return parseAccountIDAndPartitionFromARN(info.InstanceProfileArn)
 }
 
-// GetAccountIDAndPartitionFromIAMGetUser gets the account ID and associated
+// getAccountIDAndPartitionFromIAMGetUser gets the account ID and associated
 // partition from IAM.
-func GetAccountIDAndPartitionFromIAMGetUser(iamconn *iam.IAM) (string, string, error) {
+func getAccountIDAndPartitionFromIAMGetUser(iamconn *iam.IAM) (string, string, error) {
 	log.Println("[DEBUG] Trying to get account information via iam:GetUser")
 
 	output, err := iamconn.GetUser(&iam.GetUserInput{})
@@ -114,9 +109,9 @@ func GetAccountIDAndPartitionFromIAMGetUser(iamconn *iam.IAM) (string, string, e
 	return parseAccountIDAndPartitionFromARN(aws.StringValue(output.User.Arn))
 }
 
-// GetAccountIDAndPartitionFromIAMListRoles gets the account ID and associated
+// getAccountIDAndPartitionFromIAMListRoles gets the account ID and associated
 // partition from listing IAM roles.
-func GetAccountIDAndPartitionFromIAMListRoles(iamconn *iam.IAM) (string, string, error) {
+func getAccountIDAndPartitionFromIAMListRoles(iamconn *iam.IAM) (string, string, error) {
 	log.Println("[DEBUG] Trying to get account information via iam:ListRoles")
 
 	output, err := iamconn.ListRoles(&iam.ListRolesInput{
@@ -137,9 +132,9 @@ func GetAccountIDAndPartitionFromIAMListRoles(iamconn *iam.IAM) (string, string,
 	return parseAccountIDAndPartitionFromARN(aws.StringValue(output.Roles[0].Arn))
 }
 
-// GetAccountIDAndPartitionFromSTSGetCallerIdentity gets the account ID and associated
+// getAccountIDAndPartitionFromSTSGetCallerIdentity gets the account ID and associated
 // partition from STS caller identity.
-func GetAccountIDAndPartitionFromSTSGetCallerIdentity(stsconn *sts.STS) (string, string, error) {
+func getAccountIDAndPartitionFromSTSGetCallerIdentity(stsconn *sts.STS) (string, string, error) {
 	log.Println("[DEBUG] Trying to get account information via sts:GetCallerIdentity")
 
 	output, err := stsconn.GetCallerIdentity(&sts.GetCallerIdentityInput{})
@@ -164,10 +159,10 @@ func parseAccountIDAndPartitionFromARN(inputARN string) (string, string, error) 
 	return arn.AccountID, arn.Partition, nil
 }
 
-// GetCredentialsFromSession returns credentials derived from a session. A
+// getCredentialsFromSession returns credentials derived from a session. A
 // session uses the AWS SDK Go chain of providers so may use a provider (e.g.,
 // ProcessProvider) that is not part of the Terraform provider chain.
-func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
+func getCredentialsFromSession(c *awsbase.Config) (*awsCredentials.Credentials, error) {
 	log.Printf("[INFO] Attempting to use session-derived credentials")
 
 	// Avoid setting HTTPClient here as it will prevent the ec2metadata
@@ -175,7 +170,7 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	options := &session.Options{
 		Config: aws.Config{
 			CredentialsChainVerboseErrors: aws.Bool(true),
-			EndpointResolver:              c.EndpointResolver(),
+			EndpointResolver:              endpointResolver(c),
 			MaxRetries:                    aws.Int(0),
 			Region:                        aws.String(c.Region),
 		},
@@ -202,11 +197,11 @@ func GetCredentialsFromSession(c *Config) (*awsCredentials.Credentials, error) {
 	return creds, nil
 }
 
-// GetCredentials gets credentials from environment, shared credentials file,
+// getCredentials gets credentials from environment, shared credentials file,
 // environment AWS_SHARED_CREDENTIALS_FILE, the session (which may include a credential process),
-// or ECS/EC2 metadata endpoints. GetCredentials also validates the credentials
+// or ECS/EC2 metadata endpoints. getCredentials also validates the credentials
 // and the ability to assume a role or will return an error if unsuccessful.
-func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
+func getCredentials(c *awsbase.Config) (*awsCredentials.Credentials, error) {
 	sharedCredentialsFilename, err := homedir.Expand(c.CredsFilename)
 
 	if err != nil {
@@ -232,7 +227,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 	cp, err := creds.Get()
 	if err != nil {
 		if tfawserr.ErrCodeEquals(err, "NoCredentialProviders") {
-			creds, err = GetCredentialsFromSession(c)
+			creds, err = getCredentialsFromSession(c)
 			if err != nil {
 				return nil, err
 			}
@@ -256,7 +251,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 	awsConfig := &aws.Config{
 		CredentialsChainVerboseErrors: aws.Bool(true),
 		Credentials:                   creds,
-		EndpointResolver:              c.EndpointResolver(),
+		EndpointResolver:              endpointResolver(c),
 		Region:                        aws.String(c.Region),
 		MaxRetries:                    aws.Int(c.MaxRetries),
 		HTTPClient:                    cleanhttp.DefaultClient(),
@@ -264,7 +259,7 @@ func GetCredentials(c *Config) (*awsCredentials.Credentials, error) {
 
 	if c.DebugLogging {
 		awsConfig.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
-		awsConfig.Logger = DebugLogger{}
+		awsConfig.Logger = debugLogger{}
 	}
 
 	assumeRoleSession, err := session.NewSession(awsConfig)

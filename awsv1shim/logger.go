@@ -1,13 +1,13 @@
-package awsbase
+package awsv1shim
 
 import (
 	"log"
 	"strings"
 )
 
-type DebugLogger struct{}
+type debugLogger struct{}
 
-func (l DebugLogger) Log(args ...interface{}) {
+func (l debugLogger) Log(args ...interface{}) {
 	tokens := make([]string, 0, len(args))
 	for _, arg := range args {
 		if token, ok := arg.(string); ok {

@@ -1,4 +1,4 @@
-package awsbase
+package awsv1shim
 
 import (
 	"io/ioutil"
@@ -11,15 +11,17 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
+	awsbase "github.com/hashicorp/aws-sdk-go-base"
+	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
 )
 
 func TestGetAccountIDAndPartition(t *testing.T) {
 	var testCases = []struct {
 		Description          string
 		AuthProviderName     string
-		EC2MetadataEndpoints []*MetadataResponse
-		IAMEndpoints         []*MockEndpoint
-		STSEndpoints         []*MockEndpoint
+		EC2MetadataEndpoints []*awsmocks.MetadataResponse
+		IAMEndpoints         []*awsmocks.MockEndpoint
+		STSEndpoints         []*awsmocks.MockEndpoint
 		ErrCount             int
 		ExpectedAccountID    string
 		ExpectedPartition    string
@@ -27,82 +29,83 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 		{
 			Description:          "EC2 Metadata over iam:GetUser when using EC2 Instance Profile",
 			AuthProviderName:     ec2rolecreds.ProviderName,
-			EC2MetadataEndpoints: append(ec2metadata_securityCredentialsEndpoints, ec2metadata_instanceIdEndpoint, ec2metadata_iamInfoEndpoint),
-			IAMEndpoints: []*MockEndpoint{
+			EC2MetadataEndpoints: append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint),
+
+			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &MockResponse{200, iamResponse_GetUser_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_GetUser_valid, "text/xml"},
 				},
 			},
-			ExpectedAccountID: ec2metadata_iamInfoEndpoint_expectedAccountID,
-			ExpectedPartition: ec2metadata_iamInfoEndpoint_expectedPartition,
+			ExpectedAccountID: awsmocks.Ec2metadata_iamInfoEndpoint_expectedAccountID,
+			ExpectedPartition: awsmocks.Ec2metadata_iamInfoEndpoint_expectedPartition,
 		},
 		{
 			Description:          "Mimic the metadata service mocked by Hologram (https://github.com/AdRoll/hologram)",
 			AuthProviderName:     ec2rolecreds.ProviderName,
-			EC2MetadataEndpoints: ec2metadata_securityCredentialsEndpoints,
-			IAMEndpoints: []*MockEndpoint{
+			EC2MetadataEndpoints: awsmocks.Ec2metadata_securityCredentialsEndpoints,
+			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &MockResponse{403, iamResponse_GetUser_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_GetUser_unauthorized, "text/xml"},
 				},
 			},
-			STSEndpoints: []*MockEndpoint{
-				MockStsGetCallerIdentityValidEndpoint,
+			STSEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
 			},
-			ExpectedAccountID: MockStsGetCallerIdentityAccountID,
-			ExpectedPartition: MockStsGetCallerIdentityPartition,
+			ExpectedAccountID: awsmocks.MockStsGetCallerIdentityAccountID,
+			ExpectedPartition: awsmocks.MockStsGetCallerIdentityPartition,
 		},
 		{
 			Description: "iam:ListRoles if iam:GetUser AccessDenied and sts:GetCallerIdentity fails",
-			IAMEndpoints: []*MockEndpoint{
+			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &MockResponse{403, iamResponse_GetUser_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_GetUser_unauthorized, "text/xml"},
 				},
 				{
-					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &MockResponse{200, iamResponse_ListRoles_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_ListRoles_valid, "text/xml"},
 				},
 			},
-			STSEndpoints: []*MockEndpoint{
-				MockStsGetCallerIdentityInvalidEndpointAccessDenied,
+			STSEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
-			ExpectedAccountID: iamResponse_ListRoles_valid_expectedAccountID,
-			ExpectedPartition: iamResponse_ListRoles_valid_expectedPartition,
+			ExpectedAccountID: awsmocks.IamResponse_ListRoles_valid_expectedAccountID,
+			ExpectedPartition: awsmocks.IamResponse_ListRoles_valid_expectedPartition,
 		},
 		{
 			Description: "iam:ListRoles if iam:GetUser ValidationError and sts:GetCallerIdentity fails",
-			IAMEndpoints: []*MockEndpoint{
+			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &MockResponse{400, iamResponse_GetUser_federatedFailure, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{400, awsmocks.IamResponse_GetUser_federatedFailure, "text/xml"},
 				},
 				{
-					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &MockResponse{200, iamResponse_ListRoles_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_ListRoles_valid, "text/xml"},
 				},
 			},
-			STSEndpoints: []*MockEndpoint{
-				MockStsGetCallerIdentityInvalidEndpointAccessDenied,
+			STSEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
-			ExpectedAccountID: iamResponse_ListRoles_valid_expectedAccountID,
-			ExpectedPartition: iamResponse_ListRoles_valid_expectedPartition,
+			ExpectedAccountID: awsmocks.IamResponse_ListRoles_valid_expectedAccountID,
+			ExpectedPartition: awsmocks.IamResponse_ListRoles_valid_expectedPartition,
 		},
 		{
 			Description: "Error when all endpoints fail",
-			IAMEndpoints: []*MockEndpoint{
+			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &MockResponse{400, iamResponse_GetUser_federatedFailure, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{400, awsmocks.IamResponse_GetUser_federatedFailure, "text/xml"},
 				},
 				{
-					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &MockResponse{403, iamResponse_ListRoles_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_ListRoles_unauthorized, "text/xml"},
 				},
 			},
-			STSEndpoints: []*MockEndpoint{
-				MockStsGetCallerIdentityInvalidEndpointAccessDenied,
+			STSEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
 			ErrCount: 1,
 		},
@@ -115,16 +118,16 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			resetEnv := unsetEnv(t)
 			defer resetEnv()
 			// capture the test server's close method, to call after the test returns
-			awsTs := awsMetadataApiMock(testCase.EC2MetadataEndpoints)
+			awsTs := awsmocks.AwsMetadataApiMock(testCase.EC2MetadataEndpoints)
 			defer awsTs()
 
-			closeIam, iamSess, err := GetMockedAwsApiSession("IAM", testCase.IAMEndpoints)
+			closeIam, iamSess, err := awsmocks.GetMockedAwsApiSession("IAM", testCase.IAMEndpoints)
 			defer closeIam()
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			closeSts, stsSess, err := GetMockedAwsApiSession("STS", testCase.STSEndpoints)
+			closeSts, stsSess, err := awsmocks.GetMockedAwsApiSession("STS", testCase.STSEndpoints)
 			defer closeSts()
 			if err != nil {
 				t.Fatal(err)
@@ -133,7 +136,7 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			iamConn := iam.New(iamSess)
 			stsConn := sts.New(stsSess)
 
-			accountID, partition, err := GetAccountIDAndPartition(iamConn, stsConn, testCase.AuthProviderName)
+			accountID, partition, err := getAccountIDAndPartition(iamConn, stsConn, testCase.AuthProviderName)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -155,19 +158,19 @@ func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 		resetEnv := unsetEnv(t)
 		defer resetEnv()
 		// capture the test server's close method, to call after the test returns
-		awsTs := awsMetadataApiMock(append(ec2metadata_securityCredentialsEndpoints, ec2metadata_instanceIdEndpoint, ec2metadata_iamInfoEndpoint))
+		awsTs := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
 		defer awsTs()
 
-		id, partition, err := GetAccountIDAndPartitionFromEC2Metadata()
+		id, partition, err := getAccountIDAndPartitionFromEC2Metadata()
 		if err != nil {
 			t.Fatalf("Getting account ID from EC2 metadata API failed: %s", err)
 		}
 
-		if id != ec2metadata_iamInfoEndpoint_expectedAccountID {
-			t.Fatalf("Expected account ID: %s, given: %s", ec2metadata_iamInfoEndpoint_expectedAccountID, id)
+		if id != awsmocks.Ec2metadata_iamInfoEndpoint_expectedAccountID {
+			t.Fatalf("Expected account ID: %s, given: %s", awsmocks.Ec2metadata_iamInfoEndpoint_expectedAccountID, id)
 		}
-		if partition != ec2metadata_iamInfoEndpoint_expectedPartition {
-			t.Fatalf("Expected partition: %s, given: %s", ec2metadata_iamInfoEndpoint_expectedPartition, partition)
+		if partition != awsmocks.Ec2metadata_iamInfoEndpoint_expectedPartition {
+			t.Fatalf("Expected partition: %s, given: %s", awsmocks.Ec2metadata_iamInfoEndpoint_expectedPartition, partition)
 		}
 	})
 }
@@ -175,41 +178,41 @@ func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 	var testCases = []struct {
 		Description       string
-		MockEndpoints     []*MockEndpoint
+		MockEndpoints     []*awsmocks.MockEndpoint
 		ErrCount          int
 		ExpectedAccountID string
 		ExpectedPartition string
 	}{
 		{
 			Description: "Ignore iam:GetUser failure with federated user",
-			MockEndpoints: []*MockEndpoint{
+			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &MockResponse{400, iamResponse_GetUser_federatedFailure, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{400, awsmocks.IamResponse_GetUser_federatedFailure, "text/xml"},
 				},
 			},
 			ErrCount: 0,
 		},
 		{
 			Description: "Ignore iam:GetUser failure with unauthorized user",
-			MockEndpoints: []*MockEndpoint{
+			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &MockResponse{403, iamResponse_GetUser_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_GetUser_unauthorized, "text/xml"},
 				},
 			},
 			ErrCount: 0,
 		},
 		{
 			Description: "iam:GetUser success",
-			MockEndpoints: []*MockEndpoint{
+			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &MockResponse{200, iamResponse_GetUser_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_GetUser_valid, "text/xml"},
 				},
 			},
-			ExpectedAccountID: iamResponse_GetUser_valid_expectedAccountID,
-			ExpectedPartition: iamResponse_GetUser_valid_expectedPartition,
+			ExpectedAccountID: awsmocks.IamResponse_GetUser_valid_expectedAccountID,
+			ExpectedPartition: awsmocks.IamResponse_GetUser_valid_expectedPartition,
 		},
 	}
 
@@ -217,7 +220,7 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, iamSess, err := GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
+			closeIam, iamSess, err := awsmocks.GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
 			if err != nil {
 				t.Fatal(err)
@@ -225,7 +228,7 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 
 			iamConn := iam.New(iamSess)
 
-			accountID, partition, err := GetAccountIDAndPartitionFromIAMGetUser(iamConn)
+			accountID, partition, err := getAccountIDAndPartitionFromIAMGetUser(iamConn)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -245,31 +248,31 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 	var testCases = []struct {
 		Description       string
-		MockEndpoints     []*MockEndpoint
+		MockEndpoints     []*awsmocks.MockEndpoint
 		ErrCount          int
 		ExpectedAccountID string
 		ExpectedPartition string
 	}{
 		{
 			Description: "iam:ListRoles unauthorized",
-			MockEndpoints: []*MockEndpoint{
+			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &MockResponse{403, iamResponse_ListRoles_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_ListRoles_unauthorized, "text/xml"},
 				},
 			},
 			ErrCount: 1,
 		},
 		{
 			Description: "iam:ListRoles success",
-			MockEndpoints: []*MockEndpoint{
+			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &MockResponse{200, iamResponse_ListRoles_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_ListRoles_valid, "text/xml"},
 				},
 			},
-			ExpectedAccountID: iamResponse_ListRoles_valid_expectedAccountID,
-			ExpectedPartition: iamResponse_ListRoles_valid_expectedPartition,
+			ExpectedAccountID: awsmocks.IamResponse_ListRoles_valid_expectedAccountID,
+			ExpectedPartition: awsmocks.IamResponse_ListRoles_valid_expectedPartition,
 		},
 	}
 
@@ -277,7 +280,7 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, iamSess, err := GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
+			closeIam, iamSess, err := awsmocks.GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
 			if err != nil {
 				t.Fatal(err)
@@ -285,7 +288,7 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 
 			iamConn := iam.New(iamSess)
 
-			accountID, partition, err := GetAccountIDAndPartitionFromIAMListRoles(iamConn)
+			accountID, partition, err := getAccountIDAndPartitionFromIAMListRoles(iamConn)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -305,25 +308,25 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 	var testCases = []struct {
 		Description       string
-		MockEndpoints     []*MockEndpoint
+		MockEndpoints     []*awsmocks.MockEndpoint
 		ErrCount          int
 		ExpectedAccountID string
 		ExpectedPartition string
 	}{
 		{
 			Description: "sts:GetCallerIdentity unauthorized",
-			MockEndpoints: []*MockEndpoint{
-				MockStsGetCallerIdentityInvalidEndpointAccessDenied,
+			MockEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
 			ErrCount: 1,
 		},
 		{
 			Description: "sts:GetCallerIdentity success",
-			MockEndpoints: []*MockEndpoint{
-				MockStsGetCallerIdentityValidEndpoint,
+			MockEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
 			},
-			ExpectedAccountID: MockStsGetCallerIdentityAccountID,
-			ExpectedPartition: MockStsGetCallerIdentityPartition,
+			ExpectedAccountID: awsmocks.MockStsGetCallerIdentityAccountID,
+			ExpectedPartition: awsmocks.MockStsGetCallerIdentityPartition,
 		},
 	}
 
@@ -331,7 +334,7 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeSts, stsSess, err := GetMockedAwsApiSession("STS", testCase.MockEndpoints)
+			closeSts, stsSess, err := awsmocks.GetMockedAwsApiSession("STS", testCase.MockEndpoints)
 			defer closeSts()
 			if err != nil {
 				t.Fatal(err)
@@ -339,7 +342,7 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 
 			stsConn := sts.New(stsSess)
 
-			accountID, partition, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(stsConn)
+			accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(stsConn)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -414,10 +417,10 @@ func TestAWSGetCredentials_shouldErrorWhenBlank(t *testing.T) {
 	resetEnv := unsetEnv(t)
 	defer resetEnv()
 
-	cfg := Config{}
-	_, err := GetCredentials(&cfg)
+	cfg := awsbase.Config{}
+	_, err := getCredentials(&cfg)
 
-	if !IsNoValidCredentialSourcesError(err) {
+	if !awsbase.IsNoValidCredentialSourcesError(err) {
 		t.Fatalf("Unexpected error: %s", err)
 	}
 
@@ -443,13 +446,13 @@ func TestAWSGetCredentials_shouldBeStatic(t *testing.T) {
 	for _, testCase := range testCases {
 		c := testCase
 
-		cfg := Config{
+		cfg := awsbase.Config{
 			AccessKey: c.Key,
 			SecretKey: c.Secret,
 			Token:     c.Token,
 		}
 
-		creds, err := GetCredentials(&cfg)
+		creds, err := getCredentials(&cfg)
 		if err != nil {
 			t.Fatalf("Error gettings creds: %s", err)
 		}
@@ -483,13 +486,13 @@ func TestAWSGetCredentials_shouldIAM(t *testing.T) {
 	defer resetEnv()
 
 	// capture the test server's close method, to call after the test returns
-	ts := awsMetadataApiMock(append(ec2metadata_securityCredentialsEndpoints, ec2metadata_instanceIdEndpoint, ec2metadata_iamInfoEndpoint))
+	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
 	defer ts()
 
 	// An empty config, no key supplied
-	cfg := Config{}
+	cfg := awsbase.Config{}
 
-	creds, err := GetCredentials(&cfg)
+	creds, err := getCredentials(&cfg)
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
@@ -519,7 +522,7 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 	resetEnv := unsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := awsMetadataApiMock(append(ec2metadata_securityCredentialsEndpoints, ec2metadata_instanceIdEndpoint, ec2metadata_iamInfoEndpoint))
+	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
 	defer ts()
 	testCases := []struct {
 		Key, Secret, Token string
@@ -537,13 +540,13 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 	for _, testCase := range testCases {
 		c := testCase
 
-		cfg := Config{
+		cfg := awsbase.Config{
 			AccessKey: c.Key,
 			SecretKey: c.Secret,
 			Token:     c.Token,
 		}
 
-		creds, err := GetCredentials(&cfg)
+		creds, err := getCredentials(&cfg)
 		if err != nil {
 			t.Fatalf("Error gettings creds: %s", err)
 		}
@@ -574,9 +577,9 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEndpoint(t *testing.T) {
 	ts := invalidAwsEnv()
 	defer ts()
 
-	_, err := GetCredentials(&Config{})
+	_, err := getCredentials(&awsbase.Config{})
 
-	if !IsNoValidCredentialSourcesError(err) {
+	if !awsbase.IsNoValidCredentialSourcesError(err) {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
 
@@ -592,7 +595,7 @@ func TestAWSGetCredentials_shouldIgnoreInvalidEndpoint(t *testing.T) {
 	ts := invalidAwsEnv()
 	defer ts()
 
-	creds, err := GetCredentials(&Config{AccessKey: "accessKey", SecretKey: "secretKey"})
+	creds, err := getCredentials(&awsbase.Config{AccessKey: "accessKey", SecretKey: "secretKey"})
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
@@ -621,10 +624,10 @@ func TestAWSGetCredentials_shouldCatchEC2RoleProvider(t *testing.T) {
 	resetEnv := unsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := awsMetadataApiMock(append(ec2metadata_securityCredentialsEndpoints, ec2metadata_instanceIdEndpoint, ec2metadata_iamInfoEndpoint))
+	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
 	defer ts()
 
-	creds, err := GetCredentials(&Config{})
+	creds, err := getCredentials(&awsbase.Config{})
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
@@ -688,14 +691,14 @@ func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
 	}
 
 	// Confirm AWS_SHARED_CREDENTIALS_FILE is working
-	credsEnv, err := GetCredentials(&Config{Profile: "myprofile"})
+	credsEnv, err := getCredentials(&awsbase.Config{Profile: "myprofile"})
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
 	validateCredentials(credsEnv, "accesskey1", "secretkey1", "", t)
 
 	// Confirm CredsFilename overwrites AWS_SHARED_CREDENTIALS_FILE
-	credsParam, err := GetCredentials(&Config{Profile: "myprofile", CredsFilename: fileParamName})
+	credsParam, err := getCredentials(&awsbase.Config{Profile: "myprofile", CredsFilename: fileParamName})
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
@@ -710,8 +713,8 @@ func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
 
 	defer resetEnv()
 
-	cfg := Config{}
-	creds, err := GetCredentials(&cfg)
+	cfg := awsbase.Config{}
+	creds, err := getCredentials(&cfg)
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}

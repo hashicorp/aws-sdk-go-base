@@ -1,4 +1,4 @@
-package awsbase
+package awsv1shim
 
 import (
 	"crypto/tls"
@@ -13,32 +13,34 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
+	awsbase "github.com/hashicorp/aws-sdk-go-base"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 	"github.com/hashicorp/go-cleanhttp"
 )
 
 const (
-	// AppendUserAgentEnvVar is a conventionally used environment variable
+	// appendUserAgentEnvVar is a conventionally used environment variable
 	// containing additional HTTP User-Agent information.
 	// If present and its value is non-empty, it is directly appended to the
 	// User-Agent header for HTTP requests.
-	AppendUserAgentEnvVar = "TF_APPEND_USER_AGENT"
+	appendUserAgentEnvVar = "TF_APPEND_USER_AGENT"
+
 	// Maximum network retries.
 	// We depend on the AWS Go SDK DefaultRetryer exponential backoff.
 	// Ensure that if the AWS Config MaxRetries is set high (which it is by
 	// default), that we only retry for a few seconds with typically
 	// unrecoverable network errors, such as DNS lookup failures.
-	MaxNetworkRetryCount = 9
+	maxNetworkRetryCount = 9
 )
 
-// GetSessionOptions attempts to return valid AWS Go SDK session authentication
+// getSessionOptions attempts to return valid AWS Go SDK session authentication
 // options based on pre-existing credential provider, configured profile, or
 // fallback to automatically a determined session via the AWS Go SDK.
-func GetSessionOptions(c *Config) (*session.Options, error) {
+func getSessionOptions(c *awsbase.Config) (*session.Options, error) {
 	options := &session.Options{
 		Config: aws.Config{
 			CredentialsChainVerboseErrors: aws.Bool(true),
-			EndpointResolver:              c.EndpointResolver(),
+			EndpointResolver:              endpointResolver(c),
 			HTTPClient:                    cleanhttp.DefaultClient(),
 			MaxRetries:                    aws.Int(0),
 			Region:                        aws.String(c.Region),
@@ -48,7 +50,7 @@ func GetSessionOptions(c *Config) (*session.Options, error) {
 	}
 
 	// get and validate credentials
-	creds, err := GetCredentials(c)
+	creds, err := getCredentials(c)
 	if err != nil {
 		return nil, err
 	}
@@ -65,19 +67,19 @@ func GetSessionOptions(c *Config) (*session.Options, error) {
 
 	if c.DebugLogging {
 		options.Config.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
-		options.Config.Logger = DebugLogger{}
+		options.Config.Logger = debugLogger{}
 	}
 
 	return options, nil
 }
 
 // GetSession attempts to return valid AWS Go SDK session.
-func GetSession(c *Config) (*session.Session, error) {
+func GetSession(c *awsbase.Config) (*session.Session, error) {
 	if c.SkipMetadataApiCheck {
 		os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 	}
 
-	options, err := GetSessionOptions(c)
+	options, err := getSessionOptions(c)
 
 	if err != nil {
 		return nil, err
@@ -110,7 +112,7 @@ func GetSession(c *Config) (*session.Session, error) {
 
 	// Add custom input from ENV to the User-Agent request header
 	// Reference: https://github.com/terraform-providers/terraform-provider-aws/issues/9149
-	if v := os.Getenv(AppendUserAgentEnvVar); v != "" {
+	if v := os.Getenv(appendUserAgentEnvVar); v != "" {
 		log.Printf("[DEBUG] Using additional User-Agent Info: %s", v)
 		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(v))
 	}
@@ -122,7 +124,7 @@ func GetSession(c *Config) (*session.Session, error) {
 	// NOTE: This logic can be fooled by other request errors raising the retry count
 	//       before any networking error occurs
 	sess.Handlers.Retry.PushBack(func(r *request.Request) {
-		if r.RetryCount < MaxNetworkRetryCount {
+		if r.RetryCount < maxNetworkRetryCount {
 			return
 		}
 		// RequestError: send request failed
@@ -140,7 +142,7 @@ func GetSession(c *Config) (*session.Session, error) {
 	})
 
 	if !c.SkipCredsValidation {
-		if _, _, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(sts.New(sess)); err != nil {
+		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(sts.New(sess)); err != nil {
 			return nil, fmt.Errorf("error validating provider credentials: %w", err)
 		}
 	}
@@ -150,7 +152,7 @@ func GetSession(c *Config) (*session.Session, error) {
 
 // GetSessionWithAccountIDAndPartition attempts to return valid AWS Go SDK session
 // along with account ID and partition information if available
-func GetSessionWithAccountIDAndPartition(c *Config) (*session.Session, string, string, error) {
+func GetSessionWithAccountIDAndPartition(c *awsbase.Config) (*session.Session, string, string, error) {
 	sess, err := GetSession(c)
 
 	if err != nil {
@@ -166,7 +168,7 @@ func GetSessionWithAccountIDAndPartition(c *Config) (*session.Session, string, s
 	stsClient := sts.New(sess)
 
 	if !c.SkipCredsValidation {
-		accountID, partition, err := GetAccountIDAndPartitionFromSTSGetCallerIdentity(stsClient)
+		accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(stsClient)
 
 		if err != nil {
 			return nil, "", "", fmt.Errorf("error validating provider credentials: %w", err)
@@ -182,7 +184,7 @@ func GetSessionWithAccountIDAndPartition(c *Config) (*session.Session, string, s
 			credentialsProviderName = credentialsValue.ProviderName
 		}
 
-		accountID, partition, err := GetAccountIDAndPartition(iamClient, stsClient, credentialsProviderName)
+		accountID, partition, err := getAccountIDAndPartition(iamClient, stsClient, credentialsProviderName)
 
 		if err == nil {
 			return sess, accountID, partition, nil
