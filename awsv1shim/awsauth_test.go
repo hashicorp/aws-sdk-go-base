@@ -429,7 +429,7 @@ func TestAWSGetCredentials_shouldErrorWhenBlank(t *testing.T) {
 	}
 }
 
-func TestAWSGetCredentials_shouldBeStatic(t *testing.T) {
+func TestAWSGetCredentials_static(t *testing.T) {
 	testCases := []struct {
 		Key, Secret, Token string
 	}{

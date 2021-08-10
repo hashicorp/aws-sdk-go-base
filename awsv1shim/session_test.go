@@ -6,7 +6,6 @@ import (
 	"os"
 	"reflect"
 	"runtime"
-	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -20,8 +19,8 @@ import (
 )
 
 func TestGetSessionOptions(t *testing.T) {
-	oldEnv := initSessionTestEnv()
-	defer PopEnv(oldEnv)
+	oldEnv := awsmocks.InitSessionTestEnv()
+	defer awsmocks.PopEnv(oldEnv)
 
 	testCases := []struct {
 		desc        string
@@ -94,7 +93,7 @@ func TestGetSession(t *testing.T) {
 				SecretKey: awsmocks.MockStaticSecretKey,
 			},
 			Description:              "config AccessKey",
-			ExpectedCredentialsValue: awsmocks.MockStaticCredentials,
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
@@ -582,7 +581,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
 			},
-			ExpectedCredentialsValue: awsmocks.MockStaticCredentials,
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
@@ -595,7 +594,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				SecretKey: awsmocks.MockStaticSecretKey,
 			},
 			Description:              "config AccessKey over shared credentials default aws_access_key_id",
-			ExpectedCredentialsValue: awsmocks.MockStaticCredentials,
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
@@ -614,7 +613,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description:              "config AccessKey over EC2 metadata access key",
 			EnableEc2MetadataServer:  true,
-			ExpectedCredentialsValue: awsmocks.MockStaticCredentials,
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
@@ -629,7 +628,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Description:                "config AccessKey over ECS credentials access key",
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue:   awsmocks.MockStaticCredentials,
+			ExpectedCredentialsValue:   awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
@@ -799,7 +798,7 @@ source_profile = SourceSharedCredentials
 				SkipCredsValidation: true,
 			},
 			Description:              "skip credentials validation",
-			ExpectedCredentialsValue: awsmocks.MockStaticCredentials,
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 		},
 		{
@@ -821,7 +820,7 @@ source_profile = SourceSharedCredentials
 				SecretKey: awsmocks.MockStaticSecretKey,
 			},
 			Description:              "standard User-Agent",
-			ExpectedCredentialsValue: awsmocks.MockStaticCredentials,
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 			ExpectedUserAgent:        awsSdkGoUserAgent(),
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
@@ -846,7 +845,7 @@ source_profile = SourceSharedCredentials
 				},
 			},
 			Description:              "customized User-Agent",
-			ExpectedCredentialsValue: awsmocks.MockStaticCredentials,
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 			ExpectedUserAgent:        "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent(),
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
@@ -859,8 +858,8 @@ source_profile = SourceSharedCredentials
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			oldEnv := initSessionTestEnv()
-			defer PopEnv(oldEnv)
+			oldEnv := awsmocks.InitSessionTestEnv()
+			defer awsmocks.PopEnv(oldEnv)
 
 			if testCase.EnableEc2MetadataServer {
 				closeEc2Metadata := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
@@ -1000,8 +999,8 @@ source_profile = SourceSharedCredentials
 }
 
 func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
-	oldEnv := initSessionTestEnv()
-	defer PopEnv(oldEnv)
+	oldEnv := awsmocks.InitSessionTestEnv()
+	defer awsmocks.PopEnv(oldEnv)
 
 	ts := awsmocks.MockAwsApiServer("STS", []*awsmocks.MockEndpoint{
 		awsmocks.MockStsGetCallerIdentityValidEndpoint,
@@ -1088,33 +1087,6 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 	}
 }
 
-func StashEnv() []string {
-	env := os.Environ()
-	os.Clearenv()
-	return env
-}
-
-func PopEnv(env []string) {
-	os.Clearenv()
-
-	for _, e := range env {
-		p := strings.SplitN(e, "=", 2)
-		k, v := p[0], ""
-		if len(p) > 1 {
-			v = p[1]
-		}
-		os.Setenv(k, v)
-	}
-}
-
 func awsSdkGoUserAgent() string {
 	return fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
-}
-
-func initSessionTestEnv() (oldEnv []string) {
-	oldEnv = StashEnv()
-	os.Setenv("AWS_CONFIG_FILE", "file_not_exists")
-	os.Setenv("AWS_SHARED_CREDENTIALS_FILE", "file_not_exists")
-
-	return oldEnv
 }
