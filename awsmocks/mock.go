@@ -12,6 +12,7 @@ import (
 	"time"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go/aws"
 	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
@@ -146,10 +147,15 @@ var (
 		SessionToken:    MockEcsCredentialsSessionToken,
 	}
 
-	MockEnvCredentials = awsCredentials.Value{
+	MockEnvCredentialsV1 = awsCredentials.Value{
 		AccessKeyID:     MockEnvAccessKey,
 		ProviderName:    awsCredentials.EnvProviderName,
 		SecretAccessKey: MockEnvSecretKey,
+	}
+	MockEnvCredentialsV2 = awsv2.Credentials{
+		AccessKeyID:     MockEnvAccessKey,
+		SecretAccessKey: MockEnvSecretKey,
+		Source:          config.CredentialsSourceName,
 	}
 
 	MockEnvCredentialsWithSessionToken = awsCredentials.Value{
@@ -171,11 +177,17 @@ var (
 		Source:          credentials.StaticCredentialsName,
 	}
 
-	MockStsAssumeRoleCredentials = awsCredentials.Value{
+	MockStsAssumeRoleCredentialsV1 = awsCredentials.Value{
 		AccessKeyID:     MockStsAssumeRoleAccessKey,
 		ProviderName:    stscreds.ProviderName,
 		SecretAccessKey: MockStsAssumeRoleSecretKey,
 		SessionToken:    MockStsAssumeRoleSessionToken,
+	}
+	MockStsAssumeRoleCredentialsV2 = awsv2.Credentials{
+		AccessKeyID:     MockStaticAccessKey,
+		SecretAccessKey: MockStaticSecretKey,
+		SessionToken:    MockStsAssumeRoleSessionToken,
+		Source:          credentials.StaticCredentialsName,
 	}
 	MockStsAssumeRoleInvalidEndpointInvalidClientTokenId = &MockEndpoint{
 		Request: &MockRequest{

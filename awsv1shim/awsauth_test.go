@@ -2,11 +2,10 @@ package awsv1shim
 
 import (
 	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
 	"os"
 	"testing"
 
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/service/iam"
@@ -115,7 +114,7 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			resetEnv := unsetEnv(t)
+			resetEnv := awsmocks.UnsetEnv(t)
 			defer resetEnv()
 			// capture the test server's close method, to call after the test returns
 			awsTs := awsmocks.AwsMetadataApiMock(testCase.EC2MetadataEndpoints)
@@ -155,7 +154,7 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 
 func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 	t.Run("EC2 metadata success", func(t *testing.T) {
-		resetEnv := unsetEnv(t)
+		resetEnv := awsmocks.UnsetEnv(t)
 		defer resetEnv()
 		// capture the test server's close method, to call after the test returns
 		awsTs := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
@@ -414,18 +413,18 @@ func TestAWSParseAccountIDAndPartitionFromARN(t *testing.T) {
 }
 
 func TestAWSGetCredentials_shouldErrorWhenBlank(t *testing.T) {
-	resetEnv := unsetEnv(t)
+	resetEnv := awsmocks.UnsetEnv(t)
 	defer resetEnv()
 
 	cfg := awsbase.Config{}
 	_, err := getCredentials(&cfg)
 
-	if !awsbase.IsNoValidCredentialSourcesError(err) {
-		t.Fatalf("Unexpected error: %s", err)
-	}
-
 	if err == nil {
 		t.Fatal("Expected an error given empty env, keys, and IAM in AWS Config")
+	}
+
+	if !awsbase.IsNoValidCredentialSourcesError(err) {
+		t.Fatalf("Unexpected error: %s", err)
 	}
 }
 
@@ -456,24 +455,8 @@ func TestAWSGetCredentials_static(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Error gettings creds: %s", err)
 		}
-		if creds == nil {
-			t.Fatal("Expected a static creds provider to be returned")
-		}
 
-		v, err := creds.Get()
-		if err != nil {
-			t.Fatalf("Error gettings creds: %s", err)
-		}
-
-		if v.AccessKeyID != c.Key {
-			t.Fatalf("AccessKeyID mismatch, expected: (%s), got (%s)", c.Key, v.AccessKeyID)
-		}
-		if v.SecretAccessKey != c.Secret {
-			t.Fatalf("SecretAccessKey mismatch, expected: (%s), got (%s)", c.Secret, v.SecretAccessKey)
-		}
-		if v.SessionToken != c.Token {
-			t.Fatalf("SessionToken mismatch, expected: (%s), got (%s)", c.Token, v.SessionToken)
-		}
+		validateCredentials(creds, c.Key, c.Secret, c.Token, awsCredentials.StaticProviderName, t)
 	}
 }
 
@@ -482,7 +465,7 @@ func TestAWSGetCredentials_static(t *testing.T) {
 // credentials.
 func TestAWSGetCredentials_shouldIAM(t *testing.T) {
 	// clear AWS_* environment variables
-	resetEnv := unsetEnv(t)
+	resetEnv := awsmocks.UnsetEnv(t)
 	defer resetEnv()
 
 	// capture the test server's close method, to call after the test returns
@@ -519,7 +502,7 @@ func TestAWSGetCredentials_shouldIAM(t *testing.T) {
 // from an EC2 instance, without environment variables or manually supplied
 // credentials.
 func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
-	resetEnv := unsetEnv(t)
+	resetEnv := awsmocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
 	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
@@ -571,10 +554,10 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 }
 
 func TestAWSGetCredentials_shouldErrorWithInvalidEndpoint(t *testing.T) {
-	resetEnv := unsetEnv(t)
+	resetEnv := awsmocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := invalidAwsEnv()
+	ts := awsmocks.InvalidAwsEnv()
 	defer ts()
 
 	_, err := getCredentials(&awsbase.Config{})
@@ -589,10 +572,10 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEndpoint(t *testing.T) {
 }
 
 func TestAWSGetCredentials_shouldIgnoreInvalidEndpoint(t *testing.T) {
-	resetEnv := unsetEnv(t)
+	resetEnv := awsmocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := invalidAwsEnv()
+	ts := awsmocks.InvalidAwsEnv()
 	defer ts()
 
 	creds, err := getCredentials(&awsbase.Config{AccessKey: "accessKey", SecretKey: "secretKey"})
@@ -621,7 +604,7 @@ func TestAWSGetCredentials_shouldIgnoreInvalidEndpoint(t *testing.T) {
 }
 
 func TestAWSGetCredentials_shouldCatchEC2RoleProvider(t *testing.T) {
-	resetEnv := unsetEnv(t)
+	resetEnv := awsmocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
 	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
@@ -673,7 +656,7 @@ func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
 }
 
 func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
-	resetEnv := unsetEnv(t)
+	resetEnv := awsmocks.UnsetEnv(t)
 	defer resetEnv()
 
 	if err := os.Setenv("AWS_PROFILE", "myprofile"); err != nil {
@@ -695,21 +678,21 @@ func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
-	validateCredentials(credsEnv, "accesskey1", "secretkey1", "", t)
+	validateCredentials(credsEnv, "accesskey1", "secretkey1", "", credentials.SharedCredsProviderName, t)
 
 	// Confirm CredsFilename overwrites AWS_SHARED_CREDENTIALS_FILE
 	credsParam, err := getCredentials(&awsbase.Config{Profile: "myprofile", CredsFilename: fileParamName})
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
-	validateCredentials(credsParam, "accesskey2", "secretkey2", "", t)
+	validateCredentials(credsParam, "accesskey2", "secretkey2", "", credentials.SharedCredsProviderName, t)
 }
 
 func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
 	// need to set the environment variables to a dummy string, as we don't know
 	// what they may be at runtime without hardcoding here
 	s := "some_env"
-	resetEnv := setEnv(s, t)
+	resetEnv := awsmocks.SetEnv(s, t)
 
 	defer resetEnv()
 
@@ -718,143 +701,26 @@ func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
-	if creds == nil {
-		t.Fatalf("Expected a static creds provider to be returned")
-	}
 
-	validateCredentials(creds, s, s, s, t)
+	validateCredentials(creds, s, s, s, awsCredentials.EnvProviderName, t)
 }
 
-// invalidAwsEnv establishes a httptest server to simulate behaviour
-// when endpoint doesn't respond as expected
-func invalidAwsEnv() func() {
-	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(400)
-	}))
-
-	os.Setenv("AWS_METADATA_URL", ts.URL+"/latest")
-	return ts.Close
-}
-
-// unsetEnv unsets environment variables for testing a "clean slate" with no
-// credentials in the environment
-func unsetEnv(t *testing.T) func() {
-	// Grab any existing AWS keys and preserve. In some tests we'll unset these, so
-	// we need to have them and restore them after
-	e := getEnv()
-	if err := os.Unsetenv("AWS_ACCESS_KEY_ID"); err != nil {
-		t.Fatalf("Error unsetting env var AWS_ACCESS_KEY_ID: %s", err)
-	}
-	if err := os.Unsetenv("AWS_SECRET_ACCESS_KEY"); err != nil {
-		t.Fatalf("Error unsetting env var AWS_SECRET_ACCESS_KEY: %s", err)
-	}
-	if err := os.Unsetenv("AWS_SESSION_TOKEN"); err != nil {
-		t.Fatalf("Error unsetting env var AWS_SESSION_TOKEN: %s", err)
-	}
-	if err := os.Unsetenv("AWS_PROFILE"); err != nil {
-		t.Fatalf("Error unsetting env var AWS_PROFILE: %s", err)
-	}
-	if err := os.Unsetenv("AWS_SHARED_CREDENTIALS_FILE"); err != nil {
-		t.Fatalf("Error unsetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
-	}
-	// The Shared Credentials Provider has a very reasonable fallback option of
-	// checking the user's home directory for credentials, which may create
-	// unexpected results for users running these tests
-	os.Setenv("HOME", "/dev/null")
-
-	return func() {
-		// re-set all the envs we unset above
-		if err := os.Setenv("AWS_ACCESS_KEY_ID", e.Key); err != nil {
-			t.Fatalf("Error resetting env var AWS_ACCESS_KEY_ID: %s", err)
-		}
-		if err := os.Setenv("AWS_SECRET_ACCESS_KEY", e.Secret); err != nil {
-			t.Fatalf("Error resetting env var AWS_SECRET_ACCESS_KEY: %s", err)
-		}
-		if err := os.Setenv("AWS_SESSION_TOKEN", e.Token); err != nil {
-			t.Fatalf("Error resetting env var AWS_SESSION_TOKEN: %s", err)
-		}
-		if err := os.Setenv("AWS_PROFILE", e.Profile); err != nil {
-			t.Fatalf("Error resetting env var AWS_PROFILE: %s", err)
-		}
-		if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", e.CredsFilename); err != nil {
-			t.Fatalf("Error resetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
-		}
-		if err := os.Setenv("HOME", e.Home); err != nil {
-			t.Fatalf("Error resetting env var HOME: %s", err)
-		}
-	}
-}
-
-func setEnv(s string, t *testing.T) func() {
-	e := getEnv()
-	// Set all the envs to a dummy value
-	if err := os.Setenv("AWS_ACCESS_KEY_ID", s); err != nil {
-		t.Fatalf("Error setting env var AWS_ACCESS_KEY_ID: %s", err)
-	}
-	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", s); err != nil {
-		t.Fatalf("Error setting env var AWS_SECRET_ACCESS_KEY: %s", err)
-	}
-	if err := os.Setenv("AWS_SESSION_TOKEN", s); err != nil {
-		t.Fatalf("Error setting env var AWS_SESSION_TOKEN: %s", err)
-	}
-	if err := os.Setenv("AWS_PROFILE", s); err != nil {
-		t.Fatalf("Error setting env var AWS_PROFILE: %s", err)
-	}
-	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", s); err != nil {
-		t.Fatalf("Error setting env var AWS_SHARED_CREDENTIALS_FLE: %s", err)
-	}
-
-	return func() {
-		// re-set all the envs we unset above
-		if err := os.Setenv("AWS_ACCESS_KEY_ID", e.Key); err != nil {
-			t.Fatalf("Error resetting env var AWS_ACCESS_KEY_ID: %s", err)
-		}
-		if err := os.Setenv("AWS_SECRET_ACCESS_KEY", e.Secret); err != nil {
-			t.Fatalf("Error resetting env var AWS_SECRET_ACCESS_KEY: %s", err)
-		}
-		if err := os.Setenv("AWS_SESSION_TOKEN", e.Token); err != nil {
-			t.Fatalf("Error resetting env var AWS_SESSION_TOKEN: %s", err)
-		}
-		if err := os.Setenv("AWS_PROFILE", e.Profile); err != nil {
-			t.Fatalf("Error setting env var AWS_PROFILE: %s", err)
-		}
-		if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", s); err != nil {
-			t.Fatalf("Error setting env var AWS_SHARED_CREDENTIALS_FLE: %s", err)
-		}
-	}
-}
-
-func getEnv() *currentEnv {
-	// Grab any existing AWS keys and preserve. In some tests we'll unset these, so
-	// we need to have them and restore them after
-	return &currentEnv{
-		Key:           os.Getenv("AWS_ACCESS_KEY_ID"),
-		Secret:        os.Getenv("AWS_SECRET_ACCESS_KEY"),
-		Token:         os.Getenv("AWS_SESSION_TOKEN"),
-		Profile:       os.Getenv("AWS_PROFILE"),
-		CredsFilename: os.Getenv("AWS_SHARED_CREDENTIALS_FILE"),
-		Home:          os.Getenv("HOME"),
-	}
-}
-
-func validateCredentials(creds *awsCredentials.Credentials, accesskey string, secretkey string, token string, t *testing.T) {
+func validateCredentials(creds *awsCredentials.Credentials, accesskey, secretkey, token, provider string, t *testing.T) {
 	v, err := creds.Get()
 	if err != nil {
 		t.Fatalf("Error gettings creds: %s", err)
 	}
 
 	if v.AccessKeyID != accesskey {
-		t.Fatalf("AccessKeyID mismatch, expected: (%s), got (%s)", accesskey, v.AccessKeyID)
+		t.Fatalf("AccessKeyID mismatch, expected: %q, got %q", accesskey, v.AccessKeyID)
 	}
 	if v.SecretAccessKey != secretkey {
-		t.Fatalf("SecretAccessKey mismatch, expected: (%s), got (%s)", secretkey, v.SecretAccessKey)
+		t.Fatalf("SecretAccessKey mismatch, expected: %q, got %q", secretkey, v.SecretAccessKey)
 	}
 	if v.SessionToken != token {
-		t.Fatalf("SessionToken mismatch, expected: (%s), got (%s)", token, v.SessionToken)
+		t.Fatalf("SessionToken mismatch, expected: %q, got %q", token, v.SessionToken)
 	}
-}
-
-// struct to preserve the current environment
-type currentEnv struct {
-	Key, Secret, Token, Profile, CredsFilename, Home string
+	if v.ProviderName != provider {
+		t.Fatalf("Expected provider name to be %q, %q given", provider, v.ProviderName)
+	}
 }

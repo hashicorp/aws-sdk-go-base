@@ -11,7 +11,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
 )
 
-func TestGetSession(t *testing.T) {
+func TestGetAwsConfig(t *testing.T) {
 	testCases := []struct {
 		Config                     *Config
 		Description                string
@@ -47,6 +47,759 @@ func TestGetSession(t *testing.T) {
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
+		// {
+		// 	Config: &Config{
+		// 		AccessKey:             awsmocks.MockStaticAccessKey,
+		// 		AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 		AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 		Region:                "us-east-1",
+		// 		SecretKey:             awsmocks.MockStaticSecretKey,
+		// 	},
+		// 	Description:              "config AccessKey config AssumeRoleARN access key",
+		// 	ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV2,
+		// 	ExpectedRegion:           "us-east-1",
+		// 	MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 		awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 		awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 	},
+		// },
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey:                 awsmocks.MockStaticAccessKey,
+		// 				AssumeRoleARN:             awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRoleDurationSeconds: 3600,
+		// 				AssumeRoleSessionName:     awsmocks.MockStsAssumeRoleSessionName,
+		// 				Region:                    "us-east-1",
+		// 				SecretKey:                 awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:              "config AssumeRoleDurationSeconds",
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"DurationSeconds": "3600"}),
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey:             awsmocks.MockStaticAccessKey,
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRoleExternalID:  awsmocks.MockStsAssumeRoleExternalId,
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				Region:                "us-east-1",
+		// 				SecretKey:             awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:              "config AssumeRoleExternalID",
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"ExternalId": awsmocks.MockStsAssumeRoleExternalId}),
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey:             awsmocks.MockStaticAccessKey,
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRolePolicy:      awsmocks.MockStsAssumeRolePolicy,
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				Region:                "us-east-1",
+		// 				SecretKey:             awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:              "config AssumeRolePolicy",
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Policy": awsmocks.MockStsAssumeRolePolicy}),
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey:             awsmocks.MockStaticAccessKey,
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRolePolicyARNs:  []string{awsmocks.MockStsAssumeRolePolicyArn},
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				Region:                "us-east-1",
+		// 				SecretKey:             awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:              "config AssumeRolePolicyARNs",
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"PolicyArns.member.1.arn": awsmocks.MockStsAssumeRolePolicyArn}),
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey:             awsmocks.MockStaticAccessKey,
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				AssumeRoleTags: map[string]string{
+		// 					awsmocks.MockStsAssumeRoleTagKey: awsmocks.MockStsAssumeRoleTagValue,
+		// 				},
+		// 				Region:    "us-east-1",
+		// 				SecretKey: awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:              "config AssumeRoleTags",
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Tags.member.1.Key": awsmocks.MockStsAssumeRoleTagKey, "Tags.member.1.Value": awsmocks.MockStsAssumeRoleTagValue}),
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey:             awsmocks.MockStaticAccessKey,
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				AssumeRoleTags: map[string]string{
+		// 					awsmocks.MockStsAssumeRoleTagKey: awsmocks.MockStsAssumeRoleTagValue,
+		// 				},
+		// 				AssumeRoleTransitiveTagKeys: []string{awsmocks.MockStsAssumeRoleTagKey},
+		// 				Region:                      "us-east-1",
+		// 				SecretKey:                   awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:              "config AssumeRoleTransitiveTagKeys",
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Tags.member.1.Key": awsmocks.MockStsAssumeRoleTagKey, "Tags.member.1.Value": awsmocks.MockStsAssumeRoleTagValue, "TransitiveTagKeys.member.1": awsmocks.MockStsAssumeRoleTagKey}),
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Profile: "SharedCredentialsProfile",
+		// 				Region:  "us-east-1",
+		// 			},
+		// 			Description: "config Profile shared credentials profile aws_access_key_id",
+		// 			ExpectedCredentialsValue: credentials.Value{
+		// 				AccessKeyID:     "ProfileSharedCredentialsAccessKey",
+		// 				ProviderName:    credentials.SharedCredsProviderName,
+		// 				SecretAccessKey: "ProfileSharedCredentialsSecretKey",
+		// 			},
+		// 			ExpectedRegion: "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedCredentialsFile: `
+		// [default]
+		// aws_access_key_id = DefaultSharedCredentialsAccessKey
+		// aws_secret_access_key = DefaultSharedCredentialsSecretKey
+
+		// [SharedCredentialsProfile]
+		// aws_access_key_id = ProfileSharedCredentialsAccessKey
+		// aws_secret_access_key = ProfileSharedCredentialsSecretKey
+		// `,
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Profile: "SharedConfigurationProfile",
+		// 				Region:  "us-east-1",
+		// 			},
+		// 			Description:              "config Profile shared configuration credential_source Ec2InstanceMetadata",
+		// 			EnableEc2MetadataServer:  true,
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedConfigurationFile: fmt.Sprintf(`
+		// [profile SharedConfigurationProfile]
+		// credential_source = Ec2InstanceMetadata
+		// role_arn = %[1]s
+		// role_session_name = %[2]s
+		// `, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Profile: "SharedConfigurationProfile",
+		// 				Region:  "us-east-1",
+		// 			},
+		// 			Description: "config Profile shared configuration credential_source EcsContainer",
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "/creds",
+		// 			},
+		// 			EnableEc2MetadataServer:    true,
+		// 			EnableEcsCredentialsServer: true,
+		// 			ExpectedCredentialsValue:   awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:             "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedConfigurationFile: fmt.Sprintf(`
+		// [profile SharedConfigurationProfile]
+		// credential_source = EcsContainer
+		// role_arn = %[1]s
+		// role_session_name = %[2]s
+		// `, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Profile: "SharedConfigurationProfile",
+		// 				Region:  "us-east-1",
+		// 			},
+		// 			Description:              "config Profile shared configuration source_profile",
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedConfigurationFile: fmt.Sprintf(`
+		// [profile SharedConfigurationProfile]
+		// role_arn = %[1]s
+		// role_session_name = %[2]s
+		// source_profile = SharedConfigurationSourceProfile
+
+		// [profile SharedConfigurationSourceProfile]
+		// aws_access_key_id = SharedConfigurationSourceAccessKey
+		// aws_secret_access_key = SharedConfigurationSourceSecretKey
+		// `, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
+		// 		},
+		{
+			Config: &Config{
+				Region: "us-east-1",
+			},
+			Description: "environment AWS_ACCESS_KEY_ID",
+			EnvironmentVariables: map[string]string{
+				"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
+			},
+			ExpectedCredentialsValue: awsmocks.MockEnvCredentialsV2,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				Region:                "us-east-1",
+		// 			},
+		// 			Description: "environment AWS_ACCESS_KEY_ID config AssumeRoleARN access key",
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
+		// 				"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
+		// 			},
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description: "environment AWS_PROFILE shared credentials profile aws_access_key_id",
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_PROFILE": "SharedCredentialsProfile",
+		// 			},
+		// 			ExpectedCredentialsValue: credentials.Value{
+		// 				AccessKeyID:     "ProfileSharedCredentialsAccessKey",
+		// 				ProviderName:    credentials.SharedCredsProviderName,
+		// 				SecretAccessKey: "ProfileSharedCredentialsSecretKey",
+		// 			},
+		// 			ExpectedRegion: "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedCredentialsFile: `
+		// [default]
+		// aws_access_key_id = DefaultSharedCredentialsAccessKey
+		// aws_secret_access_key = DefaultSharedCredentialsSecretKey
+
+		// [SharedCredentialsProfile]
+		// aws_access_key_id = ProfileSharedCredentialsAccessKey
+		// aws_secret_access_key = ProfileSharedCredentialsSecretKey
+		// `,
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description:             "environment AWS_PROFILE shared configuration credential_source Ec2InstanceMetadata",
+		// 			EnableEc2MetadataServer: true,
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_PROFILE": "SharedConfigurationProfile",
+		// 			},
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedConfigurationFile: fmt.Sprintf(`
+		// [profile SharedConfigurationProfile]
+		// credential_source = Ec2InstanceMetadata
+		// role_arn = %[1]s
+		// role_session_name = %[2]s
+		// `, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description:                "environment AWS_PROFILE shared configuration credential_source EcsContainer",
+		// 			EnableEc2MetadataServer:    true,
+		// 			EnableEcsCredentialsServer: true,
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "/creds",
+		// 				"AWS_PROFILE":                            "SharedConfigurationProfile",
+		// 			},
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedConfigurationFile: fmt.Sprintf(`
+		// [profile SharedConfigurationProfile]
+		// credential_source = EcsContainer
+		// role_arn = %[1]s
+		// role_session_name = %[2]s
+		// `, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description: "environment AWS_PROFILE shared configuration source_profile",
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_PROFILE": "SharedConfigurationProfile",
+		// 			},
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedConfigurationFile: fmt.Sprintf(`
+		// [profile SharedConfigurationProfile]
+		// role_arn = %[1]s
+		// role_session_name = %[2]s
+		// source_profile = SharedConfigurationSourceProfile
+
+		// [profile SharedConfigurationSourceProfile]
+		// aws_access_key_id = SharedConfigurationSourceAccessKey
+		// aws_secret_access_key = SharedConfigurationSourceSecretKey
+		// `, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description: "environment AWS_SESSION_TOKEN",
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
+		// 				"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
+		// 				"AWS_SESSION_TOKEN":     awsmocks.MockEnvSessionToken,
+		// 			},
+		// 			ExpectedCredentialsValue: awsmocks.MockEnvCredentialsWithSessionToken,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description: "shared credentials default aws_access_key_id",
+		// 			ExpectedCredentialsValue: credentials.Value{
+		// 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
+		// 				ProviderName:    credentials.SharedCredsProviderName,
+		// 				SecretAccessKey: "DefaultSharedCredentialsSecretKey",
+		// 			},
+		// 			ExpectedRegion: "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedCredentialsFile: `
+		// [default]
+		// aws_access_key_id = DefaultSharedCredentialsAccessKey
+		// aws_secret_access_key = DefaultSharedCredentialsSecretKey
+		// `,
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				Region:                "us-east-1",
+		// 			},
+		// 			Description:              "shared credentials default aws_access_key_id config AssumeRoleARN access key",
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedCredentialsFile: `
+		// [default]
+		// aws_access_key_id = DefaultSharedCredentialsAccessKey
+		// aws_secret_access_key = DefaultSharedCredentialsSecretKey
+		// `,
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description:              "web identity token access key",
+		// 			EnableEc2MetadataServer:  true,
+		// 			EnableWebIdentityToken:   true,
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleWithWebIdentityCredentials,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description:              "EC2 metadata access key",
+		// 			EnableEc2MetadataServer:  true,
+		// 			ExpectedCredentialsValue: awsmocks.MockEc2MetadataCredentials,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				Region:                "us-east-1",
+		// 			},
+		// 			Description:              "EC2 metadata access key config AssumeRoleARN access key",
+		// 			EnableEc2MetadataServer:  true,
+		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description:                "ECS credentials access key",
+		// 			EnableEc2MetadataServer:    true,
+		// 			EnableEcsCredentialsServer: true,
+		// 			ExpectedCredentialsValue:   awsmocks.MockEcsCredentialsCredentials,
+		// 			ExpectedRegion:             "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				Region:                "us-east-1",
+		// 			},
+		// 			Description:                "ECS credentials access key config AssumeRoleARN access key",
+		// 			EnableEc2MetadataServer:    true,
+		// 			EnableEcsCredentialsServer: true,
+		// 			ExpectedCredentialsValue:   awsmocks.MockStsAssumeRoleCredentialsV1,
+		// 			ExpectedRegion:             "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		{
+			Config: &Config{
+				AccessKey: awsmocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: awsmocks.MockStaticSecretKey,
+			},
+			Description: "config AccessKey over environment AWS_ACCESS_KEY_ID",
+			EnvironmentVariables: map[string]string{
+				"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
+			},
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV2,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey: awsmocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:              "config AccessKey over shared credentials default aws_access_key_id",
+		// 			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedCredentialsFile: `
+		// [default]
+		// aws_access_key_id = DefaultSharedCredentialsAccessKey
+		// aws_secret_access_key = DefaultSharedCredentialsSecretKey
+		// `,
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey: awsmocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:              "config AccessKey over EC2 metadata access key",
+		// 			EnableEc2MetadataServer:  true,
+		// 			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey: awsmocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:                "config AccessKey over ECS credentials access key",
+		// 			EnableEc2MetadataServer:    true,
+		// 			EnableEcsCredentialsServer: true,
+		// 			ExpectedCredentialsValue:   awsmocks.MockStaticCredentialsV1,
+		// 			ExpectedRegion:             "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description: "environment AWS_ACCESS_KEY_ID over shared credentials default aws_access_key_id",
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
+		// 				"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
+		// 			},
+		// 			ExpectedCredentialsValue: awsmocks.MockEnvCredentials,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedCredentialsFile: `
+		// [default]
+		// aws_access_key_id = DefaultSharedCredentialsAccessKey
+		// aws_secret_access_key = DefaultSharedCredentialsSecretKey
+		// `,
+		// 		},
+		// {
+		// 	Config: &Config{
+		// 		Region: "us-east-1",
+		// 	},
+		// 	Description: "environment AWS_ACCESS_KEY_ID over EC2 metadata access key",
+		// 	EnvironmentVariables: map[string]string{
+		// 		"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
+		// 		"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
+		// 	},
+		// 	EnableEc2MetadataServer:  true,
+		// 	ExpectedCredentialsValue: awsmocks.MockEnvCredentials,
+		// 	ExpectedRegion:           "us-east-1",
+		// 	MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 		awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 	},
+		// },
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description: "environment AWS_ACCESS_KEY_ID over ECS credentials access key",
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
+		// 				"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
+		// 			},
+		// 			EnableEc2MetadataServer:    true,
+		// 			EnableEcsCredentialsServer: true,
+		// 			ExpectedCredentialsValue:   awsmocks.MockEnvCredentials,
+		// 			ExpectedRegion:             "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description:             "shared credentials default aws_access_key_id over EC2 metadata access key",
+		// 			EnableEc2MetadataServer: true,
+		// 			ExpectedCredentialsValue: credentials.Value{
+		// 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
+		// 				ProviderName:    credentials.SharedCredsProviderName,
+		// 				SecretAccessKey: "DefaultSharedCredentialsSecretKey",
+		// 			},
+		// 			ExpectedRegion: "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedCredentialsFile: `
+		// [default]
+		// aws_access_key_id = DefaultSharedCredentialsAccessKey
+		// aws_secret_access_key = DefaultSharedCredentialsSecretKey
+		// `,
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description:                "shared credentials default aws_access_key_id over ECS credentials access key",
+		// 			EnableEc2MetadataServer:    true,
+		// 			EnableEcsCredentialsServer: true,
+		// 			ExpectedCredentialsValue: credentials.Value{
+		// 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
+		// 				ProviderName:    credentials.SharedCredsProviderName,
+		// 				SecretAccessKey: "DefaultSharedCredentialsSecretKey",
+		// 			},
+		// 			ExpectedRegion: "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 			SharedCredentialsFile: `
+		// [default]
+		// aws_access_key_id = DefaultSharedCredentialsAccessKey
+		// aws_secret_access_key = DefaultSharedCredentialsSecretKey
+		// `,
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region: "us-east-1",
+		// 			},
+		// 			Description:                "ECS credentials access key over EC2 metadata access key",
+		// 			EnableEc2MetadataServer:    true,
+		// 			EnableEcsCredentialsServer: true,
+		// 			ExpectedCredentialsValue:   awsmocks.MockEcsCredentialsCredentials,
+		// 			ExpectedRegion:             "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey:             awsmocks.MockStaticAccessKey,
+		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+		// 				DebugLogging:          true,
+		// 				Region:                "us-east-1",
+		// 				SecretKey:             awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description: "assume role error",
+		// 			ExpectedError: func(err error) bool {
+		// 				return awsbase.IsCannotAssumeRoleError(err)
+		// 			},
+		// 			ExpectedRegion: "us-east-1",
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsAssumeRoleInvalidEndpointInvalidClientTokenId,
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey: awsmocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description: "credential validation error",
+		// 			ExpectedError: func(err error) bool {
+		// 				return tfawserr.ErrCodeEquals(err, "AccessDenied")
+		// 			},
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Profile: "SharedConfigurationProfile",
+		// 				Region:  "us-east-1",
+		// 			},
+		// 			Description: "session creation error",
+		// 			ExpectedError: func(err error) bool {
+		// 				return tfawserr.ErrCodeEquals(err, "CredentialRequiresARNError")
+		// 			},
+		// 			SharedConfigurationFile: `
+		// [profile SharedConfigurationProfile]
+		// source_profile = SourceSharedCredentials
+		// `,
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey:           awsmocks.MockStaticAccessKey,
+		// 				Region:              "us-east-1",
+		// 				SecretKey:           awsmocks.MockStaticSecretKey,
+		// 				SkipCredsValidation: true,
+		// 			},
+		// 			Description:              "skip credentials validation",
+		// 			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				Region:               "us-east-1",
+		// 				SkipMetadataApiCheck: true,
+		// 			},
+		// 			Description:             "skip EC2 metadata API check",
+		// 			EnableEc2MetadataServer: true,
+		// 			ExpectedError: func(err error) bool {
+		// 				return awsbase.IsNoValidCredentialSourcesError(err)
+		// 			},
+		// 			ExpectedRegion: "us-east-1",
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey: awsmocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: awsmocks.MockStaticSecretKey,
+		// 			},
+		// 			Description:              "standard User-Agent",
+		// 			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			ExpectedUserAgent:        awsSdkGoUserAgent(),
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
+		// 		{
+		// 			Config: &awsbase.Config{
+		// 				AccessKey: awsmocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: awsmocks.MockStaticSecretKey,
+		// 				UserAgentProducts: []*awsbase.UserAgentProduct{
+		// 					{
+		// 						Name:    "first",
+		// 						Version: "1.0",
+		// 					},
+		// 					{
+		// 						Name:    "second",
+		// 						Version: "1.2.3",
+		// 						Extra:   []string{"+https://www.example.com/"},
+		// 					},
+		// 				},
+		// 			},
+		// 			Description:              "customized User-Agent",
+		// 			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
+		// 			ExpectedRegion:           "us-east-1",
+		// 			ExpectedUserAgent:        "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent(),
+		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
+		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+		// 			},
+		// 		},
 	}
 
 	for _, testCase := range testCases {
