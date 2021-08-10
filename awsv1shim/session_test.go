@@ -548,7 +548,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Description:                "ECS credentials access key",
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue:   awsmocks.MockEcsCredentialsCredentials,
+			ExpectedCredentialsValue:   awsmocks.MockEcsCredentialsCredentialsV1,
 			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
@@ -737,7 +737,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Description:                "ECS credentials access key over EC2 metadata access key",
 			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
-			ExpectedCredentialsValue:   awsmocks.MockEcsCredentialsCredentials,
+			ExpectedCredentialsValue:   awsmocks.MockEcsCredentialsCredentialsV1,
 			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
