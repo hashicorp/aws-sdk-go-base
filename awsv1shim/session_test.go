@@ -520,7 +520,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			},
 			Description:              "EC2 metadata access key",
 			EnableEc2MetadataServer:  true,
-			ExpectedCredentialsValue: awsmocks.MockEc2MetadataCredentials,
+			ExpectedCredentialsValue: awsmocks.MockEc2MetadataCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,

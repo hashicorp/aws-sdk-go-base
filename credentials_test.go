@@ -254,57 +254,6 @@ func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
 	return file.Name()
 }
 
-// func TestAWSGetCredentials_shouldBeShared(t *testing.T) {
-// 	resetEnv := awsmocks.UnsetEnv(t)
-// 	defer resetEnv()
-
-// 	if err := os.Setenv("AWS_PROFILE", "myprofile"); err != nil {
-// 		t.Fatalf("Error resetting env var AWS_PROFILE: %s", err)
-// 	}
-
-// 	fileEnvName := writeCredentialsFile(credentialsFileContentsEnv, t)
-// 	defer os.Remove(fileEnvName)
-
-// 	fileParamName := writeCredentialsFile(credentialsFileContentsParam, t)
-// 	defer os.Remove(fileParamName)
-
-// 	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", fileEnvName); err != nil {
-// 		t.Fatalf("Error resetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
-// 	}
-
-// 	// Confirm AWS_SHARED_CREDENTIALS_FILE is working
-// 	credsEnv, err := credentialsProvider(&Config{Profile: "myprofile"})
-// 	if err != nil {
-// 		t.Fatalf("Error gettings creds: %s", err)
-// 	}
-// 	validateCredentials(credsEnv, "accesskey1", "secretkey1", "", "XXX", t)
-
-// 	// Confirm CredsFilename overwrites AWS_SHARED_CREDENTIALS_FILE
-// 	credsParam, err := credentialsProvider(&Config{Profile: "myprofile", CredsFilename: fileParamName})
-// 	if err != nil {
-// 		t.Fatalf("Error gettings creds: %s", err)
-// 	}
-// 	validateCredentials(credsParam, "accesskey2", "secretkey2", "", "XXX", t)
-// }
-
-// Env is default, so not handled by credsProvider
-// func TestAWSGetCredentials_shouldBeENV(t *testing.T) {
-// 	// need to set the environment variables to a dummy string, as we don't know
-// 	// what they may be at runtime without hardcoding here
-// 	s := "some_env"
-// 	resetEnv := awsmocks.SetEnv(s, t)
-
-// 	defer resetEnv()
-
-// 	cfg := Config{}
-// 	creds, err := credentialsProvider(&cfg)
-// 	if err != nil {
-// 		t.Fatalf("Error gettings creds: %s", err)
-// 	}
-
-// 	validateCredentials(creds, s, s, s, "XXX", t)
-// }
-
 func validateCredentials(creds aws.CredentialsProvider, accesskey, secretkey, token, source string, t *testing.T) {
 	v, err := creds.Retrieve(context.Background())
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	ec2rolecredsv2 "github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws"
 	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
@@ -133,9 +134,15 @@ const (
 )
 
 var (
-	MockEc2MetadataCredentials = awsCredentials.Value{
+	MockEc2MetadataCredentialsV1 = awsCredentials.Value{
 		AccessKeyID:     MockEc2MetadataAccessKey,
 		ProviderName:    ec2rolecreds.ProviderName,
+		SecretAccessKey: MockEc2MetadataSecretKey,
+		SessionToken:    MockEc2MetadataSessionToken,
+	}
+	MockEc2MetadataCredentialsV2 = awsv2.Credentials{
+		AccessKeyID:     MockEc2MetadataAccessKey,
+		Source:          ec2rolecredsv2.ProviderName,
 		SecretAccessKey: MockEc2MetadataSecretKey,
 		SessionToken:    MockEc2MetadataSessionToken,
 	}

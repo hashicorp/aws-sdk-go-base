@@ -16,6 +16,8 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credentialsProvider),
 		config.WithRegion(c.Region),
+		config.WithSharedCredentialsFiles([]string{c.CredsFilename}),
+		config.WithSharedConfigProfile(c.Profile),
 	)
 	return cfg, err
 }
