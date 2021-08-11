@@ -63,7 +63,21 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		}
 
 		if len(c.AssumeRoleTags) > 0 {
-			log.Println("[WARN] Assume role tags are not currently supported by stscreds.AssumeRoleProvider")
+			var tags []types.Tag
+
+			for k, v := range c.AssumeRoleTags {
+				tag := types.Tag{
+					Key:   aws.String(k),
+					Value: aws.String(v),
+				}
+				tags = append(tags, tag)
+			}
+
+			opts.Tags = tags
+		}
+
+		if len(c.AssumeRoleTransitiveTagKeys) > 0 {
+			opts.TransitiveTagKeys = c.AssumeRoleTransitiveTagKeys
 		}
 	})
 	_, err = appCreds.Retrieve(ctx)

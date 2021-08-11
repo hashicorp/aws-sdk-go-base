@@ -13,3 +13,5 @@ require (
 )
 
 go 1.16
+
+replace github.com/aws/aws-sdk-go-v2/credentials => github.com/gdavison/aws-sdk-go-v2/credentials v1.2.2-0.20210811194025-146c1ad6c3b2
