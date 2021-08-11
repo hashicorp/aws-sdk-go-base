@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
+	"github.com/aws/smithy-go/logging"
 )
 
 func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
@@ -19,12 +20,21 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		return aws.Config{}, err
 	}
 
+	var logMode aws.ClientLogMode
+	var logger logging.Logger
+	if c.DebugLogging {
+		logMode = aws.LogRequestWithBody | aws.LogResponseWithBody | aws.LogRetries
+		logger = debugLogger{}
+	}
+
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credentialsProvider),
 		config.WithRegion(c.Region),
 		config.WithSharedCredentialsFiles([]string{c.CredsFilename}),
 		config.WithSharedConfigProfile(c.Profile),
 		config.WithEndpointResolver(endpointResolver(c)),
+		config.WithClientLogMode(logMode),
+		config.WithLogger(logger),
 	)
 
 	if c.AssumeRoleARN == "" {
