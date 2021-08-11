@@ -185,7 +185,6 @@ var (
 		ProviderName:    awsCredentials.StaticProviderName,
 		SecretAccessKey: MockStaticSecretKey,
 	}
-
 	MockStaticCredentialsV2 = awsv2.Credentials{
 		AccessKeyID:     MockStaticAccessKey,
 		SecretAccessKey: MockStaticSecretKey,
@@ -202,7 +201,8 @@ var (
 		AccessKeyID:     MockStsAssumeRoleAccessKey,
 		SecretAccessKey: MockStsAssumeRoleSecretKey,
 		SessionToken:    MockStsAssumeRoleSessionToken,
-		Source:          credentials.StaticCredentialsName,
+		Source:          stscreds.ProviderName,
+		CanExpire:       true,
 	}
 	MockStsAssumeRoleInvalidEndpointInvalidClientTokenId = &MockEndpoint{
 		Request: &MockRequest{
