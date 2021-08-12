@@ -2,16 +2,20 @@ package awsbase
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net/http"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/smithy-go/logging"
+	"github.com/hashicorp/go-cleanhttp"
 )
 
 func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
@@ -27,6 +31,19 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		logger = debugLogger{}
 	}
 
+	imdsEnableState := imds.ClientDefaultEnableState
+	if c.SkipMetadataApiCheck {
+		imdsEnableState = imds.ClientDisabled
+	}
+
+	httpClient := cleanhttp.DefaultClient()
+	if c.Insecure {
+		transport := httpClient.Transport.(*http.Transport)
+		transport.TLSClientConfig = &tls.Config{
+			InsecureSkipVerify: true,
+		}
+	}
+
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credentialsProvider),
 		config.WithRegion(c.Region),
@@ -35,6 +52,8 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		config.WithEndpointResolver(endpointResolver(c)),
 		config.WithClientLogMode(logMode),
 		config.WithLogger(logger),
+		config.WithEC2IMDSClientEnableState(imdsEnableState),
+		config.WithHTTPClient(httpClient),
 	)
 
 	if c.AssumeRoleARN == "" {

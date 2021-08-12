@@ -23,8 +23,7 @@ func credentialsProvider(c *Config) (aws.CredentialsProvider, error) {
 		return nil, nil
 	}
 
-	var foo aws.CredentialsProviderFunc
-	foo = func(ctx context.Context) (aws.Credentials, error) {
+	return aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
 		var errs *multierror.Error
 		for _, p := range providers {
 			creds, err := p.Retrieve(ctx)
@@ -35,6 +34,5 @@ func credentialsProvider(c *Config) (aws.CredentialsProvider, error) {
 		}
 
 		return aws.Credentials{}, fmt.Errorf("No valid providers found: %w", errs)
-	}
-	return foo, nil
+	}), nil
 }

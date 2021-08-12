@@ -741,10 +741,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Description: "session creation error",
 			ExpectedError: func(err error) bool {
 				var e config.CredentialRequiresARNError
-				if errors.As(err, &e) {
-					return true
-				}
-				return false
+				return errors.As(err, &e)
 			},
 			SharedConfigurationFile: `
 [profile SharedConfigurationProfile]
@@ -936,6 +933,7 @@ source_profile = SourceSharedCredentials
 			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(aws.Credentials{}, "Expires")); diff != "" {
 				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
 			}
+			// TODO: test credentials.Expires
 
 			if expected, actual := testCase.ExpectedRegion, awsConfig.Region; expected != actual {
 				t.Fatalf("expected region (%s), got: %s", expected, actual)

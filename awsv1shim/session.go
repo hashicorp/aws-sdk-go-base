@@ -1,13 +1,14 @@
 package awsv1shim
 
 import (
-	"crypto/tls"
+	"context"
 	"fmt"
 	"log"
-	"net/http"
 	"os"
 
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -36,35 +37,29 @@ const (
 // getSessionOptions attempts to return valid AWS Go SDK session authentication
 // options based on pre-existing credential provider, configured profile, or
 // fallback to automatically a determined session via the AWS Go SDK.
-func getSessionOptions(c *awsbase.Config) (*session.Options, error) {
+func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options, error) {
+	creds, err := awsC.Credentials.Retrieve(context.Background())
+	if err != nil {
+		return nil, fmt.Errorf("error accessing credentials: %w", err)
+	}
+
 	options := &session.Options{
 		Config: aws.Config{
-			CredentialsChainVerboseErrors: aws.Bool(true),
-			EndpointResolver:              endpointResolver(c),
-			HTTPClient:                    cleanhttp.DefaultClient(),
-			MaxRetries:                    aws.Int(0),
-			Region:                        aws.String(c.Region),
+			Credentials: credentials.NewStaticCredentials(
+				creds.AccessKeyID,
+				creds.SecretAccessKey,
+				creds.SessionToken,
+			),
+			EndpointResolver: endpointResolver(c),
+			HTTPClient:       cleanhttp.DefaultClient(),
+			MaxRetries:       aws.Int(0),
+			Region:           aws.String(awsC.Region),
 		},
-		Profile:           c.Profile,
-		SharedConfigState: session.SharedConfigEnable,
+		Profile:           c.Profile,                  // ¿Is this needed?
+		SharedConfigState: session.SharedConfigEnable, // ¿Is this needed?
 	}
 
-	// get and validate credentials
-	creds, err := getCredentials(c)
-	if err != nil {
-		return nil, err
-	}
-
-	// add the validated credentials to the session options
-	options.Config.Credentials = creds
-
-	if c.Insecure {
-		transport := options.Config.HTTPClient.Transport.(*http.Transport)
-		transport.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
-	}
-
+	// This needs its own debugger. Don't reuse or wrap the AWS SDK for Go v2 logger, since it hardcodes the string "aws-sdk-go-v2"
 	if c.DebugLogging {
 		options.Config.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
 		options.Config.Logger = debugLogger{}
@@ -74,13 +69,8 @@ func getSessionOptions(c *awsbase.Config) (*session.Options, error) {
 }
 
 // GetSession attempts to return valid AWS Go SDK session.
-func GetSession(c *awsbase.Config) (*session.Session, error) {
-	if c.SkipMetadataApiCheck {
-		os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
-	}
-
-	options, err := getSessionOptions(c)
-
+func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error) {
+	options, err := getSessionOptions(awsC, c)
 	if err != nil {
 		return nil, err
 	}
@@ -152,8 +142,8 @@ func GetSession(c *awsbase.Config) (*session.Session, error) {
 
 // GetSessionWithAccountIDAndPartition attempts to return valid AWS Go SDK session
 // along with account ID and partition information if available
-func GetSessionWithAccountIDAndPartition(c *awsbase.Config) (*session.Session, string, string, error) {
-	sess, err := GetSession(c)
+func GetSessionWithAccountIDAndPartition(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, string, string, error) {
+	sess, err := GetSession(awsC, c)
 
 	if err != nil {
 		return nil, "", "", err
@@ -180,8 +170,8 @@ func GetSessionWithAccountIDAndPartition(c *awsbase.Config) (*session.Session, s
 	if !c.SkipRequestingAccountId {
 		credentialsProviderName := ""
 
-		if credentialsValue, err := sess.Config.Credentials.Get(); err == nil {
-			credentialsProviderName = credentialsValue.ProviderName
+		if credentialsValue, err := awsC.Credentials.Retrieve(context.Background()); err == nil {
+			credentialsProviderName = credentialsValue.Source
 		}
 
 		accountID, partition, err := getAccountIDAndPartition(iamClient, stsClient, credentialsProviderName)
