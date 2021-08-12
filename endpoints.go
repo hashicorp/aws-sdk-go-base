@@ -24,7 +24,8 @@ func endpointResolver(c *Config) aws.EndpointResolver {
 			if endpoint := c.StsEndpoint; endpoint != "" {
 				log.Printf("[INFO] Setting custom STS endpoint: %s", endpoint)
 				return aws.Endpoint{
-					URL: endpoint,
+					URL:    endpoint,
+					Source: aws.EndpointSourceCustom,
 				}, nil
 			}
 		}
