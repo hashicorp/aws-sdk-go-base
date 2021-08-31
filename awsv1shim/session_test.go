@@ -47,13 +47,16 @@ func TestGetSessionOptions(t *testing.T) {
 
 		t.Run(tc.desc, func(t *testing.T) {
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
+			if err != nil {
+				t.Fatalf("GetAwsConfig(c) resulted in an error %s", err)
+			}
 			opts, err := getSessionOptions(&awsConfig, tc.config)
 			if err != nil && tc.expectError == false {
-				t.Fatalf("GetSessionOptions(c) resulted in an error %s", err)
+				t.Fatalf("getSessionOptions(c) resulted in an error %s", err)
 			}
 
 			if opts == nil && tc.expectError == false {
-				t.Error("GetSessionOptions(...) resulted in a nil set of options")
+				t.Error("getSessionOptions(...) resulted in a nil set of options")
 			}
 
 			if err == nil && tc.expectError == true {
@@ -949,6 +952,9 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			}
 
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("GetAwsConfig() returned error: %s", err)
+			}
 			actualSession, err := GetSession(&awsConfig, testCase.Config)
 
 			if err != nil {
@@ -1084,6 +1090,9 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 
 		t.Run(tc.desc, func(t *testing.T) {
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
+			if err != nil {
+				t.Fatalf("GetAwsConfig() returned error: %s", err)
+			}
 			sess, acctID, part, err := GetSessionWithAccountIDAndPartition(&awsConfig, tc.config)
 			if err != nil {
 				if !tc.expectedError {
