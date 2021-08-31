@@ -1,4 +1,4 @@
-package awsbase
+package awsmocks
 
 import (
 	"bytes"
@@ -11,6 +11,11 @@ import (
 	"os"
 	"time"
 
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	ec2rolecredsv2 "github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
+	endpointcredsv2 "github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go/aws"
 	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
@@ -130,24 +135,42 @@ const (
 )
 
 var (
-	MockEc2MetadataCredentials = awsCredentials.Value{
+	MockEc2MetadataCredentialsV1 = awsCredentials.Value{
 		AccessKeyID:     MockEc2MetadataAccessKey,
 		ProviderName:    ec2rolecreds.ProviderName,
 		SecretAccessKey: MockEc2MetadataSecretKey,
 		SessionToken:    MockEc2MetadataSessionToken,
 	}
+	MockEc2MetadataCredentialsV2 = awsv2.Credentials{
+		AccessKeyID:     MockEc2MetadataAccessKey,
+		Source:          ec2rolecredsv2.ProviderName,
+		SecretAccessKey: MockEc2MetadataSecretKey,
+		SessionToken:    MockEc2MetadataSessionToken,
+	}
 
-	MockEcsCredentialsCredentials = awsCredentials.Value{
+	MockEcsCredentialsCredentialsV1 = awsCredentials.Value{
 		AccessKeyID:     MockEcsCredentialsAccessKey,
 		ProviderName:    endpointcreds.ProviderName,
 		SecretAccessKey: MockEcsCredentialsSecretKey,
 		SessionToken:    MockEcsCredentialsSessionToken,
 	}
+	MockEcsCredentialsCredentialsV2 = awsv2.Credentials{
+		AccessKeyID:     MockEcsCredentialsAccessKey,
+		SecretAccessKey: MockEcsCredentialsSecretKey,
+		SessionToken:    MockEcsCredentialsSessionToken,
+		CanExpire:       true,
+		Source:          endpointcredsv2.ProviderName,
+	}
 
-	MockEnvCredentials = awsCredentials.Value{
+	MockEnvCredentialsV1 = awsCredentials.Value{
 		AccessKeyID:     MockEnvAccessKey,
 		ProviderName:    awsCredentials.EnvProviderName,
 		SecretAccessKey: MockEnvSecretKey,
+	}
+	MockEnvCredentialsV2 = awsv2.Credentials{
+		AccessKeyID:     MockEnvAccessKey,
+		SecretAccessKey: MockEnvSecretKey,
+		Source:          config.CredentialsSourceName,
 	}
 
 	MockEnvCredentialsWithSessionToken = awsCredentials.Value{
@@ -157,17 +180,29 @@ var (
 		SessionToken:    MockEnvSessionToken,
 	}
 
-	MockStaticCredentials = awsCredentials.Value{
+	MockStaticCredentialsV1 = awsCredentials.Value{
 		AccessKeyID:     MockStaticAccessKey,
 		ProviderName:    awsCredentials.StaticProviderName,
 		SecretAccessKey: MockStaticSecretKey,
 	}
+	MockStaticCredentialsV2 = awsv2.Credentials{
+		AccessKeyID:     MockStaticAccessKey,
+		SecretAccessKey: MockStaticSecretKey,
+		Source:          credentials.StaticCredentialsName,
+	}
 
-	MockStsAssumeRoleCredentials = awsCredentials.Value{
+	MockStsAssumeRoleCredentialsV1 = awsCredentials.Value{
 		AccessKeyID:     MockStsAssumeRoleAccessKey,
 		ProviderName:    stscreds.ProviderName,
 		SecretAccessKey: MockStsAssumeRoleSecretKey,
 		SessionToken:    MockStsAssumeRoleSessionToken,
+	}
+	MockStsAssumeRoleCredentialsV2 = awsv2.Credentials{
+		AccessKeyID:     MockStsAssumeRoleAccessKey,
+		SecretAccessKey: MockStsAssumeRoleSecretKey,
+		SessionToken:    MockStsAssumeRoleSessionToken,
+		Source:          stscreds.ProviderName,
+		CanExpire:       true,
 	}
 	MockStsAssumeRoleInvalidEndpointInvalidClientTokenId = &MockEndpoint{
 		Request: &MockRequest{
@@ -315,11 +350,11 @@ func GetMockedAwsApiSession(svcName string, endpoints []*MockEndpoint) (func(), 
 	return ts.Close, sess, err
 }
 
-// awsMetadataApiMock establishes a httptest server to mock out the internal AWS Metadata
+// AwsMetadataApiMock establishes a httptest server to mock out the internal AWS Metadata
 // service. IAM Credentials are retrieved by the EC2RoleProvider, which makes
 // API calls to this internal URL. By replacing the server with a test server,
 // we can simulate an AWS environment
-func awsMetadataApiMock(responses []*MetadataResponse) func() {
+func AwsMetadataApiMock(responses []*MetadataResponse) func() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "text/plain")
 		w.Header().Add("Server", "MockEC2")
@@ -337,8 +372,8 @@ func awsMetadataApiMock(responses []*MetadataResponse) func() {
 	return ts.Close
 }
 
-// ecsCredentialsApiMock establishes a httptest server to mock out the ECS credentials API.
-func ecsCredentialsApiMock() func() {
+// EcsCredentialsApiMock establishes a httptest server to mock out the ECS credentials API.
+func EcsCredentialsApiMock() func() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.Header().Add("Server", "MockECS")
@@ -414,12 +449,12 @@ type MetadataResponse struct {
 	Body string `json:"body"`
 }
 
-var ec2metadata_instanceIdEndpoint = &MetadataResponse{
+var Ec2metadata_instanceIdEndpoint = &MetadataResponse{
 	Uri:  "/latest/meta-data/instance-id",
 	Body: "mock-instance-id",
 }
 
-var ec2metadata_securityCredentialsEndpoints = []*MetadataResponse{
+var Ec2metadata_securityCredentialsEndpoints = []*MetadataResponse{
 	{
 		Uri:  "/latest/api/token",
 		Body: "Ec2MetadataApiToken",
@@ -434,15 +469,15 @@ var ec2metadata_securityCredentialsEndpoints = []*MetadataResponse{
 	},
 }
 
-var ec2metadata_iamInfoEndpoint = &MetadataResponse{
+var Ec2metadata_iamInfoEndpoint = &MetadataResponse{
 	Uri:  "/latest/meta-data/iam/info",
 	Body: "{\"Code\": \"Success\",\"LastUpdated\": \"2016-03-17T12:27:32Z\",\"InstanceProfileArn\": \"arn:aws:iam::000000000000:instance-profile/my-instance-profile\",\"InstanceProfileId\": \"AIPAABCDEFGHIJKLMN123\"}",
 }
 
-const ec2metadata_iamInfoEndpoint_expectedAccountID = `000000000000`
-const ec2metadata_iamInfoEndpoint_expectedPartition = `aws`
+const Ec2metadata_iamInfoEndpoint_expectedAccountID = `000000000000`
+const Ec2metadata_iamInfoEndpoint_expectedPartition = `aws`
 
-const iamResponse_GetUser_valid = `<GetUserResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+const IamResponse_GetUser_valid = `<GetUserResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
   <GetUserResult>
     <User>
       <UserId>AIDACKCEVSQ6C2EXAMPLE</UserId>
@@ -458,10 +493,10 @@ const iamResponse_GetUser_valid = `<GetUserResponse xmlns="https://iam.amazonaws
   </ResponseMetadata>
 </GetUserResponse>`
 
-const iamResponse_GetUser_valid_expectedAccountID = `111111111111`
-const iamResponse_GetUser_valid_expectedPartition = `aws`
+const IamResponse_GetUser_valid_expectedAccountID = `111111111111`
+const IamResponse_GetUser_valid_expectedPartition = `aws`
 
-const iamResponse_GetUser_unauthorized = `<ErrorResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+const IamResponse_GetUser_unauthorized = `<ErrorResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
   <Error>
     <Type>Sender</Type>
     <Code>AccessDenied</Code>
@@ -470,7 +505,7 @@ const iamResponse_GetUser_unauthorized = `<ErrorResponse xmlns="https://iam.amaz
   <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
 </ErrorResponse>`
 
-const iamResponse_GetUser_federatedFailure = `<ErrorResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+const IamResponse_GetUser_federatedFailure = `<ErrorResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
   <Error>
     <Type>Sender</Type>
     <Code>ValidationError</Code>
@@ -479,7 +514,7 @@ const iamResponse_GetUser_federatedFailure = `<ErrorResponse xmlns="https://iam.
   <RequestId>7a62c49f-347e-4fc4-9331-6e8eEXAMPLE</RequestId>
 </ErrorResponse>`
 
-const iamResponse_ListRoles_valid = `<ListRolesResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+const IamResponse_ListRoles_valid = `<ListRolesResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
   <ListRolesResult>
     <IsTruncated>true</IsTruncated>
     <Marker>AWceSSsKsazQ4IEplT9o4hURCzBs00iavlEvEXAMPLE</Marker>
@@ -499,10 +534,10 @@ const iamResponse_ListRoles_valid = `<ListRolesResponse xmlns="https://iam.amazo
   </ResponseMetadata>
 </ListRolesResponse>`
 
-const iamResponse_ListRoles_valid_expectedAccountID = `444444444444`
-const iamResponse_ListRoles_valid_expectedPartition = `aws`
+const IamResponse_ListRoles_valid_expectedAccountID = `444444444444`
+const IamResponse_ListRoles_valid_expectedPartition = `aws`
 
-const iamResponse_ListRoles_unauthorized = `<ErrorResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
+const IamResponse_ListRoles_unauthorized = `<ErrorResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
   <Error>
     <Type>Sender</Type>
     <Code>AccessDenied</Code>

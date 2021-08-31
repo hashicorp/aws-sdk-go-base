@@ -1,18 +1,14 @@
 package awsbase
 
 import (
+	"fmt"
 	"log"
-	"strings"
+
+	"github.com/aws/smithy-go/logging"
 )
 
-type DebugLogger struct{}
+type debugLogger struct{}
 
-func (l DebugLogger) Log(args ...interface{}) {
-	tokens := make([]string, 0, len(args))
-	for _, arg := range args {
-		if token, ok := arg.(string); ok {
-			tokens = append(tokens, token)
-		}
-	}
-	log.Printf("[DEBUG] [aws-sdk-go] %s", strings.Join(tokens, " "))
+func (l debugLogger) Logf(classification logging.Classification, format string, v ...interface{}) {
+	log.Printf("[%s] [aws-sdk-go-v2] %s", classification, fmt.Sprintf(format, v...))
 }
