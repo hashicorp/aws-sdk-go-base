@@ -6,10 +6,16 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"reflect"
+	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go/middleware"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
@@ -771,45 +777,6 @@ source_profile = SourceSharedCredentials
 		// 	},
 		// 	ExpectedRegion: "us-east-1",
 		// },
-		// {
-		// 	Config: &Config{
-		// 		AccessKey: awsmocks.MockStaticAccessKey,
-		// 		Region:    "us-east-1",
-		// 		SecretKey: awsmocks.MockStaticSecretKey,
-		// 	},
-		// 	Description:              "standard User-Agent",
-		// 	ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV2,
-		// 	ExpectedRegion:           "us-east-1",
-		// 	ExpectedUserAgent:        awsSdkGoUserAgent(),
-		// 	MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 		awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 	},
-		// },
-		// {
-		// 	Config: &Config{
-		// 		AccessKey: awsmocks.MockStaticAccessKey,
-		// 		Region:    "us-east-1",
-		// 		SecretKey: awsmocks.MockStaticSecretKey,
-		// 		UserAgentProducts: []*UserAgentProduct{
-		// 			{
-		// 				Name:    "first",
-		// 				Version: "1.0",
-		// 			},
-		// 			{
-		// 				Name:    "second",
-		// 				Version: "1.2.3",
-		// 				Extra:   []string{"+https://www.example.com/"},
-		// 			},
-		// 		},
-		// 	},
-		// 	Description:              "customized User-Agent",
-		// 	ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV2,
-		// 	ExpectedRegion:           "us-east-1",
-		// 	ExpectedUserAgent:        "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent(),
-		// 	MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 		awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 	},
-		// },
 	}
 
 	for _, testCase := range testCases {
@@ -958,4 +925,141 @@ source_profile = SourceSharedCredentials
 			// }
 		})
 	}
+}
+
+func TestUserAgentProducts(t *testing.T) {
+	testCases := []struct {
+		Config            *Config
+		Description       string
+		ExpectedUserAgent string
+	}{
+		{
+			Config: &Config{
+				AccessKey: awsmocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: awsmocks.MockStaticSecretKey,
+			},
+			Description:       "standard User-Agent",
+			ExpectedUserAgent: awsSdkGoV2UserAgent(),
+		},
+		// {
+		// 	Config: &Config{
+		// 		AccessKey: awsmocks.MockStaticAccessKey,
+		// 		Region:    "us-east-1",
+		// 		SecretKey: awsmocks.MockStaticSecretKey,
+		// 		UserAgentProducts: []*UserAgentProduct{
+		// 			{
+		// 				Name:    "first",
+		// 				Version: "1.0",
+		// 			},
+		// 			{
+		// 				Name:    "second",
+		// 				Version: "1.2.3",
+		// 				Extra:   []string{"+https://www.example.com/"},
+		// 			},
+		// 		},
+		// 	},
+		// 	Description:       "customized User-Agent",
+		// 	ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoV2UserAgent(),
+		// },
+	}
+
+	var (
+		httpUserAgent string
+		httpSdkAgent  string
+	)
+
+	errCancelOperation := fmt.Errorf("Cancelling request")
+
+	readUserAgent := middleware.FinalizeMiddlewareFunc("ReadUserAgent", func(_ context.Context, in middleware.FinalizeInput, next middleware.FinalizeHandler) (out middleware.FinalizeOutput, meta middleware.Metadata, err error) {
+		request, ok := in.Request.(*smithyhttp.Request)
+		if !ok {
+			t.Fatalf("Expected *github.com/aws/smithy-go/transport/http.Request, got %s", fullTypeName(in.Request))
+		}
+		httpUserAgent = request.UserAgent()
+		httpSdkAgent = request.Header.Get("X-Amz-User-Agent")
+
+		return middleware.FinalizeOutput{}, middleware.Metadata{}, errCancelOperation
+	})
+
+	for _, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testCase.Description, func(t *testing.T) {
+			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			client := sts.NewFromConfig(awsConfig)
+
+			_, err = client.GetCallerIdentity(context.Background(),
+				&sts.GetCallerIdentityInput{},
+				func(opts *sts.Options) {
+					opts.APIOptions = append(opts.APIOptions, func(stack *middleware.Stack) error {
+						return stack.Finalize.Add(readUserAgent, middleware.Before)
+					})
+				},
+			)
+			if err == nil {
+				t.Fatal("Expected an error, got none")
+			} else if !errors.Is(err, errCancelOperation) {
+				t.Fatalf("Unexpected error: %s", err)
+			}
+
+			var userAgentParts []string
+			for _, v := range strings.Split(httpUserAgent, " ") {
+				if !strings.HasPrefix(v, "api/") {
+					userAgentParts = append(userAgentParts, v)
+				}
+			}
+			cleanedUserAgent := strings.Join(userAgentParts, " ")
+
+			if testCase.ExpectedUserAgent != cleanedUserAgent {
+				t.Errorf("expected User-Agent %q, got %q", testCase.ExpectedUserAgent, cleanedUserAgent)
+			}
+
+			// The header X-Amz-User-Agent was disabled but not removed in v1.3.0 (2021-03-18)
+			if httpSdkAgent != "" {
+				t.Errorf("expected header X-Amz-User-Agent to not be set, got %q", httpSdkAgent)
+			}
+		})
+	}
+}
+
+func awsSdkGoV2UserAgent() string {
+	// See https://github.com/aws/aws-sdk-go-v2/blob/994cb2c7c1c822dc628949e7ae2941b9c856ccb3/aws/middleware/user_agent_test.go#L18
+	return fmt.Sprintf("%s/%s os/%s lang/go/%s md/GOOS/%s md/GOARCH/%s", aws.SDKName, aws.SDKVersion, getNormalizedOSName(), strings.TrimPrefix(runtime.Version(), "go"), runtime.GOOS, runtime.GOARCH)
+}
+
+// Copied from https://github.com/aws/aws-sdk-go-v2/blob/main/aws/middleware/osname.go
+func getNormalizedOSName() (os string) {
+	switch runtime.GOOS {
+	case "android":
+		os = "android"
+	case "linux":
+		os = "linux"
+	case "windows":
+		os = "windows"
+	case "darwin":
+		os = "macos"
+	case "ios":
+		os = "ios"
+	default:
+		os = "other"
+	}
+	return os
+}
+
+func fullTypeName(i interface{}) string {
+	return fullValueTypeName(reflect.ValueOf(i))
+}
+
+func fullValueTypeName(v reflect.Value) string {
+	if v.Kind() == reflect.Ptr {
+		return "*" + fullValueTypeName(reflect.Indirect(v))
+	}
+
+	requestType := v.Type()
+	return fmt.Sprintf("%s.%s", requestType.PkgPath(), requestType.Name())
 }
