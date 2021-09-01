@@ -42,6 +42,8 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 	imdsEnableState := imds.ClientDefaultEnableState
 	if c.SkipMetadataApiCheck {
 		imdsEnableState = imds.ClientDisabled
+		// This should not be needed, but https://github.com/aws/aws-sdk-go-v2/issues/1398
+		os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 	}
 
 	httpClient := cleanhttp.DefaultClient()
@@ -76,18 +78,18 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		config.WithEC2IMDSClientEnableState(imdsEnableState),
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
-		// Only for retrieving Creds
+		// FIXME: This should only be set for retrieving Creds
 		config.WithRetryer(func() aws.Retryer {
 			return aws.NopRetryer{}
 		}),
 	)
 	if err != nil {
-		return cfg, err
+		return cfg, fmt.Errorf("loading configuration: %w", err)
 	}
 
 	_, err = cfg.Credentials.Retrieve(ctx)
 	if err != nil {
-		return cfg, err
+		return cfg, c.NewNoValidCredentialSourcesError()
 	}
 
 	if c.AssumeRoleARN == "" {

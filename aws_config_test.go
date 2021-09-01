@@ -765,18 +765,18 @@ source_profile = SourceSharedCredentials
 			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV2,
 			ExpectedRegion:           "us-east-1",
 		},
-		// {
-		// 	Config: &Config{
-		// 		Region:               "us-east-1",
-		// 		SkipMetadataApiCheck: true,
-		// 	},
-		// 	Description:             "skip EC2 metadata API check",
-		// 	EnableEc2MetadataServer: true,
-		// 	ExpectedError: func(err error) bool {
-		// 		return IsNoValidCredentialSourcesError(err)
-		// 	},
-		// 	ExpectedRegion: "us-east-1",
-		// },
+		{
+			Config: &Config{
+				Region:               "us-east-1",
+				SkipMetadataApiCheck: true,
+			},
+			Description:             "skip EC2 metadata API check",
+			EnableEc2MetadataServer: true,
+			ExpectedError: func(err error) bool {
+				return IsNoValidCredentialSourcesError(err)
+			},
+			ExpectedRegion: "us-east-1",
+		},
 	}
 
 	for _, testCase := range testCases {

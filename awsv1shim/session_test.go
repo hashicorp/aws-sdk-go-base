@@ -811,18 +811,18 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 		},
-		// {
-		// 	Config: &awsbase.Config{
-		// 		Region:               "us-east-1",
-		// 		SkipMetadataApiCheck: true,
-		// 	},
-		// 	Description:             "skip EC2 metadata API check",
-		// 	EnableEc2MetadataServer: true,
-		// 	ExpectedError: func(err error) bool {
-		// 		return awsbase.IsNoValidCredentialSourcesError(err)
-		// 	},
-		// 	ExpectedRegion: "us-east-1",
-		// },
+		{
+			Config: &awsbase.Config{
+				Region:               "us-east-1",
+				SkipMetadataApiCheck: true,
+			},
+			Description:             "skip EC2 metadata API check",
+			EnableEc2MetadataServer: true,
+			ExpectedError: func(err error) bool {
+				return awsbase.IsNoValidCredentialSourcesError(err)
+			},
+			ExpectedRegion: "us-east-1",
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -917,17 +917,25 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
-				t.Fatalf("GetAwsConfig() returned error: %s", err)
-			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
-
-			if err != nil {
 				if testCase.ExpectedError == nil {
-					t.Fatalf("expected no error, got error: %s", err)
+					t.Fatalf("expected no error from GetAwsConfig(), got '%[1]T' error: %[1]s", err)
 				}
 
 				if !testCase.ExpectedError(err) {
-					t.Fatalf("unexpected GetSession() error: %s", err)
+					t.Fatalf("unexpected GetAwsConfig() '%[1]T' error: %[1]s", err)
+				}
+
+				t.Logf("received expected error: %s", err)
+				return
+			}
+			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			if err != nil {
+				if testCase.ExpectedError == nil {
+					t.Fatalf("expected no error from GetSession(), got '%[1]T' error: %[1]s", err)
+				}
+
+				if !testCase.ExpectedError(err) {
+					t.Fatalf("unexpected GetSession() '%[1]T' error: %[1]s", err)
 				}
 
 				t.Logf("received expected error: %s", err)
