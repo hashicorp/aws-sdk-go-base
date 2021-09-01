@@ -47,20 +47,24 @@ func TestGetSessionOptions(t *testing.T) {
 
 		t.Run(tc.desc, func(t *testing.T) {
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
-			if err != nil {
-				t.Fatalf("GetAwsConfig(c) resulted in an error %s", err)
+			if err != nil && tc.expectError == false {
+				t.Fatalf("GetAwsConfig() resulted in an error %s", err)
 			}
+			if err == nil && tc.expectError == true {
+				t.Fatal("Expected error not returned by GetAwsConfig()")
+			}
+
 			opts, err := getSessionOptions(&awsConfig, tc.config)
 			if err != nil && tc.expectError == false {
-				t.Fatalf("getSessionOptions(c) resulted in an error %s", err)
+				t.Fatalf("getSessionOptions() resulted in an error %s", err)
 			}
 
 			if opts == nil && tc.expectError == false {
-				t.Error("getSessionOptions(...) resulted in a nil set of options")
+				t.Error("getSessionOptions() resulted in a nil set of options")
 			}
 
 			if err == nil && tc.expectError == true {
-				t.Fatal("Expected error not found")
+				t.Fatal("Expected error not returned by getSessionOptions()")
 			}
 		})
 
