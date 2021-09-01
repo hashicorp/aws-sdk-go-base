@@ -146,6 +146,7 @@ var (
 		Source:          ec2rolecredsv2.ProviderName,
 		SecretAccessKey: MockEc2MetadataSecretKey,
 		SessionToken:    MockEc2MetadataSessionToken,
+		CanExpire:       true,
 	}
 
 	MockEcsCredentialsCredentialsV1 = awsCredentials.Value{
@@ -368,7 +369,7 @@ func AwsMetadataApiMock(responses []*MetadataResponse) func() {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 
-	os.Setenv("AWS_METADATA_URL", ts.URL+"/latest")
+	os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", ts.URL)
 	return ts.Close
 }
 

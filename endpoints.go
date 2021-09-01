@@ -10,11 +10,6 @@ import (
 func endpointResolver(c *Config) aws.EndpointResolver {
 	resolver := func(service, region string) (aws.Endpoint, error) {
 		switch service {
-		// case ec2metadata.ServiceName:
-		// 	if endpoint := os.Getenv("AWS_METADATA_URL"); endpoint != "" {
-		// 		log.Printf("[INFO] Setting custom EC2 metadata endpoint: %s", endpoint)
-		// 		resolvedEndpoint.URL = endpoint
-		// 	}
 		// case iam.ServiceName:
 		// 	if endpoint := c.IamEndpoint; endpoint != "" {
 		// 		log.Printf("[INFO] Setting custom IAM endpoint: %s", endpoint)
