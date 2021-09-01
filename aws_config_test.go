@@ -942,26 +942,26 @@ func TestUserAgentProducts(t *testing.T) {
 			Description:       "standard User-Agent",
 			ExpectedUserAgent: awsSdkGoV2UserAgent(),
 		},
-		// {
-		// 	Config: &Config{
-		// 		AccessKey: awsmocks.MockStaticAccessKey,
-		// 		Region:    "us-east-1",
-		// 		SecretKey: awsmocks.MockStaticSecretKey,
-		// 		UserAgentProducts: []*UserAgentProduct{
-		// 			{
-		// 				Name:    "first",
-		// 				Version: "1.0",
-		// 			},
-		// 			{
-		// 				Name:    "second",
-		// 				Version: "1.2.3",
-		// 				Extra:   []string{"+https://www.example.com/"},
-		// 			},
-		// 		},
-		// 	},
-		// 	Description:       "customized User-Agent",
-		// 	ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoV2UserAgent(),
-		// },
+		{
+			Config: &Config{
+				AccessKey: awsmocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: awsmocks.MockStaticSecretKey,
+				UserAgentProducts: []*UserAgentProduct{
+					{
+						Name:    "first",
+						Version: "1.0",
+					},
+					{
+						Name:    "second",
+						Version: "1.2.3",
+						Extra:   []string{"+https://www.example.com/"},
+					},
+				},
+			},
+			Description:       "customized User-Agent",
+			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoV2UserAgent(),
+		},
 	}
 
 	var (
@@ -971,7 +971,7 @@ func TestUserAgentProducts(t *testing.T) {
 
 	errCancelOperation := fmt.Errorf("Cancelling request")
 
-	readUserAgent := middleware.FinalizeMiddlewareFunc("ReadUserAgent", func(_ context.Context, in middleware.FinalizeInput, next middleware.FinalizeHandler) (out middleware.FinalizeOutput, meta middleware.Metadata, err error) {
+	readUserAgent := middleware.FinalizeMiddlewareFunc("ReadUserAgent", func(_ context.Context, in middleware.FinalizeInput, next middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
 		request, ok := in.Request.(*smithyhttp.Request)
 		if !ok {
 			t.Fatalf("Expected *github.com/aws/smithy-go/transport/http.Request, got %s", fullTypeName(in.Request))
@@ -993,8 +993,7 @@ func TestUserAgentProducts(t *testing.T) {
 
 			client := sts.NewFromConfig(awsConfig)
 
-			_, err = client.GetCallerIdentity(context.Background(),
-				&sts.GetCallerIdentityInput{},
+			_, err = client.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{},
 				func(opts *sts.Options) {
 					opts.APIOptions = append(opts.APIOptions, func(stack *middleware.Stack) error {
 						return stack.Finalize.Add(readUserAgent, middleware.Before)

@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/smithy-go/logging"
+	"github.com/aws/smithy-go/middleware"
 	"github.com/hashicorp/go-cleanhttp"
 )
 
@@ -44,6 +45,16 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		}
 	}
 
+	apiOptions := make([]func(*middleware.Stack) error, 0)
+	if len(c.UserAgentProducts) > 0 {
+		apiOptions = append(apiOptions, func(stack *middleware.Stack) error {
+			// Because the default User-Agent middleware prepends itself to the contents of the User-Agent header,
+			// we have to run after it and also prepend our custom User-Agent
+			return stack.Build.Add(customUserAgentMiddleware(c), middleware.After)
+		})
+
+	}
+
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credentialsProvider),
 		config.WithRegion(c.Region),
@@ -54,6 +65,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		config.WithLogger(logger),
 		config.WithEC2IMDSClientEnableState(imdsEnableState),
 		config.WithHTTPClient(httpClient),
+		config.WithAPIOptions(apiOptions),
 	)
 
 	if c.AssumeRoleARN == "" {
