@@ -508,20 +508,20 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		`,
 		},
-		// 		{
-		// 			Config: &awsbase.Config{
-		// 				Region: "us-east-1",
-		// 			},
-		// 			Description:              "web identity token access key",
-		// 			EnableEc2MetadataServer:  true,
-		// 			EnableWebIdentityToken:   true,
-		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleWithWebIdentityCredentials,
-		// 			ExpectedRegion:           "us-east-1",
-		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 				awsmocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 			},
-		// 		},
+		{
+			Config: &awsbase.Config{
+				Region: "us-east-1",
+			},
+			Description:              "web identity token access key",
+			EnableEc2MetadataServer:  true,
+			EnableWebIdentityToken:   true,
+			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleWithWebIdentityCredentialsV1,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
 		{
 			Config: &awsbase.Config{
 				Region: "us-east-1",
