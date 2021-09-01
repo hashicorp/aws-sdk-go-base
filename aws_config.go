@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
@@ -17,6 +19,14 @@ import (
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
 	"github.com/hashicorp/go-cleanhttp"
+)
+
+const (
+	// appendUserAgentEnvVar is a conventionally used environment variable
+	// containing additional HTTP User-Agent information.
+	// If present and its value is non-empty, it is directly appended to the
+	// User-Agent header for HTTP requests.
+	appendUserAgentEnvVar = "TF_APPEND_USER_AGENT"
 )
 
 func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
@@ -52,7 +62,10 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 			// we have to run after it and also prepend our custom User-Agent
 			return stack.Build.Add(customUserAgentMiddleware(c), middleware.After)
 		})
-
+	}
+	if v := os.Getenv(appendUserAgentEnvVar); v != "" {
+		log.Printf("[DEBUG] Using additional User-Agent Info: %s", v)
+		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(v))
 	}
 
 	cfg, err := config.LoadDefaultConfig(ctx,

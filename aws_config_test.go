@@ -929,9 +929,10 @@ source_profile = SourceSharedCredentials
 
 func TestUserAgentProducts(t *testing.T) {
 	testCases := []struct {
-		Config            *Config
-		Description       string
-		ExpectedUserAgent string
+		Config               *Config
+		Description          string
+		EnvironmentVariables map[string]string
+		ExpectedUserAgent    string
 	}{
 		{
 			Config: &Config{
@@ -940,7 +941,19 @@ func TestUserAgentProducts(t *testing.T) {
 				SecretKey: awsmocks.MockStaticSecretKey,
 			},
 			Description:       "standard User-Agent",
-			ExpectedUserAgent: awsSdkGoV2UserAgent(),
+			ExpectedUserAgent: awsSdkGoUserAgent(),
+		},
+		{
+			Config: &Config{
+				AccessKey: awsmocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: awsmocks.MockStaticSecretKey,
+			},
+			Description: "customized User-Agent TF_APPEND_USER_AGENT",
+			EnvironmentVariables: map[string]string{
+				appendUserAgentEnvVar: "Last",
+			},
+			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
 		},
 		{
 			Config: &Config{
@@ -959,8 +972,31 @@ func TestUserAgentProducts(t *testing.T) {
 					},
 				},
 			},
-			Description:       "customized User-Agent",
-			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoV2UserAgent(),
+			Description:       "customized User-Agent Products",
+			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent(),
+		},
+		{
+			Config: &Config{
+				AccessKey: awsmocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: awsmocks.MockStaticSecretKey,
+				UserAgentProducts: []*UserAgentProduct{
+					{
+						Name:    "first",
+						Version: "1.0",
+					},
+					{
+						Name:    "second",
+						Version: "1.2.3",
+						Extra:   []string{"+https://www.example.com/"},
+					},
+				},
+			},
+			Description: "customized User-Agent Products and TF_APPEND_USER_AGENT",
+			EnvironmentVariables: map[string]string{
+				appendUserAgentEnvVar: "Last",
+			},
+			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent() + " Last",
 		},
 	}
 
@@ -986,6 +1022,13 @@ func TestUserAgentProducts(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
+			oldEnv := awsmocks.InitSessionTestEnv()
+			defer awsmocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
 			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
@@ -1026,7 +1069,7 @@ func TestUserAgentProducts(t *testing.T) {
 	}
 }
 
-func awsSdkGoV2UserAgent() string {
+func awsSdkGoUserAgent() string {
 	// See https://github.com/aws/aws-sdk-go-v2/blob/994cb2c7c1c822dc628949e7ae2941b9c856ccb3/aws/middleware/user_agent_test.go#L18
 	return fmt.Sprintf("%s/%s os/%s lang/go/%s md/GOOS/%s md/GOARCH/%s", aws.SDKName, aws.SDKVersion, getNormalizedOSName(), strings.TrimPrefix(runtime.Version(), "go"), runtime.GOOS, runtime.GOARCH)
 }
