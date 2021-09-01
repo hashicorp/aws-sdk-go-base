@@ -89,7 +89,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 
 	_, err = cfg.Credentials.Retrieve(ctx)
 	if err != nil {
-		return cfg, c.NewNoValidCredentialSourcesError()
+		return cfg, c.NewNoValidCredentialSourcesError(err)
 	}
 
 	if c.AssumeRoleARN == "" {

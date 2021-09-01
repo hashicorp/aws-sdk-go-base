@@ -44,18 +44,25 @@ func (c *Config) NewCannotAssumeRoleError(err error) CannotAssumeRoleError {
 // NoValidCredentialSourcesError occurs when all credential lookup methods have been exhausted without results.
 type NoValidCredentialSourcesError struct {
 	Config *Config
+	Err    error
 }
 
 func (e NoValidCredentialSourcesError) Error() string {
 	if e.Config == nil {
-		return "no valid credential sources found."
+		return fmt.Sprintf("no valid credential sources found: %s", e.Err)
 	}
 
 	return fmt.Sprintf(`no valid credential sources for %[1]s found.
 
 Please see %[2]s
 for more information about providing credentials.
-`, e.Config.CallerName, e.Config.CallerDocumentationURL)
+
+Error: %[3]s
+`, e.Config.CallerName, e.Config.CallerDocumentationURL, e.Err)
+}
+
+func (e NoValidCredentialSourcesError) Unwrap() error {
+	return e.Err
 }
 
 // IsNoValidCredentialSourcesError returns true if the error contains the NoValidCredentialSourcesError type.
@@ -64,6 +71,6 @@ func IsNoValidCredentialSourcesError(err error) bool {
 	return errors.As(err, &e)
 }
 
-func (c *Config) NewNoValidCredentialSourcesError() NoValidCredentialSourcesError {
-	return NoValidCredentialSourcesError{Config: c}
+func (c *Config) NewNoValidCredentialSourcesError(err error) NoValidCredentialSourcesError {
+	return NoValidCredentialSourcesError{Config: c, Err: err}
 }
