@@ -174,11 +174,17 @@ var (
 		Source:          config.CredentialsSourceName,
 	}
 
-	MockEnvCredentialsWithSessionToken = awsCredentials.Value{
+	MockEnvCredentialsWithSessionTokenV1 = awsCredentials.Value{
 		AccessKeyID:     MockEnvAccessKey,
 		ProviderName:    awsCredentials.EnvProviderName,
 		SecretAccessKey: MockEnvSecretKey,
 		SessionToken:    MockEnvSessionToken,
+	}
+	MockEnvCredentialsWithSessionTokenV2 = awsv2.Credentials{
+		AccessKeyID:     MockEnvAccessKey,
+		SecretAccessKey: MockEnvSecretKey,
+		SessionToken:    MockEnvSessionToken,
+		Source:          config.CredentialsSourceName,
 	}
 
 	MockStaticCredentialsV1 = awsCredentials.Value{

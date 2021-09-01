@@ -147,7 +147,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 	})
 	_, err = appCreds.Retrieve(ctx)
 	if err != nil {
-		return aws.Config{}, fmt.Errorf("error assuming role: %w", err)
+		return aws.Config{}, c.NewCannotAssumeRoleError(err)
 	}
 
 	cfg.Credentials = aws.NewCredentialsCache(appCreds)
