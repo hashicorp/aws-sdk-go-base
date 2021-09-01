@@ -76,7 +76,19 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		config.WithEC2IMDSClientEnableState(imdsEnableState),
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
+		// Only for retrieving Creds
+		config.WithRetryer(func() aws.Retryer {
+			return aws.NopRetryer{}
+		}),
 	)
+	if err != nil {
+		return cfg, err
+	}
+
+	_, err = cfg.Credentials.Retrieve(ctx)
+	if err != nil {
+		return cfg, err
+	}
 
 	if c.AssumeRoleARN == "" {
 		return cfg, err
