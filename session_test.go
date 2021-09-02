@@ -1001,62 +1001,79 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 	oldEnv := initSessionTestEnv()
 	defer PopEnv(oldEnv)
 
-	ts := MockAwsApiServer("STS", []*MockEndpoint{
-		MockStsGetCallerIdentityValidEndpoint,
-	})
-	defer ts.Close()
-
 	testCases := []struct {
 		desc              string
 		config            *Config
 		expectedAcctID    string
 		expectedPartition string
 		expectedError     bool
+		mockStsEndpoints  []*MockEndpoint
 	}{
-		{"StandardProvider_Config", &Config{
-			AccessKey:         "MockAccessKey",
-			SecretKey:         "MockSecretKey",
-			Region:            "us-west-2",
-			UserAgentProducts: []*UserAgentProduct{{}},
-			StsEndpoint:       ts.URL},
-			"222222222222", "aws", false},
-		{"SkipCredsValidation_Config", &Config{
-			AccessKey:           "MockAccessKey",
-			SecretKey:           "MockSecretKey",
-			Region:              "us-west-2",
-			SkipCredsValidation: true,
-			UserAgentProducts:   []*UserAgentProduct{{}},
-			StsEndpoint:         ts.URL},
-			"222222222222", "aws", false},
-		{"SkipRequestingAccountId_Config", &Config{
-			AccessKey:               "MockAccessKey",
-			SecretKey:               "MockSecretKey",
-			Region:                  "us-west-2",
-			SkipCredsValidation:     true,
-			SkipRequestingAccountId: true,
-			UserAgentProducts:       []*UserAgentProduct{{}},
-			StsEndpoint:             ts.URL},
-			"", "aws", false},
-		// {"WithAssumeRole", &Config{
-		// 		AccessKey: "MockAccessKey",
-		// 		SecretKey: "MockSecretKey",
-		// 		Region: "us-west-2",
-		// 		UserAgentProducts: []*UserAgentProduct{{}},
-		// 		AssumeRoleARN: "arn:aws:iam::222222222222:user/Alice"},
-		// 	"222222222222", "aws"},
-		{"NoCredentialProviders_Config", &Config{
-			AccessKey:         "",
-			SecretKey:         "",
-			Region:            "us-west-2",
-			UserAgentProducts: []*UserAgentProduct{{}},
-			StsEndpoint:       ts.URL},
-			"", "", true},
+		{
+			"StandardProvider_Config",
+			&Config{
+				AccessKey: "MockAccessKey",
+				SecretKey: "MockSecretKey",
+				Region:    "us-west-2",
+			},
+			"222222222222", "aws", false, []*MockEndpoint{
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			"SkipCredsValidation_Config",
+			&Config{
+				AccessKey:           "MockAccessKey",
+				SecretKey:           "MockSecretKey",
+				Region:              "us-west-2",
+				SkipCredsValidation: true,
+			},
+			"222222222222", "aws", false, []*MockEndpoint{
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			"SkipRequestingAccountId_Config",
+			&Config{
+				AccessKey:               "MockAccessKey",
+				SecretKey:               "MockSecretKey",
+				Region:                  "us-west-2",
+				SkipCredsValidation:     true,
+				SkipRequestingAccountId: true,
+			},
+			"", "aws", false, []*MockEndpoint{},
+		},
+		{
+			"WithAssumeRole",
+			&Config{
+				AccessKey:             "MockAccessKey",
+				SecretKey:             "MockSecretKey",
+				Region:                "us-west-2",
+				AssumeRoleARN:         MockStsAssumeRoleArn,
+				AssumeRoleSessionName: MockStsAssumeRoleSessionName},
+			"555555555555", "aws", false, []*MockEndpoint{
+				MockStsAssumeRoleValidEndpoint,
+				MockStsGetCallerIdentityValidEndpoint,
+			}},
+		{
+			"NoCredentialProviders_Config",
+			&Config{
+				AccessKey: "",
+				SecretKey: "",
+				Region:    "us-west-2",
+			},
+			"", "", true, []*MockEndpoint{},
+		},
 	}
 
 	for _, testCase := range testCases {
 		tc := testCase
 
 		t.Run(tc.desc, func(t *testing.T) {
+			ts := MockAwsApiServer("STS", tc.mockStsEndpoints)
+			defer ts.Close()
+			tc.config.StsEndpoint = ts.URL
+
 			sess, acctID, part, err := GetSessionWithAccountIDAndPartition(tc.config)
 			if err != nil {
 				if !tc.expectedError {
