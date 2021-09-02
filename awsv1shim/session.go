@@ -55,8 +55,6 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 			MaxRetries:       aws.Int(0),
 			Region:           aws.String(awsC.Region),
 		},
-		Profile:           c.Profile,                  // ¿Is this needed?
-		SharedConfigState: session.SharedConfigEnable, // ¿Is this needed?
 	}
 
 	// This needs its own debugger. Don't reuse or wrap the AWS SDK for Go v2 logger, since it hardcodes the string "aws-sdk-go-v2"
