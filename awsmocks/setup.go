@@ -39,7 +39,7 @@ func PopEnv(env []string) {
 // when endpoint doesn't respond as expected
 func InvalidAwsEnv() func() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(400)
+		w.WriteHeader(http.StatusBadRequest)
 	}))
 
 	os.Setenv("AWS_METADATA_URL", ts.URL+"/latest")
