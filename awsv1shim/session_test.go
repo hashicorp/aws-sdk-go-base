@@ -1114,7 +1114,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 		config            *awsbase.Config
 		expectedAcctID    string
 		expectedPartition string
-		expectedError     bool
+		expectError       bool
 		mockStsEndpoints  []*awsmocks.MockEndpoint
 	}{
 		{
@@ -1184,7 +1184,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
 			if err != nil {
-				if !tc.expectedError {
+				if !tc.expectError {
 					t.Fatalf("expected no error from GetAwsConfig(), got: %s", err)
 				}
 
@@ -1197,7 +1197,7 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 			}
 			sess, acctID, part, err := GetSessionWithAccountIDAndPartition(&awsConfig, tc.config)
 			if err != nil {
-				if !tc.expectedError {
+				if !tc.expectError {
 					t.Fatalf("expected no error, got: %s", err)
 				}
 
