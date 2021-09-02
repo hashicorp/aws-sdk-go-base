@@ -1109,27 +1109,24 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 	oldEnv := awsmocks.InitSessionTestEnv()
 	defer awsmocks.PopEnv(oldEnv)
 
-	ts := awsmocks.MockAwsApiServer("STS", []*awsmocks.MockEndpoint{
-		awsmocks.MockStsGetCallerIdentityValidEndpoint,
-	})
-	defer ts.Close()
-
 	testCases := []struct {
 		desc              string
 		config            *awsbase.Config
 		expectedAcctID    string
 		expectedPartition string
 		expectedError     bool
+		mockStsEndpoints  []*awsmocks.MockEndpoint
 	}{
 		{
 			"StandardProvider_Config",
 			&awsbase.Config{
-				AccessKey:         "MockAccessKey",
-				SecretKey:         "MockSecretKey",
-				Region:            "us-west-2",
-				UserAgentProducts: []*awsbase.UserAgentProduct{{}},
-				StsEndpoint:       ts.URL},
+				AccessKey: "MockAccessKey",
+				SecretKey: "MockSecretKey",
+				Region:    "us-west-2"},
 			"222222222222", "aws", false,
+			[]*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
 		},
 		{
 			"SkipCredsValidation_Config",
@@ -1137,10 +1134,11 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 				AccessKey:           "MockAccessKey",
 				SecretKey:           "MockSecretKey",
 				Region:              "us-west-2",
-				SkipCredsValidation: true,
-				UserAgentProducts:   []*awsbase.UserAgentProduct{{}},
-				StsEndpoint:         ts.URL},
+				SkipCredsValidation: true},
 			"222222222222", "aws", false,
+			[]*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
 		},
 		{
 			"SkipRequestingAccountId_Config",
@@ -1149,43 +1147,53 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 				SecretKey:               "MockSecretKey",
 				Region:                  "us-west-2",
 				SkipCredsValidation:     true,
-				SkipRequestingAccountId: true,
-				UserAgentProducts:       []*awsbase.UserAgentProduct{{}},
-				StsEndpoint:             ts.URL},
-			"", "aws", false,
+				SkipRequestingAccountId: true},
+			"", "aws", false, []*awsmocks.MockEndpoint{},
 		},
-		// This test needs the Mock STS server
-		// {
-		// 	"WithAssumeRole",
-		// 	&awsbase.Config{
-		// 		AccessKey:         "MockAccessKey",
-		// 		SecretKey:         "MockSecretKey",
-		// 		Region:            "us-west-2",
-		// 		UserAgentProducts: []*awsbase.UserAgentProduct{{}},
-		// 		AssumeRoleARN:     "arn:aws:iam::222222222222:user/Alice"},
-		// 	"222222222222", "aws", false,
-		// },
-
-		// Not implemented
-		// {
-		// 	"NoCredentialProviders_Config",
-		// 	&awsbase.Config{
-		// 		AccessKey:         "",
-		// 		SecretKey:         "",
-		// 		Region:            "us-west-2",
-		// 		UserAgentProducts: []*awsbase.UserAgentProduct{{}},
-		// 		StsEndpoint:       ts.URL},
-		// 	"", "", true,
-		// },
+		{
+			"WithAssumeRole",
+			&awsbase.Config{
+				AccessKey:             "MockAccessKey",
+				SecretKey:             "MockSecretKey",
+				Region:                "us-west-2",
+				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName},
+			"555555555555", "aws", false, []*awsmocks.MockEndpoint{
+				awsmocks.MockStsAssumeRoleValidEndpoint,
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			"NoCredentialProviders_Config",
+			&awsbase.Config{
+				AccessKey: "",
+				SecretKey: "",
+				Region:    "us-west-2"},
+			"", "", true, []*awsmocks.MockEndpoint{},
+		},
 	}
 
 	for _, testCase := range testCases {
 		tc := testCase
 
 		t.Run(tc.desc, func(t *testing.T) {
+			ts := awsmocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
+			defer ts.Close()
+
+			tc.config.StsEndpoint = ts.URL
+
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
 			if err != nil {
-				t.Fatalf("GetAwsConfig() returned error: %s", err)
+				if !tc.expectedError {
+					t.Fatalf("expected no error from GetAwsConfig(), got: %s", err)
+				}
+
+				if !awsbase.IsNoValidCredentialSourcesError(err) {
+					t.Fatalf("expected no valid credential sources error, got: %s", err)
+				}
+
+				t.Logf("received expected error: %s", err)
+				return
 			}
 			sess, acctID, part, err := GetSessionWithAccountIDAndPartition(&awsConfig, tc.config)
 			if err != nil {
