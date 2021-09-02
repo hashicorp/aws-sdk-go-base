@@ -1179,7 +1179,6 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			ts := awsmocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
 			defer ts.Close()
-
 			tc.config.StsEndpoint = ts.URL
 
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
