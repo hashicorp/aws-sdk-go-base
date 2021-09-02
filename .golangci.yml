@@ -8,6 +8,7 @@ linters:
     - deadcode
     - dogsled
     - errcheck
+    - errname
     - exportloopref
     - goconst
     - gofmt
