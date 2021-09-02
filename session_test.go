@@ -72,7 +72,6 @@ func TestGetSession(t *testing.T) {
 		EnvironmentVariables       map[string]string
 		ExpectedCredentialsValue   credentials.Value
 		ExpectedRegion             string
-		ExpectedUserAgent          string
 		ExpectedError              func(err error) bool
 		MockStsEndpoints           []*MockEndpoint
 		SharedConfigurationFile    string
@@ -812,45 +811,6 @@ source_profile = SourceSharedCredentials
 			},
 			ExpectedRegion: "us-east-1",
 		},
-		{
-			Config: &Config{
-				AccessKey: MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: MockStaticSecretKey,
-			},
-			Description:              "standard User-Agent",
-			ExpectedCredentialsValue: MockStaticCredentials,
-			ExpectedRegion:           "us-east-1",
-			ExpectedUserAgent:        awsSdkGoUserAgent(),
-			MockStsEndpoints: []*MockEndpoint{
-				MockStsGetCallerIdentityValidEndpoint,
-			},
-		},
-		{
-			Config: &Config{
-				AccessKey: MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: MockStaticSecretKey,
-				UserAgentProducts: []*UserAgentProduct{
-					{
-						Name:    "first",
-						Version: "1.0",
-					},
-					{
-						Name:    "second",
-						Version: "1.2.3",
-						Extra:   []string{"+https://www.example.com/"},
-					},
-				},
-			},
-			Description:              "customized User-Agent",
-			ExpectedCredentialsValue: MockStaticCredentials,
-			ExpectedRegion:           "us-east-1",
-			ExpectedUserAgent:        "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent(),
-			MockStsEndpoints: []*MockEndpoint{
-				MockStsGetCallerIdentityValidEndpoint,
-			},
-		},
 	}
 
 	for _, testCase := range testCases {
@@ -975,23 +935,137 @@ source_profile = SourceSharedCredentials
 			if expected, actual := testCase.ExpectedRegion, aws.StringValue(actualSession.Config.Region); expected != actual {
 				t.Fatalf("expected region (%s), got: %s", expected, actual)
 			}
+		})
+	}
+}
 
-			if testCase.ExpectedUserAgent != "" {
-				clientInfo := metadata.ClientInfo{
-					Endpoint:    "http://endpoint",
-					SigningName: "",
-				}
-				conn := client.New(*actualSession.Config, clientInfo, actualSession.Handlers)
+func TestUserAgentProducts(t *testing.T) {
+	testCases := []struct {
+		Config               *Config
+		Description          string
+		EnvironmentVariables map[string]string
+		ExpectedUserAgent    string
+		MockStsEndpoints     []*MockEndpoint
+	}{
+		{
+			Config: &Config{
+				AccessKey: MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: MockStaticSecretKey,
+			},
+			Description:       "standard User-Agent",
+			ExpectedUserAgent: awsSdkGoUserAgent(),
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey: MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: MockStaticSecretKey,
+			},
+			Description: "customized User-Agent TF_APPEND_USER_AGENT",
+			EnvironmentVariables: map[string]string{
+				AppendUserAgentEnvVar: "Last",
+			},
+			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey: MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: MockStaticSecretKey,
+				UserAgentProducts: []*UserAgentProduct{
+					{
+						Name:    "first",
+						Version: "1.0",
+					},
+					{
+						Name:    "second",
+						Version: "1.2.3",
+						Extra:   []string{"+https://www.example.com/"},
+					},
+				},
+			},
+			Description:       "customized User-Agent",
+			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent(),
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey: MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: MockStaticSecretKey,
+				UserAgentProducts: []*UserAgentProduct{
+					{
+						Name:    "first",
+						Version: "1.0",
+					},
+					{
+						Name:    "second",
+						Version: "1.2.3",
+						Extra:   []string{"+https://www.example.com/"},
+					},
+				},
+			},
+			Description: "customized User-Agent Products and TF_APPEND_USER_AGENT",
+			EnvironmentVariables: map[string]string{
+				AppendUserAgentEnvVar: "Last",
+			},
+			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent() + " Last",
+			MockStsEndpoints: []*MockEndpoint{
+				MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+	}
 
-				req := conn.NewRequest(&request.Operation{Name: "Operation"}, nil, nil)
+	for _, testCase := range testCases {
+		testCase := testCase
 
-				if err := req.Build(); err != nil {
-					t.Fatalf("expect no Request.Build() error, got %s", err)
-				}
+		t.Run(testCase.Description, func(t *testing.T) {
+			oldEnv := initSessionTestEnv()
+			defer PopEnv(oldEnv)
 
-				if e, a := testCase.ExpectedUserAgent, req.HTTPRequest.Header.Get("User-Agent"); e != a {
-					t.Errorf("expected User-Agent (%s), got: %s", e, a)
-				}
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			closeSts, mockStsSession, err := GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			defer closeSts()
+
+			if err != nil {
+				t.Fatalf("unexpected error creating mock STS server: %s", err)
+			}
+
+			if mockStsSession != nil && mockStsSession.Config != nil {
+				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
+			}
+
+			actualSession, err := GetSession(testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
+			}
+
+			clientInfo := metadata.ClientInfo{
+				Endpoint:    "http://endpoint",
+				SigningName: "",
+			}
+			conn := client.New(*actualSession.Config, clientInfo, actualSession.Handlers)
+
+			req := conn.NewRequest(&request.Operation{Name: "Operation"}, nil, nil)
+
+			if err := req.Build(); err != nil {
+				t.Fatalf("expect no Request.Build() error, got %s", err)
+			}
+
+			if e, a := testCase.ExpectedUserAgent, req.HTTPRequest.Header.Get("User-Agent"); e != a {
+				t.Errorf("expected User-Agent %q, got: %q", e, a)
 			}
 		})
 	}
