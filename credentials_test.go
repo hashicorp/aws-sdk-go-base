@@ -50,10 +50,7 @@ func TestAWSGetCredentials_static(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds, err := credentialsProvider(&cfg)
-		if err != nil {
-			t.Fatalf("Error gettings creds: %s", err)
-		}
+		creds := credentialsProvider(&cfg)
 
 		validateCredentials(creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
 	}
@@ -128,10 +125,7 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds, err := credentialsProvider(&cfg)
-		if err != nil {
-			t.Fatalf("Error gettings creds: %s", err)
-		}
+		creds := credentialsProvider(&cfg)
 		if creds == nil {
 			t.Fatal("Expected a static creds provider to be returned")
 		}

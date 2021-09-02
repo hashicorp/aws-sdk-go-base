@@ -30,10 +30,7 @@ const (
 )
 
 func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
-	credentialsProvider, err := credentialsProvider(c)
-	if err != nil {
-		return aws.Config{}, err
-	}
+	credentialsProvider := credentialsProvider(c)
 
 	var logMode aws.ClientLogMode
 	var logger logging.Logger
