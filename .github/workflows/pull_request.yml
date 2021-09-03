@@ -88,8 +88,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          fetch-depth: 0
 
       - name: semgrep
         uses: returntocorp/semgrep-action@v1
+        env:
+          REWRITE_RULE_IDS: 0
