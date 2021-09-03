@@ -1,7 +1,6 @@
 default: test lint
 
 fmt:
-	@echo "==> Fixing source code with gofmt..."
 	gofmt -s -w ./
 
 lint: golangci-lint importlint
@@ -18,5 +17,8 @@ test:
 tools:
 	cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 	cd tools && go install github.com/pavius/impi/cmd/impi
+
+semgrep:
+	@docker run --rm --volume "${PWD}:/src" returntocorp/semgrep --config .semgrep
 
 .PHONY: lint test tools

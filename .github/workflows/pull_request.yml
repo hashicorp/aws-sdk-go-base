@@ -83,3 +83,11 @@ jobs:
       - run: cd tools && go install github.com/pavius/impi/cmd/impi
 
       - run: impi --local . --scheme stdThirdPartyLocal ./...
+
+  semgrep:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: semgrep
+        uses: returntocorp/semgrep-action@v1
