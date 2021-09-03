@@ -26,7 +26,6 @@ func PopEnv(env []string) {
 	os.Clearenv()
 
 	for _, e := range env {
-		// nolint: gomnd
 		p := strings.SplitN(e, "=", 2)
 		k, v := p[0], ""
 		if len(p) > 1 {
