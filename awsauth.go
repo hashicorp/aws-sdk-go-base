@@ -69,7 +69,7 @@ func getAccountIDAndPartitionFromEC2Metadata(ctx context.Context) (string, strin
 
 // getAccountIDAndPartitionFromIAMGetUser gets the account ID and associated
 // partition from IAM.
-func getAccountIDAndPartitionFromIAMGetUser(ctx context.Context, iamClient *iam.Client) (string, string, error) {
+func getAccountIDAndPartitionFromIAMGetUser(ctx context.Context, iamClient iam.GetUserAPIClient) (string, string, error) {
 	log.Println("[DEBUG] Trying to get account information via iam:GetUser")
 
 	output, err := iamClient.GetUser(ctx, &iam.GetUserInput{})
@@ -100,7 +100,7 @@ func getAccountIDAndPartitionFromIAMGetUser(ctx context.Context, iamClient *iam.
 
 // getAccountIDAndPartitionFromIAMListRoles gets the account ID and associated
 // partition from listing IAM roles.
-func getAccountIDAndPartitionFromIAMListRoles(ctx context.Context, iamClient *iam.Client) (string, string, error) {
+func getAccountIDAndPartitionFromIAMListRoles(ctx context.Context, iamClient iam.ListRolesAPIClient) (string, string, error) {
 	log.Println("[DEBUG] Trying to get account information via iam:ListRoles")
 
 	output, err := iamClient.ListRoles(ctx, &iam.ListRolesInput{
