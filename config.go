@@ -22,7 +22,6 @@ type Config struct {
 	SecretKey                   string
 	SkipCredsValidation         bool
 	SkipMetadataApiCheck        bool
-	SkipRequestingAccountId     bool
 	StsEndpoint                 string
 	Token                       string
 	UserAgentProducts           []*UserAgentProduct

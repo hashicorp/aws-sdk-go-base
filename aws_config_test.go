@@ -1111,12 +1111,13 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	defer awsmocks.PopEnv(oldEnv)
 
 	testCases := []struct {
-		desc              string
-		config            *Config
-		expectedAcctID    string
-		expectedPartition string
-		expectError       bool
-		mockStsEndpoints  []*awsmocks.MockEndpoint
+		desc                    string
+		config                  *Config
+		skipRequestingAccountId bool
+		expectedAcctID          string
+		expectedPartition       string
+		expectError             bool
+		mockStsEndpoints        []*awsmocks.MockEndpoint
 	}{
 		{
 			"StandardProvider_Config",
@@ -1124,6 +1125,7 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 				AccessKey: "MockAccessKey",
 				SecretKey: "MockSecretKey",
 				Region:    "us-west-2"},
+			false,
 			"222222222222", "aws", false,
 			[]*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
@@ -1136,6 +1138,7 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 				SecretKey:           "MockSecretKey",
 				Region:              "us-west-2",
 				SkipCredsValidation: true},
+			false,
 			"222222222222", "aws", false,
 			[]*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
@@ -1144,11 +1147,11 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 		{
 			"SkipRequestingAccountId_Config",
 			&Config{
-				AccessKey:               "MockAccessKey",
-				SecretKey:               "MockSecretKey",
-				Region:                  "us-west-2",
-				SkipCredsValidation:     true,
-				SkipRequestingAccountId: true},
+				AccessKey:           "MockAccessKey",
+				SecretKey:           "MockSecretKey",
+				Region:              "us-west-2",
+				SkipCredsValidation: true},
+			true,
 			"", "aws", false, []*awsmocks.MockEndpoint{},
 		},
 		{
@@ -1159,18 +1162,11 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 				Region:                "us-west-2",
 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName},
+			false,
 			"555555555555", "aws", false, []*awsmocks.MockEndpoint{
 				awsmocks.MockStsAssumeRoleValidEndpoint,
 				awsmocks.MockStsGetCallerIdentityValidAssumedRoleEndpoint,
 			},
-		},
-		{
-			"NoCredentialProviders_Config",
-			&Config{
-				AccessKey: "",
-				SecretKey: "",
-				Region:    "us-west-2"},
-			"", "", true, []*awsmocks.MockEndpoint{},
 		},
 	}
 
@@ -1182,7 +1178,11 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 			defer ts.Close()
 			tc.config.StsEndpoint = ts.URL
 
-			_, acctID, part, err := GetAwsConfigWithAccountIDAndPartition(context.Background(), tc.config)
+			awsConfig, err := GetAwsConfig(context.Background(), tc.config)
+			if err != nil {
+				t.Fatalf("expected no error from GetAwsConfig(), got: %s", err)
+			}
+			acctID, part, err := GetAwsAccountIDAndPartition(context.Background(), awsConfig, tc.config.SkipCredsValidation, tc.skipRequestingAccountId)
 			if err != nil {
 				if !tc.expectError {
 					t.Fatalf("expected no error, got: %s", err)

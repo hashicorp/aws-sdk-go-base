@@ -157,23 +157,18 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 	return cfg, err
 }
 
-func GetAwsConfigWithAccountIDAndPartition(ctx context.Context, c *Config) (aws.Config, string, string, error) {
-	awsConfig, err := GetAwsConfig(ctx, c)
-	if err != nil {
-		return awsConfig, "", "", err
-	}
-
-	if !c.SkipCredsValidation {
+func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, skipCredsValidation, skipRequestingAccountId bool) (string, string, error) {
+	if !skipCredsValidation {
 		stsClient := sts.NewFromConfig(awsConfig)
 		accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient)
 		if err != nil {
-			return awsConfig, "", "", fmt.Errorf("error validating provider credentials: %w", err)
+			return "", "", fmt.Errorf("error validating provider credentials: %w", err)
 		}
 
-		return awsConfig, accountID, partition, nil
+		return accountID, partition, nil
 	}
 
-	if !c.SkipRequestingAccountId {
+	if !skipRequestingAccountId {
 		credentialsProviderName := ""
 		if credentialsValue, err := awsConfig.Credentials.Retrieve(context.Background()); err == nil {
 			credentialsProviderName = credentialsValue.Source
@@ -184,14 +179,14 @@ func GetAwsConfigWithAccountIDAndPartition(ctx context.Context, c *Config) (aws.
 		accountID, partition, err := getAccountIDAndPartition(ctx, iamClient, stsClient, credentialsProviderName)
 
 		if err == nil {
-			return awsConfig, accountID, partition, nil
+			return accountID, partition, nil
 		}
 
-		return awsConfig, "", "", fmt.Errorf(
+		return "", "", fmt.Errorf(
 			"AWS account ID not previously found and failed retrieving via all available methods. "+
 				"See https://www.terraform.io/docs/providers/aws/index.html#skip_requesting_account_id for workaround and implications. "+
 				"Errors: %w", err)
 	}
 
-	return awsConfig, "", endpoints.PartitionForRegion(awsConfig.Region), nil
+	return "", endpoints.PartitionForRegion(awsConfig.Region), nil
 }
