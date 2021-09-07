@@ -1,12 +1,13 @@
-package awsv1shim
+package awsbase
 
 import (
+	"context"
 	"net/http"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/service/iam"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
 )
 
@@ -116,22 +117,16 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			awsTs := awsmocks.AwsMetadataApiMock(testCase.EC2MetadataEndpoints)
 			defer awsTs()
 
-			closeIam, iamSess, err := awsmocks.GetMockedAwsApiSessionV1("IAM", testCase.IAMEndpoints)
+			closeIam, iamConfig := awsmocks.GetMockedAwsApiSessionV2("IAM", testCase.IAMEndpoints)
 			defer closeIam()
-			if err != nil {
-				t.Fatal(err)
-			}
 
-			closeSts, stsSess, err := awsmocks.GetMockedAwsApiSessionV1("STS", testCase.STSEndpoints)
+			closeSts, stsConfig := awsmocks.GetMockedAwsApiSessionV2("STS", testCase.STSEndpoints)
 			defer closeSts()
-			if err != nil {
-				t.Fatal(err)
-			}
 
-			iamConn := iam.New(iamSess)
-			stsConn := sts.New(stsSess)
+			iamConn := iam.NewFromConfig(iamConfig)
+			stsConn := sts.NewFromConfig(stsConfig)
 
-			accountID, partition, err := getAccountIDAndPartition(iamConn, stsConn, testCase.AuthProviderName)
+			accountID, partition, err := getAccountIDAndPartition(context.Background(), iamConn, stsConn, testCase.AuthProviderName)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -152,11 +147,11 @@ func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 	t.Run("EC2 metadata success", func(t *testing.T) {
 		resetEnv := awsmocks.UnsetEnv(t)
 		defer resetEnv()
-		// capture the test server's close method, to call after the test returns
+
 		awsTs := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
 		defer awsTs()
 
-		id, partition, err := getAccountIDAndPartitionFromEC2Metadata()
+		id, partition, err := getAccountIDAndPartitionFromEC2Metadata(context.Background())
 		if err != nil {
 			t.Fatalf("Getting account ID from EC2 metadata API failed: %s", err)
 		}
@@ -215,15 +210,12 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, iamSess, err := awsmocks.GetMockedAwsApiSessionV1("IAM", testCase.MockEndpoints)
+			closeIam, config := awsmocks.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
 			defer closeIam()
-			if err != nil {
-				t.Fatal(err)
-			}
 
-			iamConn := iam.New(iamSess)
+			iamClient := iam.NewFromConfig(config)
 
-			accountID, partition, err := getAccountIDAndPartitionFromIAMGetUser(iamConn)
+			accountID, partition, err := getAccountIDAndPartitionFromIAMGetUser(context.Background(), iamClient)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -275,15 +267,12 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, iamSess, err := awsmocks.GetMockedAwsApiSessionV1("IAM", testCase.MockEndpoints)
+			closeIam, config := awsmocks.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
 			defer closeIam()
-			if err != nil {
-				t.Fatal(err)
-			}
 
-			iamConn := iam.New(iamSess)
+			iamClient := iam.NewFromConfig(config)
 
-			accountID, partition, err := getAccountIDAndPartitionFromIAMListRoles(iamConn)
+			accountID, partition, err := getAccountIDAndPartitionFromIAMListRoles(context.Background(), iamClient)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -329,15 +318,12 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeSts, stsSess, err := awsmocks.GetMockedAwsApiSessionV1("STS", testCase.MockEndpoints)
+			closeSts, config := awsmocks.GetMockedAwsApiSessionV2("STS", testCase.MockEndpoints)
 			defer closeSts()
-			if err != nil {
-				t.Fatal(err)
-			}
 
-			stsConn := sts.New(stsSess)
+			stsClient := sts.NewFromConfig(config)
 
-			accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(stsConn)
+			accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(context.Background(), stsClient)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}

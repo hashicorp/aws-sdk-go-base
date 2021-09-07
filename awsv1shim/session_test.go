@@ -862,7 +862,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
 			}
 
-			closeSts, mockStsSession, err := awsmocks.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			closeSts, mockStsSession, err := awsmocks.GetMockedAwsApiSessionV1("STS", testCase.MockStsEndpoints)
 			defer closeSts()
 
 			if err != nil {
@@ -1062,7 +1062,7 @@ func TestUserAgentProducts(t *testing.T) {
 				os.Setenv(k, v)
 			}
 
-			closeSts, mockStsSession, err := awsmocks.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			closeSts, mockStsSession, err := awsmocks.GetMockedAwsApiSessionV1("STS", testCase.MockStsEndpoints)
 			defer closeSts()
 
 			if err != nil {

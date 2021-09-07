@@ -14,10 +14,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
+	"github.com/hashicorp/aws-sdk-go-base/internal/endpoints"
 	"github.com/hashicorp/go-cleanhttp"
 )
 
@@ -153,4 +155,43 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 	cfg.Credentials = aws.NewCredentialsCache(appCreds)
 
 	return cfg, err
+}
+
+func GetAwsConfigWithAccountIDAndPartition(ctx context.Context, c *Config) (aws.Config, string, string, error) {
+	awsConfig, err := GetAwsConfig(ctx, c)
+	if err != nil {
+		return awsConfig, "", "", err
+	}
+
+	if !c.SkipCredsValidation {
+		stsClient := sts.NewFromConfig(awsConfig)
+		accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient)
+		if err != nil {
+			return awsConfig, "", "", fmt.Errorf("error validating provider credentials: %w", err)
+		}
+
+		return awsConfig, accountID, partition, nil
+	}
+
+	if !c.SkipRequestingAccountId {
+		credentialsProviderName := ""
+		if credentialsValue, err := awsConfig.Credentials.Retrieve(context.Background()); err == nil {
+			credentialsProviderName = credentialsValue.Source
+		}
+
+		iamClient := iam.NewFromConfig(awsConfig)
+		stsClient := sts.NewFromConfig(awsConfig)
+		accountID, partition, err := getAccountIDAndPartition(ctx, iamClient, stsClient, credentialsProviderName)
+
+		if err == nil {
+			return awsConfig, accountID, partition, nil
+		}
+
+		return awsConfig, "", "", fmt.Errorf(
+			"AWS account ID not previously found and failed retrieving via all available methods. "+
+				"See https://www.terraform.io/docs/providers/aws/index.html#skip_requesting_account_id for workaround and implications. "+
+				"Errors: %w", err)
+	}
+
+	return awsConfig, "", endpoints.PartitionForRegion(awsConfig.Region), nil
 }
