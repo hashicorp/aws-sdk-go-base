@@ -9,10 +9,8 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
 	awsbase "github.com/hashicorp/aws-sdk-go-base"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
@@ -136,58 +134,4 @@ func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error)
 	}
 
 	return sess, nil
-}
-
-// GetSessionWithAccountIDAndPartition attempts to return valid AWS Go SDK session
-// along with account ID and partition information if available
-func GetSessionWithAccountIDAndPartition(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, string, string, error) {
-	sess, err := GetSession(awsC, c)
-
-	if err != nil {
-		return nil, "", "", err
-	}
-
-	if c.AssumeRoleARN != "" {
-		accountID, partition, _ := parseAccountIDAndPartitionFromARN(c.AssumeRoleARN)
-		return sess, accountID, partition, nil
-	}
-
-	iamClient := iam.New(sess)
-	stsClient := sts.New(sess)
-
-	if !c.SkipCredsValidation {
-		accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(stsClient)
-
-		if err != nil {
-			return nil, "", "", fmt.Errorf("error validating provider credentials: %w", err)
-		}
-
-		return sess, accountID, partition, nil
-	}
-
-	if !c.SkipRequestingAccountId {
-		credentialsProviderName := ""
-
-		if credentialsValue, err := awsC.Credentials.Retrieve(context.Background()); err == nil {
-			credentialsProviderName = credentialsValue.Source
-		}
-
-		accountID, partition, err := getAccountIDAndPartition(iamClient, stsClient, credentialsProviderName)
-
-		if err == nil {
-			return sess, accountID, partition, nil
-		}
-
-		return nil, "", "", fmt.Errorf(
-			"AWS account ID not previously found and failed retrieving via all available methods. "+
-				"See https://www.terraform.io/docs/providers/aws/index.html#skip_requesting_account_id for workaround and implications. "+
-				"Errors: %w", err)
-	}
-
-	var partition string
-	if p, ok := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), c.Region); ok {
-		partition = p.ID()
-	}
-
-	return sess, "", partition, nil
 }
