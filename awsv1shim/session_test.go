@@ -908,7 +908,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				}
 
 				// Config does not provide a passthrough for session.Options.SharedConfigFiles
-				testCase.Config.CredsFilename = file.Name()
+				testCase.Config.SharedCredentialsFilename = file.Name()
 			}
 
 			for k, v := range testCase.EnvironmentVariables {

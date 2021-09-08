@@ -862,7 +862,7 @@ source_profile = SourceSharedCredentials
 				}
 
 				// Config does not provide a passthrough for session.Options.SharedConfigFiles
-				testCase.Config.CredsFilename = file.Name()
+				testCase.Config.SharedCredentialsFilename = file.Name()
 				if testCase.ExpectedCredentialsValue.Source == sharedConfigCredentialsProvider {
 					testCase.ExpectedCredentialsValue.Source = fmt.Sprintf("%s: %s", sharedConfigCredentialsProvider, file.Name())
 				}

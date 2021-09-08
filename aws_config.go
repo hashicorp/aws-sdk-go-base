@@ -70,7 +70,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 	cfg, err := config.LoadDefaultConfig(ctx,
 		config.WithCredentialsProvider(credentialsProvider),
 		config.WithRegion(c.Region),
-		config.WithSharedCredentialsFiles([]string{c.CredsFilename}),
+		config.WithSharedCredentialsFiles([]string{c.SharedCredentialsFilename}),
 		config.WithSharedConfigProfile(c.Profile),
 		config.WithEndpointResolver(endpointResolver(c)),
 		config.WithClientLogMode(logMode),

@@ -12,7 +12,6 @@ type Config struct {
 	AssumeRoleTransitiveTagKeys []string
 	CallerDocumentationURL      string
 	CallerName                  string
-	CredsFilename               string
 	DebugLogging                bool
 	IamEndpoint                 string
 	Insecure                    bool
@@ -20,6 +19,7 @@ type Config struct {
 	Profile                     string
 	Region                      string
 	SecretKey                   string
+	SharedCredentialsFilename   string
 	SkipCredsValidation         bool
 	SkipMetadataApiCheck        bool
 	SkipRequestingAccountId     bool
