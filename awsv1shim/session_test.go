@@ -888,8 +888,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
 				}
 
-				// Config does not provide a passthrough for session.Options.SharedConfigFiles
-				os.Setenv("AWS_CONFIG_FILE", file.Name())
+				testCase.Config.SharedConfigFilename = file.Name()
 			}
 
 			if testCase.SharedCredentialsFile != "" {
@@ -907,7 +906,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 					t.Fatalf("unexpected error writing shared credentials file: %s", err)
 				}
 
-				// Config does not provide a passthrough for session.Options.SharedConfigFiles
 				testCase.Config.SharedCredentialsFilename = file.Name()
 			}
 

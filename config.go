@@ -20,6 +20,7 @@ type Config struct {
 	Region                      string
 	SecretKey                   string
 	SharedCredentialsFilename   string
+	SharedConfigFilename        string
 	SkipCredsValidation         bool
 	SkipMetadataApiCheck        bool
 	SkipRequestingAccountId     bool
