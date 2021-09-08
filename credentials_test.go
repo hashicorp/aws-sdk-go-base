@@ -2,8 +2,6 @@ package awsbase
 
 import (
 	"context"
-	"io/ioutil"
-	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -50,10 +48,7 @@ func TestAWSGetCredentials_static(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds, err := credentialsProvider(&cfg)
-		if err != nil {
-			t.Fatalf("Error gettings creds: %s", err)
-		}
+		creds := credentialsProvider(&cfg)
 
 		validateCredentials(creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
 	}
@@ -128,10 +123,7 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds, err := credentialsProvider(&cfg)
-		if err != nil {
-			t.Fatalf("Error gettings creds: %s", err)
-		}
+		creds := credentialsProvider(&cfg)
 		if creds == nil {
 			t.Fatal("Expected a static creds provider to be returned")
 		}
@@ -228,31 +220,31 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 // 	}
 // }
 
-var credentialsFileContentsEnv = `[myprofile]
-aws_access_key_id = accesskey1
-aws_secret_access_key = secretkey1
-`
+// var credentialsFileContentsEnv = `[myprofile]
+// aws_access_key_id = accesskey1
+// aws_secret_access_key = secretkey1
+// `
 
-var credentialsFileContentsParam = `[myprofile]
-aws_access_key_id = accesskey2
-aws_secret_access_key = secretkey2
-`
+// var credentialsFileContentsParam = `[myprofile]
+// aws_access_key_id = accesskey2
+// aws_secret_access_key = secretkey2
+// `
 
-func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
-	file, err := ioutil.TempFile(os.TempDir(), "terraform_aws_cred")
-	if err != nil {
-		t.Fatalf("Error writing temporary credentials file: %s", err)
-	}
-	_, err = file.WriteString(credentialsFileContents)
-	if err != nil {
-		t.Fatalf("Error writing temporary credentials to file: %s", err)
-	}
-	err = file.Close()
-	if err != nil {
-		t.Fatalf("Error closing temporary credentials file: %s", err)
-	}
-	return file.Name()
-}
+// func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
+// 	file, err := ioutil.TempFile(os.TempDir(), "terraform_aws_cred")
+// 	if err != nil {
+// 		t.Fatalf("Error writing temporary credentials file: %s", err)
+// 	}
+// 	_, err = file.WriteString(credentialsFileContents)
+// 	if err != nil {
+// 		t.Fatalf("Error writing temporary credentials to file: %s", err)
+// 	}
+// 	err = file.Close()
+// 	if err != nil {
+// 		t.Fatalf("Error closing temporary credentials file: %s", err)
+// 	}
+// 	return file.Name()
+// }
 
 func validateCredentials(creds aws.CredentialsProvider, accesskey, secretkey, token, source string, t *testing.T) {
 	v, err := creds.Retrieve(context.Background())

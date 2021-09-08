@@ -1,6 +1,6 @@
 package awsv1shim
 
-import (
+import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"context"
 	"fmt"
 	"log"

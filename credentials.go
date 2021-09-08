@@ -9,7 +9,7 @@ import (
 	multierror "github.com/hashicorp/go-multierror"
 )
 
-func credentialsProvider(c *Config) (aws.CredentialsProvider, error) {
+func credentialsProvider(c *Config) aws.CredentialsProvider {
 	var providers []aws.CredentialsProvider
 	if c.AccessKey != "" {
 		providers = append(providers,
@@ -20,7 +20,7 @@ func credentialsProvider(c *Config) (aws.CredentialsProvider, error) {
 			))
 	}
 	if len(providers) == 0 {
-		return nil, nil
+		return nil
 	}
 
 	return aws.CredentialsProviderFunc(func(ctx context.Context) (aws.Credentials, error) {
@@ -34,5 +34,5 @@ func credentialsProvider(c *Config) (aws.CredentialsProvider, error) {
 		}
 
 		return aws.Credentials{}, fmt.Errorf("No valid providers found: %w", errs)
-	}), nil
+	})
 }

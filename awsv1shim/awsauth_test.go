@@ -2,6 +2,7 @@ package awsv1shim
 
 import (
 	"io/ioutil"
+	"net/http"
 	"os"
 	"testing"
 
@@ -32,8 +33,8 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 
 			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_GetUser_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_GetUser_valid, ContentType: "text/xml"},
 				},
 			},
 			ExpectedAccountID: awsmocks.Ec2metadata_iamInfoEndpoint_expectedAccountID,
@@ -45,8 +46,8 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			EC2MetadataEndpoints: awsmocks.Ec2metadata_securityCredentialsEndpoints,
 			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_GetUser_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
 				},
 			},
 			STSEndpoints: []*awsmocks.MockEndpoint{
@@ -59,12 +60,12 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			Description: "iam:ListRoles if iam:GetUser AccessDenied and sts:GetCallerIdentity fails",
 			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_GetUser_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
 				},
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_ListRoles_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_ListRoles_valid, ContentType: "text/xml"},
 				},
 			},
 			STSEndpoints: []*awsmocks.MockEndpoint{
@@ -77,12 +78,12 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			Description: "iam:ListRoles if iam:GetUser ValidationError and sts:GetCallerIdentity fails",
 			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{400, awsmocks.IamResponse_GetUser_federatedFailure, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusBadRequest, Body: awsmocks.IamResponse_GetUser_federatedFailure, ContentType: "text/xml"},
 				},
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_ListRoles_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_ListRoles_valid, ContentType: "text/xml"},
 				},
 			},
 			STSEndpoints: []*awsmocks.MockEndpoint{
@@ -95,12 +96,12 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			Description: "Error when all endpoints fail",
 			IAMEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{400, awsmocks.IamResponse_GetUser_federatedFailure, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusBadRequest, Body: awsmocks.IamResponse_GetUser_federatedFailure, ContentType: "text/xml"},
 				},
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_ListRoles_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_ListRoles_unauthorized, ContentType: "text/xml"},
 				},
 			},
 			STSEndpoints: []*awsmocks.MockEndpoint{
@@ -186,8 +187,8 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 			Description: "Ignore iam:GetUser failure with federated user",
 			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{400, awsmocks.IamResponse_GetUser_federatedFailure, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusBadRequest, Body: awsmocks.IamResponse_GetUser_federatedFailure, ContentType: "text/xml"},
 				},
 			},
 			ErrCount: 0,
@@ -196,8 +197,8 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 			Description: "Ignore iam:GetUser failure with unauthorized user",
 			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_GetUser_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
 				},
 			},
 			ErrCount: 0,
@@ -206,8 +207,8 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 			Description: "iam:GetUser success",
 			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_GetUser_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_GetUser_valid, ContentType: "text/xml"},
 				},
 			},
 			ExpectedAccountID: awsmocks.IamResponse_GetUser_valid_expectedAccountID,
@@ -256,8 +257,8 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 			Description: "iam:ListRoles unauthorized",
 			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{403, awsmocks.IamResponse_ListRoles_unauthorized, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_ListRoles_unauthorized, ContentType: "text/xml"},
 				},
 			},
 			ErrCount: 1,
@@ -266,8 +267,8 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 			Description: "iam:ListRoles success",
 			MockEndpoints: []*awsmocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{"POST", "/", "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{200, awsmocks.IamResponse_ListRoles_valid, "text/xml"},
+					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_ListRoles_valid, ContentType: "text/xml"},
 				},
 			},
 			ExpectedAccountID: awsmocks.IamResponse_ListRoles_valid_expectedAccountID,

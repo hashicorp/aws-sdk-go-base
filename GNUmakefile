@@ -1,17 +1,24 @@
 default: test lint
 
 fmt:
-	@echo "==> Fixing source code with gofmt..."
 	gofmt -s -w ./
 
-lint:
-	@echo "==> Checking source code against linters..."
+lint: golangci-lint importlint
+
+golangci-lint:
 	@golangci-lint run ./...
+
+importlint:
+	@impi --local . --scheme stdThirdPartyLocal ./...
 
 test:
 	go test -timeout=30s -parallel=4 ./...
 
 tools:
-	GO111MODULE=off go get -u github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd tools && go install github.com/pavius/impi/cmd/impi
+
+semgrep:
+	@docker run --rm --volume "${PWD}:/src" returntocorp/semgrep --config .semgrep --no-rewrite-rule-ids
 
 .PHONY: lint test tools

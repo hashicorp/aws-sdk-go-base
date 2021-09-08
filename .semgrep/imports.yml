@@ -1,0 +1,31 @@
+rules:
+  - id: no-sdkv1-imports
+    languages: [go]
+    message: The package `awsbase` should not include any references to the AWS SDK for Go v1
+    paths:
+      exclude:
+        - awsv1shim
+        - tfawserr
+        - awsmocks
+    patterns:
+      - pattern: |
+          import ("$X")
+      - metavariable-regex:
+          metavariable: "$X"
+          regex: '^"github.com/aws/aws-sdk-go/.+"$'
+    severity: ERROR
+
+  - id: no-sdkv2-imports-in-awsv1shim
+    languages: [go]
+    message: The package `awsv1shim` should not include references to the AWS SDK for Go v2
+    paths:
+      include:
+        - awsv1shim
+        - tfawserr
+    patterns:
+      - pattern: |
+          import ("$X")
+      - metavariable-regex:
+          metavariable: "$X"
+          regex: '^"github.com/aws/aws-sdk-go-v2/.+"$'
+    severity: ERROR
