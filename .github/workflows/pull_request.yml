@@ -2,7 +2,7 @@ name: Pull Request Checks
 on: [pull_request]
 
 env:
-  GO_VERSION: "1.14"
+  GO_VERSION: "1.16"
 
 jobs:
   go_mod:
@@ -10,30 +10,53 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
+
       - name: go mod
         run: |
           echo "==> Checking source code with go mod tidy..."
           go mod tidy
           git diff --exit-code -- go.mod go.sum || \
             (echo; echo "Unexpected difference in go.mod/go.sum files. Run 'go mod tidy' command or revert any go.mod/go.sum changes and commit."; exit 1)
+
   go_test:
     name: go test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+
       - uses: actions/setup-go@v2
         with:
           go-version: ${{ env.GO_VERSION }}
+
       - run: go test ./...
+
   golangci-lint:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v2
-    - uses: actions/setup-go@v2
-      with:
-        go-version: ${{ env.GO_VERSION }}
-    - run: go get github.com/golangci/golangci-lint/cmd/golangci-lint@v1.27.0
-    - run: golangci-lint run ./...
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-go@v2
+        with:
+          # Some of the linters require Go v1.16 to build
+          go-version: "1.16"
+
+      - run: cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
+
+      - run: golangci-lint run ./...
+
+  import-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - run: cd tools && go install github.com/pavius/impi/cmd/impi
+
+      - run: impi --local . --scheme stdThirdPartyLocal ./...

@@ -8,14 +8,14 @@ linters:
     - deadcode
     - dogsled
     - errcheck
+    - errname
+    - exportloopref
     - goconst
     - gofmt
     - gomnd
     - gosimple
     - ineffassign
-    - interfacer
     - misspell
-    - scopelint
     - staticcheck
     - structcheck
     - unconvert
