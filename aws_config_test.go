@@ -717,10 +717,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			MockStsEndpoints: []*awsmocks.MockEndpoint{
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
 			},
-			SharedConfigurationFile: fmt.Sprintf(`
+			SharedConfigurationFile: `
 [default]
 region = us-east-1
-`),
+`,
 		},
 		{
 			Config: &Config{
