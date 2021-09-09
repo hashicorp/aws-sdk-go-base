@@ -708,6 +708,22 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		{
 			Config: &Config{
+				AccessKey: awsmocks.MockStaticAccessKey,
+				SecretKey: awsmocks.MockStaticSecretKey,
+			},
+			Description:              "retrieve region from shared configuration file",
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV2,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+region = us-east-1
+`),
+		},
+		{
+			Config: &Config{
 				AccessKey:             awsmocks.MockStaticAccessKey,
 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
