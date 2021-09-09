@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	ec2rolecredsv2 "github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	endpointcredsv2 "github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
+	stscredsv2 "github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws"
 	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
@@ -146,6 +147,7 @@ var (
 		Source:          ec2rolecredsv2.ProviderName,
 		SecretAccessKey: MockEc2MetadataSecretKey,
 		SessionToken:    MockEc2MetadataSessionToken,
+		CanExpire:       true,
 	}
 
 	MockEcsCredentialsCredentialsV1 = awsCredentials.Value{
@@ -173,11 +175,17 @@ var (
 		Source:          config.CredentialsSourceName,
 	}
 
-	MockEnvCredentialsWithSessionToken = awsCredentials.Value{
+	MockEnvCredentialsWithSessionTokenV1 = awsCredentials.Value{
 		AccessKeyID:     MockEnvAccessKey,
 		ProviderName:    awsCredentials.EnvProviderName,
 		SecretAccessKey: MockEnvSecretKey,
 		SessionToken:    MockEnvSessionToken,
+	}
+	MockEnvCredentialsWithSessionTokenV2 = awsv2.Credentials{
+		AccessKeyID:     MockEnvAccessKey,
+		SecretAccessKey: MockEnvSecretKey,
+		SessionToken:    MockEnvSessionToken,
+		Source:          config.CredentialsSourceName,
 	}
 
 	MockStaticCredentialsV1 = awsCredentials.Value{
@@ -201,7 +209,7 @@ var (
 		AccessKeyID:     MockStsAssumeRoleAccessKey,
 		SecretAccessKey: MockStsAssumeRoleSecretKey,
 		SessionToken:    MockStsAssumeRoleSessionToken,
-		Source:          stscreds.ProviderName,
+		Source:          stscredsv2.ProviderName,
 		CanExpire:       true,
 	}
 	MockStsAssumeRoleInvalidEndpointInvalidClientTokenId = &MockEndpoint{
@@ -260,11 +268,18 @@ var (
 		},
 	}
 
-	MockStsAssumeRoleWithWebIdentityCredentials = awsCredentials.Value{
+	MockStsAssumeRoleWithWebIdentityCredentialsV1 = awsCredentials.Value{
 		AccessKeyID:     MockStsAssumeRoleWithWebIdentityAccessKey,
 		ProviderName:    stscreds.WebIdentityProviderName,
 		SecretAccessKey: MockStsAssumeRoleWithWebIdentitySecretKey,
 		SessionToken:    MockStsAssumeRoleWithWebIdentitySessionToken,
+	}
+	MockStsAssumeRoleWithWebIdentityCredentialsV2 = awsv2.Credentials{
+		AccessKeyID:     MockStsAssumeRoleWithWebIdentityAccessKey,
+		SecretAccessKey: MockStsAssumeRoleWithWebIdentitySecretKey,
+		SessionToken:    MockStsAssumeRoleWithWebIdentitySessionToken,
+		Source:          stscredsv2.WebIdentityProviderName,
+		CanExpire:       true,
 	}
 
 	MockStsGetCallerIdentityInvalidEndpointAccessDenied = &MockEndpoint{
@@ -368,7 +383,7 @@ func AwsMetadataApiMock(responses []*MetadataResponse) func() {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 
-	os.Setenv("AWS_METADATA_URL", ts.URL+"/latest")
+	os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", ts.URL)
 	return ts.Close
 }
 

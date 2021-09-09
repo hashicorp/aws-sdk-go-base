@@ -52,12 +52,12 @@ func (e NoValidCredentialSourcesError) Error() string {
 		return fmt.Sprintf("no valid credential sources found: %s", e.Err)
 	}
 
-	return fmt.Sprintf(`no valid credential sources for %s found.
+	return fmt.Sprintf(`no valid credential sources for %[1]s found.
 
-Please see %s
+Please see %[2]s
 for more information about providing credentials.
 
-Error: %s
+Error: %[3]s
 `, e.Config.CallerName, e.Config.CallerDocumentationURL, e.Err)
 }
 

@@ -47,20 +47,24 @@ func TestGetSessionOptions(t *testing.T) {
 
 		t.Run(tc.desc, func(t *testing.T) {
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
-			if err != nil {
-				t.Fatalf("GetAwsConfig(c) resulted in an error %s", err)
+			if err != nil && tc.expectError == false {
+				t.Fatalf("GetAwsConfig() resulted in an error %s", err)
 			}
+			if err == nil && tc.expectError == true {
+				t.Fatal("Expected error not returned by GetAwsConfig()")
+			}
+
 			opts, err := getSessionOptions(&awsConfig, tc.config)
 			if err != nil && tc.expectError == false {
-				t.Fatalf("getSessionOptions(c) resulted in an error %s", err)
+				t.Fatalf("getSessionOptions() resulted in an error %s", err)
 			}
 
 			if opts == nil && tc.expectError == false {
-				t.Error("getSessionOptions(...) resulted in a nil set of options")
+				t.Error("getSessionOptions() resulted in a nil set of options")
 			}
 
 			if err == nil && tc.expectError == true {
-				t.Fatal("Expected error not found")
+				t.Fatal("Expected error not returned by getSessionOptions()")
 			}
 		})
 
@@ -83,13 +87,13 @@ func TestGetSession(t *testing.T) {
 		SharedConfigurationFile    string
 		SharedCredentialsFile      string
 	}{
-		// {
-		// 	Config:      &awsbase.Config{},
-		// 	Description: "no configuration or credentials",
-		// 	ExpectedError: func(err error) bool {
-		// 		return awsbase.IsNoValidCredentialSourcesError(err)
-		// 	},
-		// },
+		{
+			Config:      &awsbase.Config{},
+			Description: "no configuration or credentials",
+			ExpectedError: func(err error) bool {
+				return awsbase.IsNoValidCredentialSourcesError(err)
+			},
+		},
 		{
 			Config: &awsbase.Config{
 				AccessKey: awsmocks.MockStaticAccessKey,
@@ -251,26 +255,26 @@ func TestGetSession(t *testing.T) {
 		aws_secret_access_key = ProfileSharedCredentialsSecretKey
 		`,
 		},
-		// 		{
-		// 			Config: &awsbase.Config{
-		// 				Profile: "SharedConfigurationProfile",
-		// 				Region:  "us-east-1",
-		// 			},
-		// 			Description:              "config Profile shared configuration credential_source Ec2InstanceMetadata",
-		// 			EnableEc2MetadataServer:  true,
-		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
-		// 			ExpectedRegion:           "us-east-1",
-		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
-		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 			},
-		// 			SharedConfigurationFile: fmt.Sprintf(`
-		// [profile SharedConfigurationProfile]
-		// credential_source = Ec2InstanceMetadata
-		// role_arn = %[1]s
-		// role_session_name = %[2]s
-		// `, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
-		// 		},
+		{
+			Config: &awsbase.Config{
+				Profile: "SharedConfigurationProfile",
+				Region:  "us-east-1",
+			},
+			Description:              "config Profile shared configuration credential_source Ec2InstanceMetadata",
+			EnableEc2MetadataServer:  true,
+			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsAssumeRoleValidEndpoint,
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+			SharedConfigurationFile: fmt.Sprintf(`
+[profile SharedConfigurationProfile]
+credential_source = Ec2InstanceMetadata
+role_arn = %[1]s
+role_session_name = %[2]s
+`, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
+		},
 		// 		{
 		// 			Config: &awsbase.Config{
 		// 				Profile: "SharedConfigurationProfile",
@@ -378,28 +382,28 @@ aws_access_key_id = ProfileSharedCredentialsAccessKey
 aws_secret_access_key = ProfileSharedCredentialsSecretKey
 `,
 		},
-		// 		{
-		// 			Config: &awsbase.Config{
-		// 				Region: "us-east-1",
-		// 			},
-		// 			Description:             "environment AWS_PROFILE shared configuration credential_source Ec2InstanceMetadata",
-		// 			EnableEc2MetadataServer: true,
-		// 			EnvironmentVariables: map[string]string{
-		// 				"AWS_PROFILE": "SharedConfigurationProfile",
-		// 			},
-		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
-		// 			ExpectedRegion:           "us-east-1",
-		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
-		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 			},
-		// 			SharedConfigurationFile: fmt.Sprintf(`
-		// [profile SharedConfigurationProfile]
-		// credential_source = Ec2InstanceMetadata
-		// role_arn = %[1]s
-		// role_session_name = %[2]s
-		// `, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
-		// 		},
+		{
+			Config: &awsbase.Config{
+				Region: "us-east-1",
+			},
+			Description:             "environment AWS_PROFILE shared configuration credential_source Ec2InstanceMetadata",
+			EnableEc2MetadataServer: true,
+			EnvironmentVariables: map[string]string{
+				"AWS_PROFILE": "SharedConfigurationProfile",
+			},
+			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsAssumeRoleValidEndpoint,
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+			SharedConfigurationFile: fmt.Sprintf(`
+[profile SharedConfigurationProfile]
+credential_source = Ec2InstanceMetadata
+role_arn = %[1]s
+role_session_name = %[2]s
+`, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
+		},
 		// 		{
 		// 			Config: &awsbase.Config{
 		// 				Region: "us-east-1",
@@ -449,22 +453,22 @@ aws_access_key_id = SharedConfigurationSourceAccessKey
 aws_secret_access_key = SharedConfigurationSourceSecretKey
 `, awsmocks.MockStsAssumeRoleArn, awsmocks.MockStsAssumeRoleSessionName),
 		},
-		// 		{
-		// 			Config: &awsbase.Config{
-		// 				Region: "us-east-1",
-		// 			},
-		// 			Description: "environment AWS_SESSION_TOKEN",
-		// 			EnvironmentVariables: map[string]string{
-		// 				"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
-		// 				"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
-		// 				"AWS_SESSION_TOKEN":     awsmocks.MockEnvSessionToken,
-		// 			},
-		// 			ExpectedCredentialsValue: awsmocks.MockEnvCredentialsWithSessionToken,
-		// 			ExpectedRegion:           "us-east-1",
-		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 			},
-		// 		},
+		{
+			Config: &awsbase.Config{
+				Region: "us-east-1",
+			},
+			Description: "environment AWS_SESSION_TOKEN",
+			EnvironmentVariables: map[string]string{
+				"AWS_ACCESS_KEY_ID":     awsmocks.MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": awsmocks.MockEnvSecretKey,
+				"AWS_SESSION_TOKEN":     awsmocks.MockEnvSessionToken,
+			},
+			ExpectedCredentialsValue: awsmocks.MockEnvCredentialsWithSessionTokenV1,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
 		{
 			Config: &awsbase.Config{
 				Region: "us-east-1",
@@ -504,47 +508,47 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		`,
 		},
-		// 		{
-		// 			Config: &awsbase.Config{
-		// 				Region: "us-east-1",
-		// 			},
-		// 			Description:              "web identity token access key",
-		// 			EnableEc2MetadataServer:  true,
-		// 			EnableWebIdentityToken:   true,
-		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleWithWebIdentityCredentials,
-		// 			ExpectedRegion:           "us-east-1",
-		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 				awsmocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 			},
-		// 		},
-		// 		{
-		// 			Config: &awsbase.Config{
-		// 				Region: "us-east-1",
-		// 			},
-		// 			Description:              "EC2 metadata access key",
-		// 			EnableEc2MetadataServer:  true,
-		// 			ExpectedCredentialsValue: awsmocks.MockEc2MetadataCredentialsV1,
-		// 			ExpectedRegion:           "us-east-1",
-		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 			},
-		// 		},
-		// 		{
-		// 			Config: &awsbase.Config{
-		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
-		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
-		// 				Region:                "us-east-1",
-		// 			},
-		// 			Description:              "EC2 metadata access key config AssumeRoleARN access key",
-		// 			EnableEc2MetadataServer:  true,
-		// 			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
-		// 			ExpectedRegion:           "us-east-1",
-		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
-		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 			},
-		// 		},
+		{
+			Config: &awsbase.Config{
+				Region: "us-east-1",
+			},
+			Description:              "web identity token access key",
+			EnableEc2MetadataServer:  true,
+			EnableWebIdentityToken:   true,
+			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleWithWebIdentityCredentialsV1,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &awsbase.Config{
+				Region: "us-east-1",
+			},
+			Description:              "EC2 metadata access key",
+			EnableEc2MetadataServer:  true,
+			ExpectedCredentialsValue: awsmocks.MockEc2MetadataCredentialsV1,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &awsbase.Config{
+				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+				Region:                "us-east-1",
+			},
+			Description:              "EC2 metadata access key config AssumeRoleARN access key",
+			EnableEc2MetadataServer:  true,
+			ExpectedCredentialsValue: awsmocks.MockStsAssumeRoleCredentialsV1,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsAssumeRoleValidEndpoint,
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
 		{
 			Config: &awsbase.Config{
 				Region: "us-east-1",
@@ -558,22 +562,22 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		// 		{
-		// 			Config: &awsbase.Config{
-		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
-		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
-		// 				Region:                "us-east-1",
-		// 			},
-		// 			Description:                "ECS credentials access key config AssumeRoleARN access key",
-		// 			EnableEc2MetadataServer:    true,
-		// 			EnableEcsCredentialsServer: true,
-		// 			ExpectedCredentialsValue:   awsmocks.MockStsAssumeRoleCredentialsV1,
-		// 			ExpectedRegion:             "us-east-1",
-		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 				awsmocks.MockStsAssumeRoleValidEndpoint,
-		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 			},
-		// 		},
+		{
+			Config: &awsbase.Config{
+				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+				Region:                "us-east-1",
+			},
+			Description:                "ECS credentials access key config AssumeRoleARN access key",
+			EnableEc2MetadataServer:    true,
+			EnableEcsCredentialsServer: true,
+			ExpectedCredentialsValue:   awsmocks.MockStsAssumeRoleCredentialsV1,
+			ExpectedRegion:             "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsAssumeRoleValidEndpoint,
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
 		{
 			Config: &awsbase.Config{
 				AccessKey: awsmocks.MockStaticAccessKey,
@@ -747,25 +751,25 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		// 		{
-		// 			Config: &awsbase.Config{
-		// 				AccessKey:             awsmocks.MockStaticAccessKey,
-		// 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
-		// 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
-		// 				DebugLogging:          true,
-		// 				Region:                "us-east-1",
-		// 				SecretKey:             awsmocks.MockStaticSecretKey,
-		// 			},
-		// 			Description: "assume role error",
-		// 			ExpectedError: func(err error) bool {
-		// 				return awsbase.IsCannotAssumeRoleError(err)
-		// 			},
-		// 			ExpectedRegion: "us-east-1",
-		// 			MockStsEndpoints: []*awsmocks.MockEndpoint{
-		// 				awsmocks.MockStsAssumeRoleInvalidEndpointInvalidClientTokenId,
-		// 				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-		// 			},
-		// 		},
+		{
+			Config: &awsbase.Config{
+				AccessKey:             awsmocks.MockStaticAccessKey,
+				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
+				DebugLogging:          true,
+				Region:                "us-east-1",
+				SecretKey:             awsmocks.MockStaticSecretKey,
+			},
+			Description: "assume role error",
+			ExpectedError: func(err error) bool {
+				return awsbase.IsCannotAssumeRoleError(err)
+			},
+			ExpectedRegion: "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsAssumeRoleInvalidEndpointInvalidClientTokenId,
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
 		// 		{
 		// 			Config: &awsbase.Config{
 		// 				AccessKey: awsmocks.MockStaticAccessKey,
@@ -807,18 +811,18 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV1,
 			ExpectedRegion:           "us-east-1",
 		},
-		// {
-		// 	Config: &awsbase.Config{
-		// 		Region:               "us-east-1",
-		// 		SkipMetadataApiCheck: true,
-		// 	},
-		// 	Description:             "skip EC2 metadata API check",
-		// 	EnableEc2MetadataServer: true,
-		// 	ExpectedError: func(err error) bool {
-		// 		return awsbase.IsNoValidCredentialSourcesError(err)
-		// 	},
-		// 	ExpectedRegion: "us-east-1",
-		// },
+		{
+			Config: &awsbase.Config{
+				Region:               "us-east-1",
+				SkipMetadataApiCheck: true,
+			},
+			Description:             "skip EC2 metadata API check",
+			EnableEc2MetadataServer: true,
+			ExpectedError: func(err error) bool {
+				return awsbase.IsNoValidCredentialSourcesError(err)
+			},
+			ExpectedRegion: "us-east-1",
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -913,17 +917,25 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
-				t.Fatalf("GetAwsConfig() returned error: %s", err)
-			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
-
-			if err != nil {
 				if testCase.ExpectedError == nil {
-					t.Fatalf("expected no error, got error: %s", err)
+					t.Fatalf("expected no error from GetAwsConfig(), got '%[1]T' error: %[1]s", err)
 				}
 
 				if !testCase.ExpectedError(err) {
-					t.Fatalf("unexpected GetSession() error: %s", err)
+					t.Fatalf("unexpected GetAwsConfig() '%[1]T' error: %[1]s", err)
+				}
+
+				t.Logf("received expected error: %s", err)
+				return
+			}
+			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			if err != nil {
+				if testCase.ExpectedError == nil {
+					t.Fatalf("expected no error from GetSession(), got '%[1]T' error: %[1]s", err)
+				}
+
+				if !testCase.ExpectedError(err) {
+					t.Fatalf("unexpected GetSession() '%[1]T' error: %[1]s", err)
 				}
 
 				t.Logf("received expected error: %s", err)
@@ -1097,27 +1109,24 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 	oldEnv := awsmocks.InitSessionTestEnv()
 	defer awsmocks.PopEnv(oldEnv)
 
-	ts := awsmocks.MockAwsApiServer("STS", []*awsmocks.MockEndpoint{
-		awsmocks.MockStsGetCallerIdentityValidEndpoint,
-	})
-	defer ts.Close()
-
 	testCases := []struct {
 		desc              string
 		config            *awsbase.Config
 		expectedAcctID    string
 		expectedPartition string
-		expectedError     bool
+		expectError       bool
+		mockStsEndpoints  []*awsmocks.MockEndpoint
 	}{
 		{
 			"StandardProvider_Config",
 			&awsbase.Config{
-				AccessKey:         "MockAccessKey",
-				SecretKey:         "MockSecretKey",
-				Region:            "us-west-2",
-				UserAgentProducts: []*awsbase.UserAgentProduct{{}},
-				StsEndpoint:       ts.URL},
+				AccessKey: "MockAccessKey",
+				SecretKey: "MockSecretKey",
+				Region:    "us-west-2"},
 			"222222222222", "aws", false,
+			[]*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
 		},
 		{
 			"SkipCredsValidation_Config",
@@ -1125,10 +1134,11 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 				AccessKey:           "MockAccessKey",
 				SecretKey:           "MockSecretKey",
 				Region:              "us-west-2",
-				SkipCredsValidation: true,
-				UserAgentProducts:   []*awsbase.UserAgentProduct{{}},
-				StsEndpoint:         ts.URL},
+				SkipCredsValidation: true},
 			"222222222222", "aws", false,
+			[]*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
 		},
 		{
 			"SkipRequestingAccountId_Config",
@@ -1137,47 +1147,56 @@ func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
 				SecretKey:               "MockSecretKey",
 				Region:                  "us-west-2",
 				SkipCredsValidation:     true,
-				SkipRequestingAccountId: true,
-				UserAgentProducts:       []*awsbase.UserAgentProduct{{}},
-				StsEndpoint:             ts.URL},
-			"", "aws", false,
+				SkipRequestingAccountId: true},
+			"", "aws", false, []*awsmocks.MockEndpoint{},
 		},
-		// This test needs the Mock STS server
-		// {
-		// 	"WithAssumeRole",
-		// 	&awsbase.Config{
-		// 		AccessKey:         "MockAccessKey",
-		// 		SecretKey:         "MockSecretKey",
-		// 		Region:            "us-west-2",
-		// 		UserAgentProducts: []*awsbase.UserAgentProduct{{}},
-		// 		AssumeRoleARN:     "arn:aws:iam::222222222222:user/Alice"},
-		// 	"222222222222", "aws", false,
-		// },
-
-		// Not implemented
-		// {
-		// 	"NoCredentialProviders_Config",
-		// 	&awsbase.Config{
-		// 		AccessKey:         "",
-		// 		SecretKey:         "",
-		// 		Region:            "us-west-2",
-		// 		UserAgentProducts: []*awsbase.UserAgentProduct{{}},
-		// 		StsEndpoint:       ts.URL},
-		// 	"", "", true,
-		// },
+		{
+			"WithAssumeRole",
+			&awsbase.Config{
+				AccessKey:             "MockAccessKey",
+				SecretKey:             "MockSecretKey",
+				Region:                "us-west-2",
+				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
+				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName},
+			"555555555555", "aws", false, []*awsmocks.MockEndpoint{
+				awsmocks.MockStsAssumeRoleValidEndpoint,
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			"NoCredentialProviders_Config",
+			&awsbase.Config{
+				AccessKey: "",
+				SecretKey: "",
+				Region:    "us-west-2"},
+			"", "", true, []*awsmocks.MockEndpoint{},
+		},
 	}
 
 	for _, testCase := range testCases {
 		tc := testCase
 
 		t.Run(tc.desc, func(t *testing.T) {
+			ts := awsmocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
+			defer ts.Close()
+			tc.config.StsEndpoint = ts.URL
+
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
 			if err != nil {
-				t.Fatalf("GetAwsConfig() returned error: %s", err)
+				if !tc.expectError {
+					t.Fatalf("expected no error from GetAwsConfig(), got: %s", err)
+				}
+
+				if !awsbase.IsNoValidCredentialSourcesError(err) {
+					t.Fatalf("expected no valid credential sources error, got: %s", err)
+				}
+
+				t.Logf("received expected error: %s", err)
+				return
 			}
 			sess, acctID, part, err := GetSessionWithAccountIDAndPartition(&awsConfig, tc.config)
 			if err != nil {
-				if !tc.expectedError {
+				if !tc.expectError {
 					t.Fatalf("expected no error, got: %s", err)
 				}
 

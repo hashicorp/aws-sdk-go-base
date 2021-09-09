@@ -50,7 +50,7 @@ func TestAWSGetCredentials_static(t *testing.T) {
 
 		creds := credentialsProvider(&cfg)
 
-		validateCredentials(creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
+		validateCredentialsProvider(creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
 	}
 }
 
@@ -246,10 +246,10 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 // 	return file.Name()
 // }
 
-func validateCredentials(creds aws.CredentialsProvider, accesskey, secretkey, token, source string, t *testing.T) {
+func validateCredentialsProvider(creds aws.CredentialsProvider, accesskey, secretkey, token, source string, t *testing.T) {
 	v, err := creds.Retrieve(context.Background())
 	if err != nil {
-		t.Fatalf("Error gettings creds: %s", err)
+		t.Fatalf("Error retrieving credentials: %s", err)
 	}
 
 	if v.AccessKeyID != accesskey {
