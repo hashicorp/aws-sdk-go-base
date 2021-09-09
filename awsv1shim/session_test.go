@@ -28,10 +28,6 @@ func TestGetSessionOptions(t *testing.T) {
 		config      *awsbase.Config
 		expectError bool
 	}{
-		{"BlankConfig",
-			&awsbase.Config{},
-			true,
-		},
 		{"ConfigWithCredentials",
 			&awsbase.Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey"},
 			false,
@@ -47,11 +43,8 @@ func TestGetSessionOptions(t *testing.T) {
 
 		t.Run(tc.desc, func(t *testing.T) {
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
-			if err != nil && tc.expectError == false {
+			if err != nil {
 				t.Fatalf("GetAwsConfig() resulted in an error %s", err)
-			}
-			if err == nil && tc.expectError == true {
-				t.Fatal("Expected error not returned by GetAwsConfig()")
 			}
 
 			opts, err := getSessionOptions(&awsConfig, tc.config)

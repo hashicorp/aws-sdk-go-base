@@ -878,7 +878,7 @@ source_profile = SourceSharedCredentials
 
 				testCase.Config.SharedCredentialsFiles = []string{file.Name()}
 				if testCase.ExpectedCredentialsValue.Source == sharedConfigCredentialsProvider {
-					testCase.ExpectedCredentialsValue.Source = fmt.Sprintf("%s: %s", sharedConfigCredentialsProvider, file.Name())
+					testCase.ExpectedCredentialsValue.Source = sharedConfigCredentialsSource(file.Name())
 				}
 			}
 

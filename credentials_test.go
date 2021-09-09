@@ -2,28 +2,16 @@ package awsbase
 
 import (
 	"context"
+	"fmt"
+	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
 )
-
-// func TestAWSGetCredentials_shouldErrorWhenBlank(t *testing.T) {
-// 	resetEnv := awsmocks.UnsetEnv(t)
-// 	defer resetEnv()
-
-// 	cfg := Config{}
-// 	_, err := credentialsProvider(&cfg)
-
-// 	if err == nil {
-// 		t.Fatal("Expected an error given empty env, keys, and IAM in AWS Config")
-// 	}
-
-// 	if !IsNoValidCredentialSourcesError(err) {
-// 		t.Fatalf("Unexpected error: %s", err)
-// 	}
-// }
 
 func TestAWSGetCredentials_static(t *testing.T) {
 	testCases := []struct {
@@ -34,8 +22,8 @@ func TestAWSGetCredentials_static(t *testing.T) {
 			Secret: "secret",
 		}, {
 			Key:    "test",
-			Secret: "test",
-			Token:  "test",
+			Secret: "secret",
+			Token:  "token",
 		},
 	}
 
@@ -48,54 +36,42 @@ func TestAWSGetCredentials_static(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds := credentialsProvider(&cfg)
+		creds, err := getCredentialsProvider(context.Background(), &cfg)
+		if err != nil {
+			t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
+		}
 
 		validateCredentialsProvider(creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
+		testCredentialsProviderWrappedWithCache(creds, t)
 	}
 }
 
-// // TestAWSGetCredentials_shouldIAM is designed to test the scenario of running Terraform
-// // from an EC2 instance, without environment variables or manually supplied
-// // credentials.
-// func TestAWSGetCredentials_shouldIAM(t *testing.T) {
-// 	// clear AWS_* environment variables
-// 	resetEnv := awsmocks.UnsetEnv(t)
-// 	defer resetEnv()
-
-// 	// capture the test server's close method, to call after the test returns
-// 	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
-// 	defer ts()
-
-// 	// An empty config, no key supplied
-// 	cfg := Config{}
-
-// 	creds, err := credentialsProvider(&cfg)
-// 	if err != nil {
-// 		t.Fatalf("Error gettings creds: %s", err)
-// 	}
-// 	if creds == nil {
-// 		t.Fatal("Expected a static creds provider to be returned")
-// 	}
-
-// 	v, err := creds.Retrieve(context.Background())
-// 	if err != nil {
-// 		t.Fatalf("Error gettings creds: %s", err)
-// 	}
-// 	if expected, actual := "Ec2MetadataAccessKey", v.AccessKeyID; expected != actual {
-// 		t.Fatalf("expected access key (%s), got: %s", expected, actual)
-// 	}
-// 	if expected, actual := "Ec2MetadataSecretKey", v.SecretAccessKey; expected != actual {
-// 		t.Fatalf("expected secret key (%s), got: %s", expected, actual)
-// 	}
-// 	if expected, actual := "Ec2MetadataSessionToken", v.SessionToken; expected != actual {
-// 		t.Fatalf("expected session token (%s), got: %s", expected, actual)
-// 	}
-// }
-
-// TestAWSGetCredentials_shouldIAM is designed to test the scenario of running Terraform
+// TestAWSGetCredentials_ec2Imds is designed to test the scenario of running Terraform
 // from an EC2 instance, without environment variables or manually supplied
 // credentials.
-func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
+func TestAWSGetCredentials_ec2Imds(t *testing.T) {
+	// clear AWS_* environment variables
+	resetEnv := awsmocks.UnsetEnv(t)
+	defer resetEnv()
+
+	// capture the test server's close method, to call after the test returns
+	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
+	defer ts()
+
+	// An empty config, no key supplied
+	cfg := Config{}
+
+	creds, err := getCredentialsProvider(context.Background(), &cfg)
+	if err != nil {
+		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
+	}
+
+	validateCredentialsProvider(creds, "Ec2MetadataAccessKey", "Ec2MetadataSecretKey", "Ec2MetadataSessionToken", ec2rolecreds.ProviderName, t)
+	testCredentialsProviderWrappedWithCache(creds, t)
+
+}
+
+func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
 	resetEnv := awsmocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
@@ -109,8 +85,8 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 			Secret: "secret",
 		}, {
 			Key:    "test",
-			Secret: "test",
-			Token:  "test",
+			Secret: "secret",
+			Token:  "token",
 		},
 	}
 
@@ -123,128 +99,99 @@ func TestAWSGetCredentials_shouldIgnoreIAM(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds := credentialsProvider(&cfg)
-		if creds == nil {
-			t.Fatal("Expected a static creds provider to be returned")
+		creds, err := getCredentialsProvider(context.Background(), &cfg)
+		if err != nil {
+			t.Fatalf("unexpected '%[1]T' error: %[1]s", err)
 		}
 
-		v, err := creds.Retrieve(context.Background())
-		if err != nil {
-			t.Fatalf("Error gettings creds: %s", err)
-		}
-		if v.AccessKeyID != c.Key {
-			t.Fatalf("AccessKeyID mismatch, expected: (%s), got (%s)", c.Key, v.AccessKeyID)
-		}
-		if v.SecretAccessKey != c.Secret {
-			t.Fatalf("SecretAccessKey mismatch, expected: (%s), got (%s)", c.Secret, v.SecretAccessKey)
-		}
-		if v.SessionToken != c.Token {
-			t.Fatalf("SessionToken mismatch, expected: (%s), got (%s)", c.Token, v.SessionToken)
-		}
+		validateCredentialsProvider(creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
+		testCredentialsProviderWrappedWithCache(creds, t)
 	}
 }
 
-// func TestAWSGetCredentials_shouldErrorWithInvalidEndpoint(t *testing.T) {
-// 	resetEnv := awsmocks.UnsetEnv(t)
-// 	defer resetEnv()
-// 	// capture the test server's close method, to call after the test returns
-// 	ts := awsmocks.InvalidAwsEnv()
-// 	defer ts()
+func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
+	resetEnv := awsmocks.UnsetEnv(t)
+	defer resetEnv()
+	// capture the test server's close method, to call after the test returns
+	ts := awsmocks.InvalidAwsEnv()
+	defer ts()
 
-// 	_, err := credentialsProvider(&Config{})
+	// An empty config, no key supplied
+	cfg := Config{}
 
-// 	if !IsNoValidCredentialSourcesError(err) {
-// 		t.Fatalf("Error gettings creds: %s", err)
-// 	}
+	_, err := getCredentialsProvider(context.Background(), &cfg)
+	if err == nil {
+		t.Fatal("expected error returned when getting creds w/ invalid EC2 IMDS endpoint")
+	}
+	if !IsNoValidCredentialSourcesError(err) {
+		t.Fatalf("expected NoValidCredentialSourcesError, got '%[1]T': %[1]s", err)
+	}
 
-// 	if err == nil {
-// 		t.Fatal("Expected error returned when getting creds w/ invalid EC2 endpoint")
-// 	}
-// }
+}
 
-// func TestAWSGetCredentials_shouldIgnoreInvalidEndpoint(t *testing.T) {
-// 	resetEnv := awsmocks.UnsetEnv(t)
-// 	defer resetEnv()
-// 	// capture the test server's close method, to call after the test returns
-// 	ts := awsmocks.InvalidAwsEnv()
-// 	defer ts()
+func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
+	resetEnv := awsmocks.UnsetEnv(t)
+	defer resetEnv()
 
-// 	creds, err := credentialsProvider(&Config{AccessKey: "accessKey", SecretKey: "secretKey"})
-// 	if err != nil {
-// 		t.Fatalf("Error gettings creds: %s", err)
-// 	}
-// 	v, err := creds.Retrieve(context.Background())
-// 	if err != nil {
-// 		t.Fatalf("Getting static credentials w/ invalid EC2 endpoint failed: %s", err)
-// 	}
-// 	if creds == nil {
-// 		t.Fatal("Expected a static creds provider to be returned")
-// 	}
+	if err := os.Setenv("AWS_PROFILE", "myprofile"); err != nil {
+		t.Fatalf("Error resetting env var AWS_PROFILE: %s", err)
+	}
 
-// 	if v.Source != "StaticProvider" {
-// 		t.Fatalf("Expected provider name to be %q, %q given", "StaticProvider", v.Source)
-// 	}
+	fileEnvName := writeCredentialsFile(credentialsFileContentsEnv, t)
+	defer os.Remove(fileEnvName)
 
-// 	if v.AccessKeyID != "accessKey" {
-// 		t.Fatalf("Static Access Key %q doesn't match: %s", "accessKey", v.AccessKeyID)
-// 	}
+	fileParamName := writeCredentialsFile(credentialsFileContentsParam, t)
+	defer os.Remove(fileParamName)
 
-// 	if v.SecretAccessKey != "secretKey" {
-// 		t.Fatalf("Static Secret Key %q doesn't match: %s", "secretKey", v.SecretAccessKey)
-// 	}
-// }
+	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", fileEnvName); err != nil {
+		t.Fatalf("Error resetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
+	}
 
-// func TestAWSGetCredentials_shouldCatchEC2RoleProvider(t *testing.T) {
-// 	resetEnv := awsmocks.UnsetEnv(t)
-// 	defer resetEnv()
-// 	// capture the test server's close method, to call after the test returns
-// 	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
-// 	defer ts()
+	// Confirm AWS_SHARED_CREDENTIALS_FILE is working
+	credsEnv, err := getCredentialsProvider(context.Background(), &Config{
+		Profile: "myprofile",
+	})
+	if err != nil {
+		t.Fatalf("unexpected '%[1]T' error getting credentials provider from environment: %[1]s", err)
+	}
+	validateCredentialsProvider(credsEnv, "accesskey1", "secretkey1", "", sharedConfigCredentialsSource(fileEnvName), t)
 
-// 	creds, err := credentialsProvider(&Config{})
-// 	if err != nil {
-// 		t.Fatalf("Error gettings creds: %s", err)
-// 	}
-// 	if creds == nil {
-// 		t.Fatal("Expected an EC2Role creds provider to be returned")
-// 	}
+	// Confirm CredsFilename overrides AWS_SHARED_CREDENTIALS_FILE
+	credsParam, err := getCredentialsProvider(context.Background(), &Config{
+		Profile:                "myprofile",
+		SharedCredentialsFiles: []string{fileParamName},
+	})
+	if err != nil {
+		t.Fatalf("unexpected '%[1]T' error getting credentials provider from configuration: %[1]s", err)
+	}
+	validateCredentialsProvider(credsParam, "accesskey2", "secretkey2", "", sharedConfigCredentialsSource(fileParamName), t)
+}
 
-// 	v, err := creds.Retrieve(context.Background())
-// 	if err != nil {
-// 		t.Fatalf("Expected no error when getting creds: %s", err)
-// 	}
-// 	expectedProvider := "EC2RoleProvider"
-// 	if v.Source != expectedProvider {
-// 		t.Fatalf("Expected provider name to be %q, %q given",
-// 			expectedProvider, v.Source)
-// 	}
-// }
+var credentialsFileContentsEnv = `[myprofile]
+aws_access_key_id = accesskey1
+aws_secret_access_key = secretkey1
+`
 
-// var credentialsFileContentsEnv = `[myprofile]
-// aws_access_key_id = accesskey1
-// aws_secret_access_key = secretkey1
-// `
+var credentialsFileContentsParam = `[myprofile]
+aws_access_key_id = accesskey2
+aws_secret_access_key = secretkey2
+`
 
-// var credentialsFileContentsParam = `[myprofile]
-// aws_access_key_id = accesskey2
-// aws_secret_access_key = secretkey2
-// `
-
-// func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
-// 	file, err := ioutil.TempFile(os.TempDir(), "terraform_aws_cred")
-// 	if err != nil {
-// 		t.Fatalf("Error writing temporary credentials file: %s", err)
-// 	}
-// 	_, err = file.WriteString(credentialsFileContents)
-// 	if err != nil {
-// 		t.Fatalf("Error writing temporary credentials to file: %s", err)
-// 	}
-// 	err = file.Close()
-// 	if err != nil {
-// 		t.Fatalf("Error closing temporary credentials file: %s", err)
-// 	}
-// 	return file.Name()
-// }
+func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
+	file, err := ioutil.TempFile(os.TempDir(), "terraform_aws_cred")
+	if err != nil {
+		t.Fatalf("Error writing temporary credentials file: %s", err)
+	}
+	_, err = file.WriteString(credentialsFileContents)
+	if err != nil {
+		t.Fatalf("Error writing temporary credentials to file: %s", err)
+	}
+	err = file.Close()
+	if err != nil {
+		t.Fatalf("Error closing temporary credentials file: %s", err)
+	}
+	return file.Name()
+}
 
 func validateCredentialsProvider(creds aws.CredentialsProvider, accesskey, secretkey, token, source string, t *testing.T) {
 	v, err := creds.Retrieve(context.Background())
@@ -253,15 +200,28 @@ func validateCredentialsProvider(creds aws.CredentialsProvider, accesskey, secre
 	}
 
 	if v.AccessKeyID != accesskey {
-		t.Fatalf("AccessKeyID mismatch, expected: %q, got %q", accesskey, v.AccessKeyID)
+		t.Errorf("AccessKeyID mismatch, expected: %q, got %q", accesskey, v.AccessKeyID)
 	}
 	if v.SecretAccessKey != secretkey {
-		t.Fatalf("SecretAccessKey mismatch, expected: %q, got %q", secretkey, v.SecretAccessKey)
+		t.Errorf("SecretAccessKey mismatch, expected: %q, got %q", secretkey, v.SecretAccessKey)
 	}
 	if v.SessionToken != token {
-		t.Fatalf("SessionToken mismatch, expected: %q, got %q", token, v.SessionToken)
+		t.Errorf("SessionToken mismatch, expected: %q, got %q", token, v.SessionToken)
 	}
 	if v.Source != source {
-		t.Fatalf("Expected provider name to be %q, %q given", source, v.Source)
+		t.Errorf("Expected provider name to be %q, %q given", source, v.Source)
 	}
+}
+
+func testCredentialsProviderWrappedWithCache(creds aws.CredentialsProvider, t *testing.T) {
+	switch creds.(type) {
+	case *aws.CredentialsCache:
+		break
+	default:
+		t.Error("expected credentials provider to be wrapped with aws.CredentialsCache")
+	}
+}
+
+func sharedConfigCredentialsSource(filename string) string {
+	return fmt.Sprintf(sharedConfigCredentialsProvider+": %s", filename)
 }
