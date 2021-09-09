@@ -1043,6 +1043,8 @@ func TestUserAgentProducts(t *testing.T) {
 				os.Setenv(k, v)
 			}
 
+			testCase.Config.SkipCredsValidation = true
+
 			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)

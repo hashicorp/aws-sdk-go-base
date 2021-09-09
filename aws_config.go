@@ -42,7 +42,13 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		return cfg, fmt.Errorf("loading configuration: %w", err)
 	}
 
-	return cfg, err
+	if !c.SkipCredsValidation {
+		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, sts.NewFromConfig(cfg)); err != nil {
+			return cfg, fmt.Errorf("error validating provider credentials: %w", err)
+		}
+	}
+
+	return cfg, nil
 }
 
 func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, skipCredsValidation, skipRequestingAccountId bool) (string, string, error) {

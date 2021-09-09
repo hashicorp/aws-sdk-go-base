@@ -42,6 +42,8 @@ func TestGetSessionOptions(t *testing.T) {
 		tc := testCase
 
 		t.Run(tc.desc, func(t *testing.T) {
+			tc.config.SkipCredsValidation = true
+
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() resulted in an error %s", err)
@@ -1079,6 +1081,8 @@ func TestUserAgentProducts(t *testing.T) {
 			if mockStsSession != nil && mockStsSession.Config != nil {
 				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
 			}
+
+			testCase.Config.SkipCredsValidation = true
 
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {

@@ -128,7 +128,7 @@ func getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx context.Context, stsCl
 
 	output, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
-		return "", "", fmt.Errorf("error calling sts:GetCallerIdentity (%[1]T): %[1]w", err)
+		return "", "", fmt.Errorf("error calling sts:GetCallerIdentity: %[1]w", err)
 	}
 
 	if output == nil || output.Arn == nil {
