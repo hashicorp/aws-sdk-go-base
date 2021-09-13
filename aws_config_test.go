@@ -18,6 +18,7 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/hashicorp/aws-sdk-go-base/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
 )
@@ -960,7 +961,7 @@ func TestUserAgentProducts(t *testing.T) {
 			},
 			Description: "customized User-Agent TF_APPEND_USER_AGENT",
 			EnvironmentVariables: map[string]string{
-				appendUserAgentEnvVar: "Last",
+				constants.AppendUserAgentEnvVar: "Last",
 			},
 			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
 		},
@@ -1003,7 +1004,7 @@ func TestUserAgentProducts(t *testing.T) {
 			},
 			Description: "customized User-Agent Products and TF_APPEND_USER_AGENT",
 			EnvironmentVariables: map[string]string{
-				appendUserAgentEnvVar: "Last",
+				constants.AppendUserAgentEnvVar: "Last",
 			},
 			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent() + " Last",
 		},

@@ -13,22 +13,8 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"github.com/aws/aws-sdk-go/aws/session"
 	awsbase "github.com/hashicorp/aws-sdk-go-base"
 	"github.com/hashicorp/aws-sdk-go-base/awsv1shim/tfawserr"
+	"github.com/hashicorp/aws-sdk-go-base/internal/constants"
 	"github.com/hashicorp/go-cleanhttp"
-)
-
-const (
-	// appendUserAgentEnvVar is a conventionally used environment variable
-	// containing additional HTTP User-Agent information.
-	// If present and its value is non-empty, it is directly appended to the
-	// User-Agent header for HTTP requests.
-	appendUserAgentEnvVar = "TF_APPEND_USER_AGENT"
-
-	// Maximum network retries.
-	// We depend on the AWS Go SDK DefaultRetryer exponential backoff.
-	// Ensure that if the AWS Config MaxRetries is set high (which it is by
-	// default), that we only retry for a few seconds with typically
-	// unrecoverable network errors, such as DNS lookup failures.
-	maxNetworkRetryCount = 9
 )
 
 // getSessionOptions attempts to return valid AWS Go SDK session authentication
@@ -97,7 +83,7 @@ func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error)
 
 	// Add custom input from ENV to the User-Agent request header
 	// Reference: https://github.com/terraform-providers/terraform-provider-aws/issues/9149
-	if v := os.Getenv(appendUserAgentEnvVar); v != "" {
+	if v := os.Getenv(constants.AppendUserAgentEnvVar); v != "" {
 		log.Printf("[DEBUG] Using additional User-Agent Info: %s", v)
 		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(v))
 	}
@@ -109,18 +95,18 @@ func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error)
 	// NOTE: This logic can be fooled by other request errors raising the retry count
 	//       before any networking error occurs
 	sess.Handlers.Retry.PushBack(func(r *request.Request) {
-		if r.RetryCount < maxNetworkRetryCount {
+		if r.RetryCount < constants.MaxNetworkRetryCount {
 			return
 		}
 		// RequestError: send request failed
 		// caused by: Post https://FQDN/: dial tcp: lookup FQDN: no such host
-		if tfawserr.ErrMessageAndOrigErrContain(r.Error, "RequestError", "send request failed", "no such host") {
+		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "no such host") {
 			log.Printf("[WARN] Disabling retries after next request due to networking issue")
 			r.Retryable = aws.Bool(false)
 		}
 		// RequestError: send request failed
 		// caused by: Post https://FQDN/: dial tcp IPADDRESS:443: connect: connection refused
-		if tfawserr.ErrMessageAndOrigErrContain(r.Error, "RequestError", "send request failed", "connection refused") {
+		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "connection refused") {
 			log.Printf("[WARN] Disabling retries after next request due to networking issue")
 			r.Retryable = aws.Bool(false)
 		}
