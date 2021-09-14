@@ -862,7 +862,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
 			}
 
-			closeSts, mockStsSession, err := awsmocks.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			closeSts, mockStsSession, err := awsmocks.GetMockedAwsApiSessionV1("STS", testCase.MockStsEndpoints)
 			defer closeSts()
 
 			if err != nil {
@@ -1062,7 +1062,7 @@ func TestUserAgentProducts(t *testing.T) {
 				os.Setenv(k, v)
 			}
 
-			closeSts, mockStsSession, err := awsmocks.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			closeSts, mockStsSession, err := awsmocks.GetMockedAwsApiSessionV1("STS", testCase.MockStsEndpoints)
 			defer closeSts()
 
 			if err != nil {
@@ -1103,122 +1103,4 @@ func TestUserAgentProducts(t *testing.T) {
 
 func awsSdkGoUserAgent() string {
 	return fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
-}
-
-func TestGetSessionWithAccountIDAndPartition(t *testing.T) {
-	oldEnv := awsmocks.InitSessionTestEnv()
-	defer awsmocks.PopEnv(oldEnv)
-
-	testCases := []struct {
-		desc              string
-		config            *awsbase.Config
-		expectedAcctID    string
-		expectedPartition string
-		expectError       bool
-		mockStsEndpoints  []*awsmocks.MockEndpoint
-	}{
-		{
-			"StandardProvider_Config",
-			&awsbase.Config{
-				AccessKey: "MockAccessKey",
-				SecretKey: "MockSecretKey",
-				Region:    "us-west-2"},
-			"222222222222", "aws", false,
-			[]*awsmocks.MockEndpoint{
-				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-			},
-		},
-		{
-			"SkipCredsValidation_Config",
-			&awsbase.Config{
-				AccessKey:           "MockAccessKey",
-				SecretKey:           "MockSecretKey",
-				Region:              "us-west-2",
-				SkipCredsValidation: true},
-			"222222222222", "aws", false,
-			[]*awsmocks.MockEndpoint{
-				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-			},
-		},
-		{
-			"SkipRequestingAccountId_Config",
-			&awsbase.Config{
-				AccessKey:               "MockAccessKey",
-				SecretKey:               "MockSecretKey",
-				Region:                  "us-west-2",
-				SkipCredsValidation:     true,
-				SkipRequestingAccountId: true},
-			"", "aws", false, []*awsmocks.MockEndpoint{},
-		},
-		{
-			"WithAssumeRole",
-			&awsbase.Config{
-				AccessKey:             "MockAccessKey",
-				SecretKey:             "MockSecretKey",
-				Region:                "us-west-2",
-				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
-				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName},
-			"555555555555", "aws", false, []*awsmocks.MockEndpoint{
-				awsmocks.MockStsAssumeRoleValidEndpoint,
-				awsmocks.MockStsGetCallerIdentityValidEndpoint,
-			},
-		},
-		{
-			"NoCredentialProviders_Config",
-			&awsbase.Config{
-				AccessKey: "",
-				SecretKey: "",
-				Region:    "us-west-2"},
-			"", "", true, []*awsmocks.MockEndpoint{},
-		},
-	}
-
-	for _, testCase := range testCases {
-		tc := testCase
-
-		t.Run(tc.desc, func(t *testing.T) {
-			ts := awsmocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
-			defer ts.Close()
-			tc.config.StsEndpoint = ts.URL
-
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
-			if err != nil {
-				if !tc.expectError {
-					t.Fatalf("expected no error from GetAwsConfig(), got: %s", err)
-				}
-
-				if !awsbase.IsNoValidCredentialSourcesError(err) {
-					t.Fatalf("expected no valid credential sources error, got: %s", err)
-				}
-
-				t.Logf("received expected error: %s", err)
-				return
-			}
-			sess, acctID, part, err := GetSessionWithAccountIDAndPartition(&awsConfig, tc.config)
-			if err != nil {
-				if !tc.expectError {
-					t.Fatalf("expected no error, got: %s", err)
-				}
-
-				if !awsbase.IsNoValidCredentialSourcesError(err) {
-					t.Fatalf("expected no valid credential sources error, got: %s", err)
-				}
-
-				t.Logf("received expected error: %s", err)
-				return
-			}
-
-			if sess == nil {
-				t.Error("unexpected empty session")
-			}
-
-			if acctID != tc.expectedAcctID {
-				t.Errorf("expected account ID (%s), got: %s", tc.expectedAcctID, acctID)
-			}
-
-			if part != tc.expectedPartition {
-				t.Errorf("expected partition (%s), got: %s", tc.expectedPartition, part)
-			}
-		})
-	}
 }

@@ -13,12 +13,12 @@ import (
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
+	credentialsv2 "github.com/aws/aws-sdk-go-v2/credentials"
 	ec2rolecredsv2 "github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	endpointcredsv2 "github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
 	stscredsv2 "github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws"
-	awsCredentials "github.com/aws/aws-sdk-go/aws/credentials"
+	credentialsv1 "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
@@ -123,9 +123,19 @@ const (
 	MockStsGetCallerIdentityPartition         = `aws`
 	MockStsGetCallerIdentityValidResponseBody = `<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
   <GetCallerIdentityResult>
-   <Arn>arn:aws:iam::222222222222:user/Alice</Arn>
+    <Arn>arn:aws:iam::222222222222:user/Alice</Arn>
     <UserId>AKIAI44QH8DHBEXAMPLE</UserId>
     <Account>222222222222</Account>
+  </GetCallerIdentityResult>
+  <ResponseMetadata>
+    <RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>
+  </ResponseMetadata>
+</GetCallerIdentityResponse>`
+	MockStsGetCallerIdentityValidAssumedRoleResponseBody = `<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+  <GetCallerIdentityResult>
+    <Arn>arn:aws:sts::555555555555:assumed-role/role/AssumeRoleSessionName</Arn>
+    <UserId>ARO123EXAMPLE123:AssumeRoleSessionName</UserId>
+    <Account>555555555555</Account>
   </GetCallerIdentityResult>
   <ResponseMetadata>
     <RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>
@@ -136,7 +146,7 @@ const (
 )
 
 var (
-	MockEc2MetadataCredentialsV1 = awsCredentials.Value{
+	MockEc2MetadataCredentialsV1 = credentialsv1.Value{
 		AccessKeyID:     MockEc2MetadataAccessKey,
 		ProviderName:    ec2rolecreds.ProviderName,
 		SecretAccessKey: MockEc2MetadataSecretKey,
@@ -150,7 +160,7 @@ var (
 		CanExpire:       true,
 	}
 
-	MockEcsCredentialsCredentialsV1 = awsCredentials.Value{
+	MockEcsCredentialsCredentialsV1 = credentialsv1.Value{
 		AccessKeyID:     MockEcsCredentialsAccessKey,
 		ProviderName:    endpointcreds.ProviderName,
 		SecretAccessKey: MockEcsCredentialsSecretKey,
@@ -164,9 +174,9 @@ var (
 		Source:          endpointcredsv2.ProviderName,
 	}
 
-	MockEnvCredentialsV1 = awsCredentials.Value{
+	MockEnvCredentialsV1 = credentialsv1.Value{
 		AccessKeyID:     MockEnvAccessKey,
-		ProviderName:    awsCredentials.EnvProviderName,
+		ProviderName:    credentialsv1.EnvProviderName,
 		SecretAccessKey: MockEnvSecretKey,
 	}
 	MockEnvCredentialsV2 = awsv2.Credentials{
@@ -175,9 +185,9 @@ var (
 		Source:          config.CredentialsSourceName,
 	}
 
-	MockEnvCredentialsWithSessionTokenV1 = awsCredentials.Value{
+	MockEnvCredentialsWithSessionTokenV1 = credentialsv1.Value{
 		AccessKeyID:     MockEnvAccessKey,
-		ProviderName:    awsCredentials.EnvProviderName,
+		ProviderName:    credentialsv1.EnvProviderName,
 		SecretAccessKey: MockEnvSecretKey,
 		SessionToken:    MockEnvSessionToken,
 	}
@@ -188,18 +198,18 @@ var (
 		Source:          config.CredentialsSourceName,
 	}
 
-	MockStaticCredentialsV1 = awsCredentials.Value{
+	MockStaticCredentialsV1 = credentialsv1.Value{
 		AccessKeyID:     MockStaticAccessKey,
-		ProviderName:    awsCredentials.StaticProviderName,
+		ProviderName:    credentialsv1.StaticProviderName,
 		SecretAccessKey: MockStaticSecretKey,
 	}
 	MockStaticCredentialsV2 = awsv2.Credentials{
 		AccessKeyID:     MockStaticAccessKey,
 		SecretAccessKey: MockStaticSecretKey,
-		Source:          credentials.StaticCredentialsName,
+		Source:          credentialsv2.StaticCredentialsName,
 	}
 
-	MockStsAssumeRoleCredentialsV1 = awsCredentials.Value{
+	MockStsAssumeRoleCredentialsV1 = credentialsv1.Value{
 		AccessKeyID:     MockStsAssumeRoleAccessKey,
 		ProviderName:    stscreds.ProviderName,
 		SecretAccessKey: MockStsAssumeRoleSecretKey,
@@ -268,7 +278,7 @@ var (
 		},
 	}
 
-	MockStsAssumeRoleWithWebIdentityCredentialsV1 = awsCredentials.Value{
+	MockStsAssumeRoleWithWebIdentityCredentialsV1 = credentialsv1.Value{
 		AccessKeyID:     MockStsAssumeRoleWithWebIdentityAccessKey,
 		ProviderName:    stscreds.WebIdentityProviderName,
 		SecretAccessKey: MockStsAssumeRoleWithWebIdentitySecretKey,
@@ -312,6 +322,21 @@ var (
 			StatusCode:  http.StatusOK,
 		},
 	}
+	MockStsGetCallerIdentityValidAssumedRoleEndpoint = &MockEndpoint{
+		Request: &MockRequest{
+			Body: url.Values{
+				"Action":  []string{"GetCallerIdentity"},
+				"Version": []string{"2011-06-15"},
+			}.Encode(),
+			Method: http.MethodPost,
+			Uri:    "/",
+		},
+		Response: &MockResponse{
+			Body:        MockStsGetCallerIdentityValidAssumedRoleResponseBody,
+			ContentType: "text/xml",
+			StatusCode:  http.StatusOK,
+		},
+	}
 )
 
 // MockAwsApiServer establishes a httptest server to simulate behaviour of a real AWS API server
@@ -349,11 +374,11 @@ func MockAwsApiServer(svcName string, endpoints []*MockEndpoint) *httptest.Serve
 	return ts
 }
 
-// GetMockedAwsApiSession establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
-func GetMockedAwsApiSession(svcName string, endpoints []*MockEndpoint) (func(), *session.Session, error) {
+// GetMockedAwsApiSessionV1 establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
+func GetMockedAwsApiSessionV1(svcName string, endpoints []*MockEndpoint) (func(), *session.Session, error) {
 	ts := MockAwsApiServer(svcName, endpoints)
 
-	sc := awsCredentials.NewStaticCredentials("accessKey", "secretKey", "")
+	sc := credentialsv1.NewStaticCredentials("accessKey", "secretKey", "")
 
 	sess, err := session.NewSession(&aws.Config{
 		Credentials:                   sc,
@@ -363,6 +388,26 @@ func GetMockedAwsApiSession(svcName string, endpoints []*MockEndpoint) (func(), 
 	})
 
 	return ts.Close, sess, err
+}
+
+// GetMockedAwsApiSessionV2 establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
+func GetMockedAwsApiSessionV2(svcName string, endpoints []*MockEndpoint) (func(), awsv2.Config) {
+	ts := MockAwsApiServer(svcName, endpoints)
+
+	sc := credentialsv2.NewStaticCredentialsProvider("accessKey", "secretKey", "")
+
+	sess := awsv2.Config{
+		Credentials: sc,
+		Region:      "us-east-1",
+		EndpointResolver: awsv2.EndpointResolverFunc(func(service, region string) (awsv2.Endpoint, error) {
+			return awsv2.Endpoint{
+				URL:    ts.URL,
+				Source: awsv2.EndpointSourceCustom,
+			}, nil
+		}),
+	}
+
+	return ts.Close, sess
 }
 
 // AwsMetadataApiMock establishes a httptest server to mock out the internal AWS Metadata
