@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"runtime"
 	"testing"
@@ -1149,42 +1150,42 @@ func TestSessionRetryHandlers(t *testing.T) {
 		{
 			Description:              "send request no such host failed under MaxNetworkRetryCount",
 			RetryCount:               constants.MaxNetworkRetryCount - 1,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", errors.New("no such host")),
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("no such host")}),
 			ExpectedRetryableValue:   true,
 			ExpectRetryToBeAttempted: true,
 		},
 		{
 			Description:              "send request no such host failed over MaxNetworkRetryCount",
 			RetryCount:               constants.MaxNetworkRetryCount,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", errors.New("no such host")),
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("no such host")}),
 			ExpectedRetryableValue:   false,
 			ExpectRetryToBeAttempted: false,
 		},
 		{
 			Description:              "send request connection refused failed under MaxNetworkRetryCount",
 			RetryCount:               constants.MaxNetworkRetryCount - 1,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", errors.New("connection refused")),
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("connection refused")}),
 			ExpectedRetryableValue:   true,
 			ExpectRetryToBeAttempted: true,
 		},
 		{
 			Description:              "send request connection refused failed over MaxNetworkRetryCount",
 			RetryCount:               constants.MaxNetworkRetryCount,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", errors.New("connection refused")),
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("connection refused")}),
 			ExpectedRetryableValue:   false,
 			ExpectRetryToBeAttempted: false,
 		},
 		{
 			Description:              "send request other error failed under MaxNetworkRetryCount",
 			RetryCount:               constants.MaxNetworkRetryCount - 1,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", errors.New("other error")),
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("other error")}),
 			ExpectedRetryableValue:   true,
 			ExpectRetryToBeAttempted: true,
 		},
 		{
 			Description:              "send request other error failed over MaxNetworkRetryCount",
 			RetryCount:               constants.MaxNetworkRetryCount,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", errors.New("other error")),
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("other error")}),
 			ExpectedRetryableValue:   true,
 			ExpectRetryToBeAttempted: true,
 		},

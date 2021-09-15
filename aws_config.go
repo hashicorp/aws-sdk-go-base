@@ -3,13 +3,18 @@ package awsbase
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"log"
+	"net"
 	"net/http"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
@@ -26,9 +31,21 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		return aws.Config{}, err
 	}
 
+	var retryer aws.Retryer
+	retryer = retry.NewStandard()
+	if c.MaxRetries != 0 {
+		retryer = retry.AddWithMaxAttempts(retryer, c.MaxRetries)
+	}
+	retryer = &networkErrorShortcutter{
+		Retryer: retryer,
+	}
+
 	loadOptions := append(
 		commonLoadOptions(c),
 		config.WithCredentialsProvider(credentialsProvider),
+		config.WithRetryer(func() aws.Retryer {
+			return retryer
+		}),
 	)
 	cfg, err := config.LoadDefaultConfig(ctx, loadOptions...)
 	if err != nil {
@@ -42,6 +59,30 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 	}
 
 	return cfg, nil
+}
+
+// networkErrorShortcutter is used to enable networking error shortcutting
+type networkErrorShortcutter struct {
+	aws.Retryer
+}
+
+// We're misusing RetryDelay here, since this is the only function that takes the attempt count
+func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Duration, error) {
+	if attempt >= constants.MaxNetworkRetryCount {
+		var netOpErr *net.OpError
+		if errors.As(err, &netOpErr) {
+			// It's disappointing that we have to do string matching here, rather than being able to using `errors.Is()` or even strings exported by the Go `net` package
+			if strings.Contains(netOpErr.Error(), "no such host") || strings.Contains(netOpErr.Error(), "connection refused") {
+				log.Printf("[WARN] Disabling retries after next request due to networking issue: %s", err)
+				return 0, &retry.MaxAttemptsError{
+					Attempt: attempt,
+					Err:     err,
+				}
+			}
+		}
+	}
+
+	return r.Retryer.RetryDelay(attempt, err)
 }
 
 func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, skipCredsValidation, skipRequestingAccountId bool) (string, string, error) {
