@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
+	"github.com/hashicorp/aws-sdk-go-base/mocks"
 )
 
 func TestGetAccountIDAndPartition(t *testing.T) {
@@ -117,10 +118,10 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			awsTs := awsmocks.AwsMetadataApiMock(testCase.EC2MetadataEndpoints)
 			defer awsTs()
 
-			closeIam, iamConfig := awsmocks.GetMockedAwsApiSessionV2("IAM", testCase.IAMEndpoints)
+			closeIam, iamConfig, _ := mocks.GetMockedAwsApiSessionV2("IAM", testCase.IAMEndpoints)
 			defer closeIam()
 
-			closeSts, stsConfig := awsmocks.GetMockedAwsApiSessionV2("STS", testCase.STSEndpoints)
+			closeSts, stsConfig, _ := mocks.GetMockedAwsApiSessionV2("STS", testCase.STSEndpoints)
 			defer closeSts()
 
 			iamConn := iam.NewFromConfig(iamConfig)
@@ -210,7 +211,7 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, config := awsmocks.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
+			closeIam, config, _ := mocks.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
@@ -267,7 +268,7 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, config := awsmocks.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
+			closeIam, config, _ := mocks.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
@@ -318,7 +319,7 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeSts, config := awsmocks.GetMockedAwsApiSessionV2("STS", testCase.MockEndpoints)
+			closeSts, config, _ := mocks.GetMockedAwsApiSessionV2("STS", testCase.MockEndpoints)
 			defer closeSts()
 
 			stsClient := sts.NewFromConfig(config)
