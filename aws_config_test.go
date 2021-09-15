@@ -708,6 +708,22 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		{
 			Config: &Config{
+				AccessKey: awsmocks.MockStaticAccessKey,
+				SecretKey: awsmocks.MockStaticSecretKey,
+			},
+			Description:              "retrieve region from shared configuration file",
+			ExpectedCredentialsValue: awsmocks.MockStaticCredentialsV2,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*awsmocks.MockEndpoint{
+				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+			SharedConfigurationFile: `
+[default]
+region = us-east-1
+`,
+		},
+		{
+			Config: &Config{
 				AccessKey:             awsmocks.MockStaticAccessKey,
 				AssumeRoleARN:         awsmocks.MockStsAssumeRoleArn,
 				AssumeRoleSessionName: awsmocks.MockStsAssumeRoleSessionName,
@@ -842,8 +858,7 @@ source_profile = SourceSharedCredentials
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
 				}
 
-				// Config does not provide a passthrough for session.Options.SharedConfigFiles
-				os.Setenv("AWS_CONFIG_FILE", file.Name())
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
 			}
 
 			if testCase.SharedCredentialsFile != "" {
@@ -861,8 +876,7 @@ source_profile = SourceSharedCredentials
 					t.Fatalf("unexpected error writing shared credentials file: %s", err)
 				}
 
-				// Config does not provide a passthrough for session.Options.SharedConfigFiles
-				testCase.Config.CredsFilename = file.Name()
+				testCase.Config.SharedCredentialsFiles = []string{file.Name()}
 				if testCase.ExpectedCredentialsValue.Source == sharedConfigCredentialsProvider {
 					testCase.ExpectedCredentialsValue.Source = fmt.Sprintf("%s: %s", sharedConfigCredentialsProvider, file.Name())
 				}
