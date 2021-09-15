@@ -1,4 +1,4 @@
-package mocks
+package mockdata
 
 import (
 	"github.com/aws/aws-sdk-go/aws"
@@ -7,12 +7,12 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
+	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
 )
 
 // GetMockedAwsApiSession establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
-func GetMockedAwsApiSession(svcName string, endpoints []*awsmocks.MockEndpoint) (func(), *session.Session, error) {
-	ts := awsmocks.MockAwsApiServer(svcName, endpoints)
+func GetMockedAwsApiSession(svcName string, endpoints []*servicemocks.MockEndpoint) (func(), *session.Session, error) {
+	ts := servicemocks.MockAwsApiServer(svcName, endpoints)
 
 	sc := credentials.NewStaticCredentials("accessKey", "secretKey", "")
 
@@ -28,49 +28,49 @@ func GetMockedAwsApiSession(svcName string, endpoints []*awsmocks.MockEndpoint) 
 
 var (
 	MockEc2MetadataCredentials = credentials.Value{
-		AccessKeyID:     awsmocks.MockEc2MetadataAccessKey,
+		AccessKeyID:     servicemocks.MockEc2MetadataAccessKey,
 		ProviderName:    ec2rolecreds.ProviderName,
-		SecretAccessKey: awsmocks.MockEc2MetadataSecretKey,
-		SessionToken:    awsmocks.MockEc2MetadataSessionToken,
+		SecretAccessKey: servicemocks.MockEc2MetadataSecretKey,
+		SessionToken:    servicemocks.MockEc2MetadataSessionToken,
 	}
 
 	MockEcsCredentialsCredentials = credentials.Value{
-		AccessKeyID:     awsmocks.MockEcsCredentialsAccessKey,
+		AccessKeyID:     servicemocks.MockEcsCredentialsAccessKey,
 		ProviderName:    endpointcreds.ProviderName,
-		SecretAccessKey: awsmocks.MockEcsCredentialsSecretKey,
-		SessionToken:    awsmocks.MockEcsCredentialsSessionToken,
+		SecretAccessKey: servicemocks.MockEcsCredentialsSecretKey,
+		SessionToken:    servicemocks.MockEcsCredentialsSessionToken,
 	}
 
 	MockEnvCredentials = credentials.Value{
-		AccessKeyID:     awsmocks.MockEnvAccessKey,
+		AccessKeyID:     servicemocks.MockEnvAccessKey,
 		ProviderName:    credentials.EnvProviderName,
-		SecretAccessKey: awsmocks.MockEnvSecretKey,
+		SecretAccessKey: servicemocks.MockEnvSecretKey,
 	}
 
 	MockEnvCredentialsWithSessionToken = credentials.Value{
-		AccessKeyID:     awsmocks.MockEnvAccessKey,
+		AccessKeyID:     servicemocks.MockEnvAccessKey,
 		ProviderName:    credentials.EnvProviderName,
-		SecretAccessKey: awsmocks.MockEnvSecretKey,
-		SessionToken:    awsmocks.MockEnvSessionToken,
+		SecretAccessKey: servicemocks.MockEnvSecretKey,
+		SessionToken:    servicemocks.MockEnvSessionToken,
 	}
 
 	MockStaticCredentials = credentials.Value{
-		AccessKeyID:     awsmocks.MockStaticAccessKey,
+		AccessKeyID:     servicemocks.MockStaticAccessKey,
 		ProviderName:    credentials.StaticProviderName,
-		SecretAccessKey: awsmocks.MockStaticSecretKey,
+		SecretAccessKey: servicemocks.MockStaticSecretKey,
 	}
 
 	MockStsAssumeRoleCredentials = credentials.Value{
-		AccessKeyID:     awsmocks.MockStsAssumeRoleAccessKey,
+		AccessKeyID:     servicemocks.MockStsAssumeRoleAccessKey,
 		ProviderName:    stscreds.ProviderName,
-		SecretAccessKey: awsmocks.MockStsAssumeRoleSecretKey,
-		SessionToken:    awsmocks.MockStsAssumeRoleSessionToken,
+		SecretAccessKey: servicemocks.MockStsAssumeRoleSecretKey,
+		SessionToken:    servicemocks.MockStsAssumeRoleSessionToken,
 	}
 
 	MockStsAssumeRoleWithWebIdentityCredentials = credentials.Value{
-		AccessKeyID:     awsmocks.MockStsAssumeRoleWithWebIdentityAccessKey,
+		AccessKeyID:     servicemocks.MockStsAssumeRoleWithWebIdentityAccessKey,
 		ProviderName:    stscreds.WebIdentityProviderName,
-		SecretAccessKey: awsmocks.MockStsAssumeRoleWithWebIdentitySecretKey,
-		SessionToken:    awsmocks.MockStsAssumeRoleWithWebIdentitySessionToken,
+		SecretAccessKey: servicemocks.MockStsAssumeRoleWithWebIdentitySecretKey,
+		SessionToken:    servicemocks.MockStsAssumeRoleWithWebIdentitySessionToken,
 	}
 )

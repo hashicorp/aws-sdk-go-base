@@ -1,4 +1,4 @@
-package mocks
+package mockdata
 
 import (
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -7,12 +7,12 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
+	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
 )
 
 // GetMockedAwsApiSessionV2 establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
-func GetMockedAwsApiSessionV2(svcName string, endpoints []*awsmocks.MockEndpoint) (func(), aws.Config, string) {
-	ts := awsmocks.MockAwsApiServer(svcName, endpoints)
+func GetMockedAwsApiSessionV2(svcName string, endpoints []*servicemocks.MockEndpoint) (func(), aws.Config, string) {
+	ts := servicemocks.MockAwsApiServer(svcName, endpoints)
 
 	sc := credentials.NewStaticCredentialsProvider("accessKey", "secretKey", "")
 
@@ -32,52 +32,52 @@ func GetMockedAwsApiSessionV2(svcName string, endpoints []*awsmocks.MockEndpoint
 
 var (
 	MockEc2MetadataCredentials = aws.Credentials{
-		AccessKeyID:     awsmocks.MockEc2MetadataAccessKey,
+		AccessKeyID:     servicemocks.MockEc2MetadataAccessKey,
 		Source:          ec2rolecreds.ProviderName,
-		SecretAccessKey: awsmocks.MockEc2MetadataSecretKey,
-		SessionToken:    awsmocks.MockEc2MetadataSessionToken,
+		SecretAccessKey: servicemocks.MockEc2MetadataSecretKey,
+		SessionToken:    servicemocks.MockEc2MetadataSessionToken,
 		CanExpire:       true,
 	}
 
 	MockEcsCredentialsCredentials = aws.Credentials{
-		AccessKeyID:     awsmocks.MockEcsCredentialsAccessKey,
-		SecretAccessKey: awsmocks.MockEcsCredentialsSecretKey,
-		SessionToken:    awsmocks.MockEcsCredentialsSessionToken,
+		AccessKeyID:     servicemocks.MockEcsCredentialsAccessKey,
+		SecretAccessKey: servicemocks.MockEcsCredentialsSecretKey,
+		SessionToken:    servicemocks.MockEcsCredentialsSessionToken,
 		CanExpire:       true,
 		Source:          endpointcreds.ProviderName,
 	}
 
 	MockEnvCredentials = aws.Credentials{
-		AccessKeyID:     awsmocks.MockEnvAccessKey,
-		SecretAccessKey: awsmocks.MockEnvSecretKey,
+		AccessKeyID:     servicemocks.MockEnvAccessKey,
+		SecretAccessKey: servicemocks.MockEnvSecretKey,
 		Source:          config.CredentialsSourceName,
 	}
 
 	MockEnvCredentialsWithSessionToken = aws.Credentials{
-		AccessKeyID:     awsmocks.MockEnvAccessKey,
-		SecretAccessKey: awsmocks.MockEnvSecretKey,
-		SessionToken:    awsmocks.MockEnvSessionToken,
+		AccessKeyID:     servicemocks.MockEnvAccessKey,
+		SecretAccessKey: servicemocks.MockEnvSecretKey,
+		SessionToken:    servicemocks.MockEnvSessionToken,
 		Source:          config.CredentialsSourceName,
 	}
 
 	MockStaticCredentials = aws.Credentials{
-		AccessKeyID:     awsmocks.MockStaticAccessKey,
-		SecretAccessKey: awsmocks.MockStaticSecretKey,
+		AccessKeyID:     servicemocks.MockStaticAccessKey,
+		SecretAccessKey: servicemocks.MockStaticSecretKey,
 		Source:          credentials.StaticCredentialsName,
 	}
 
 	MockStsAssumeRoleCredentials = aws.Credentials{
-		AccessKeyID:     awsmocks.MockStsAssumeRoleAccessKey,
-		SecretAccessKey: awsmocks.MockStsAssumeRoleSecretKey,
-		SessionToken:    awsmocks.MockStsAssumeRoleSessionToken,
+		AccessKeyID:     servicemocks.MockStsAssumeRoleAccessKey,
+		SecretAccessKey: servicemocks.MockStsAssumeRoleSecretKey,
+		SessionToken:    servicemocks.MockStsAssumeRoleSessionToken,
 		Source:          stscreds.ProviderName,
 		CanExpire:       true,
 	}
 
 	MockStsAssumeRoleWithWebIdentityCredentials = aws.Credentials{
-		AccessKeyID:     awsmocks.MockStsAssumeRoleWithWebIdentityAccessKey,
-		SecretAccessKey: awsmocks.MockStsAssumeRoleWithWebIdentitySecretKey,
-		SessionToken:    awsmocks.MockStsAssumeRoleWithWebIdentitySessionToken,
+		AccessKeyID:     servicemocks.MockStsAssumeRoleWithWebIdentityAccessKey,
+		SecretAccessKey: servicemocks.MockStsAssumeRoleWithWebIdentitySecretKey,
+		SessionToken:    servicemocks.MockStsAssumeRoleWithWebIdentitySessionToken,
 		Source:          stscreds.WebIdentityProviderName,
 		CanExpire:       true,
 	}

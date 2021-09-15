@@ -8,17 +8,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
-	"github.com/hashicorp/aws-sdk-go-base/mocks"
+	"github.com/hashicorp/aws-sdk-go-base/mockdata"
+	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
 )
 
 func TestGetAccountIDAndPartition(t *testing.T) {
 	var testCases = []struct {
 		Description          string
 		AuthProviderName     string
-		EC2MetadataEndpoints []*awsmocks.MetadataResponse
-		IAMEndpoints         []*awsmocks.MockEndpoint
-		STSEndpoints         []*awsmocks.MockEndpoint
+		EC2MetadataEndpoints []*servicemocks.MetadataResponse
+		IAMEndpoints         []*servicemocks.MockEndpoint
+		STSEndpoints         []*servicemocks.MockEndpoint
 		ErrCount             int
 		ExpectedAccountID    string
 		ExpectedPartition    string
@@ -26,83 +26,83 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 		{
 			Description:          "EC2 Metadata over iam:GetUser when using EC2 Instance Profile",
 			AuthProviderName:     ec2rolecreds.ProviderName,
-			EC2MetadataEndpoints: append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint),
+			EC2MetadataEndpoints: append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint),
 
-			IAMEndpoints: []*awsmocks.MockEndpoint{
+			IAMEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_GetUser_valid, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusOK, Body: servicemocks.IamResponse_GetUser_valid, ContentType: "text/xml"},
 				},
 			},
-			ExpectedAccountID: awsmocks.Ec2metadata_iamInfoEndpoint_expectedAccountID,
-			ExpectedPartition: awsmocks.Ec2metadata_iamInfoEndpoint_expectedPartition,
+			ExpectedAccountID: servicemocks.Ec2metadata_iamInfoEndpoint_expectedAccountID,
+			ExpectedPartition: servicemocks.Ec2metadata_iamInfoEndpoint_expectedPartition,
 		},
 		{
 			Description:          "Mimic the metadata service mocked by Hologram (https://github.com/AdRoll/hologram)",
 			AuthProviderName:     ec2rolecreds.ProviderName,
-			EC2MetadataEndpoints: awsmocks.Ec2metadata_securityCredentialsEndpoints,
-			IAMEndpoints: []*awsmocks.MockEndpoint{
+			EC2MetadataEndpoints: servicemocks.Ec2metadata_securityCredentialsEndpoints,
+			IAMEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusForbidden, Body: servicemocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
 				},
 			},
-			STSEndpoints: []*awsmocks.MockEndpoint{
-				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			STSEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
-			ExpectedAccountID: awsmocks.MockStsGetCallerIdentityAccountID,
-			ExpectedPartition: awsmocks.MockStsGetCallerIdentityPartition,
+			ExpectedAccountID: servicemocks.MockStsGetCallerIdentityAccountID,
+			ExpectedPartition: servicemocks.MockStsGetCallerIdentityPartition,
 		},
 		{
 			Description: "iam:ListRoles if iam:GetUser AccessDenied and sts:GetCallerIdentity fails",
-			IAMEndpoints: []*awsmocks.MockEndpoint{
+			IAMEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusForbidden, Body: servicemocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
 				},
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_ListRoles_valid, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusOK, Body: servicemocks.IamResponse_ListRoles_valid, ContentType: "text/xml"},
 				},
 			},
-			STSEndpoints: []*awsmocks.MockEndpoint{
-				awsmocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
+			STSEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
-			ExpectedAccountID: awsmocks.IamResponse_ListRoles_valid_expectedAccountID,
-			ExpectedPartition: awsmocks.IamResponse_ListRoles_valid_expectedPartition,
+			ExpectedAccountID: servicemocks.IamResponse_ListRoles_valid_expectedAccountID,
+			ExpectedPartition: servicemocks.IamResponse_ListRoles_valid_expectedPartition,
 		},
 		{
 			Description: "iam:ListRoles if iam:GetUser ValidationError and sts:GetCallerIdentity fails",
-			IAMEndpoints: []*awsmocks.MockEndpoint{
+			IAMEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusBadRequest, Body: awsmocks.IamResponse_GetUser_federatedFailure, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusBadRequest, Body: servicemocks.IamResponse_GetUser_federatedFailure, ContentType: "text/xml"},
 				},
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_ListRoles_valid, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusOK, Body: servicemocks.IamResponse_ListRoles_valid, ContentType: "text/xml"},
 				},
 			},
-			STSEndpoints: []*awsmocks.MockEndpoint{
-				awsmocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
+			STSEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
-			ExpectedAccountID: awsmocks.IamResponse_ListRoles_valid_expectedAccountID,
-			ExpectedPartition: awsmocks.IamResponse_ListRoles_valid_expectedPartition,
+			ExpectedAccountID: servicemocks.IamResponse_ListRoles_valid_expectedAccountID,
+			ExpectedPartition: servicemocks.IamResponse_ListRoles_valid_expectedPartition,
 		},
 		{
 			Description: "Error when all endpoints fail",
-			IAMEndpoints: []*awsmocks.MockEndpoint{
+			IAMEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusBadRequest, Body: awsmocks.IamResponse_GetUser_federatedFailure, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusBadRequest, Body: servicemocks.IamResponse_GetUser_federatedFailure, ContentType: "text/xml"},
 				},
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_ListRoles_unauthorized, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusForbidden, Body: servicemocks.IamResponse_ListRoles_unauthorized, ContentType: "text/xml"},
 				},
 			},
-			STSEndpoints: []*awsmocks.MockEndpoint{
-				awsmocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
+			STSEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
 			ErrCount: 1,
 		},
@@ -112,16 +112,16 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			resetEnv := awsmocks.UnsetEnv(t)
+			resetEnv := servicemocks.UnsetEnv(t)
 			defer resetEnv()
 			// capture the test server's close method, to call after the test returns
-			awsTs := awsmocks.AwsMetadataApiMock(testCase.EC2MetadataEndpoints)
+			awsTs := servicemocks.AwsMetadataApiMock(testCase.EC2MetadataEndpoints)
 			defer awsTs()
 
-			closeIam, iamConfig, _ := mocks.GetMockedAwsApiSessionV2("IAM", testCase.IAMEndpoints)
+			closeIam, iamConfig, _ := mockdata.GetMockedAwsApiSessionV2("IAM", testCase.IAMEndpoints)
 			defer closeIam()
 
-			closeSts, stsConfig, _ := mocks.GetMockedAwsApiSessionV2("STS", testCase.STSEndpoints)
+			closeSts, stsConfig, _ := mockdata.GetMockedAwsApiSessionV2("STS", testCase.STSEndpoints)
 			defer closeSts()
 
 			iamConn := iam.NewFromConfig(iamConfig)
@@ -146,10 +146,10 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 
 func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 	t.Run("EC2 metadata success", func(t *testing.T) {
-		resetEnv := awsmocks.UnsetEnv(t)
+		resetEnv := servicemocks.UnsetEnv(t)
 		defer resetEnv()
 
-		awsTs := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
+		awsTs := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
 		defer awsTs()
 
 		id, partition, err := getAccountIDAndPartitionFromEC2Metadata(context.Background())
@@ -157,11 +157,11 @@ func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 			t.Fatalf("Getting account ID from EC2 metadata API failed: %s", err)
 		}
 
-		if id != awsmocks.Ec2metadata_iamInfoEndpoint_expectedAccountID {
-			t.Fatalf("Expected account ID: %s, given: %s", awsmocks.Ec2metadata_iamInfoEndpoint_expectedAccountID, id)
+		if id != servicemocks.Ec2metadata_iamInfoEndpoint_expectedAccountID {
+			t.Fatalf("Expected account ID: %s, given: %s", servicemocks.Ec2metadata_iamInfoEndpoint_expectedAccountID, id)
 		}
-		if partition != awsmocks.Ec2metadata_iamInfoEndpoint_expectedPartition {
-			t.Fatalf("Expected partition: %s, given: %s", awsmocks.Ec2metadata_iamInfoEndpoint_expectedPartition, partition)
+		if partition != servicemocks.Ec2metadata_iamInfoEndpoint_expectedPartition {
+			t.Fatalf("Expected partition: %s, given: %s", servicemocks.Ec2metadata_iamInfoEndpoint_expectedPartition, partition)
 		}
 	})
 }
@@ -169,41 +169,41 @@ func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 	var testCases = []struct {
 		Description       string
-		MockEndpoints     []*awsmocks.MockEndpoint
+		MockEndpoints     []*servicemocks.MockEndpoint
 		ErrCount          int
 		ExpectedAccountID string
 		ExpectedPartition string
 	}{
 		{
 			Description: "Ignore iam:GetUser failure with federated user",
-			MockEndpoints: []*awsmocks.MockEndpoint{
+			MockEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusBadRequest, Body: awsmocks.IamResponse_GetUser_federatedFailure, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusBadRequest, Body: servicemocks.IamResponse_GetUser_federatedFailure, ContentType: "text/xml"},
 				},
 			},
 			ErrCount: 0,
 		},
 		{
 			Description: "Ignore iam:GetUser failure with unauthorized user",
-			MockEndpoints: []*awsmocks.MockEndpoint{
+			MockEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusForbidden, Body: servicemocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
 				},
 			},
 			ErrCount: 0,
 		},
 		{
 			Description: "iam:GetUser success",
-			MockEndpoints: []*awsmocks.MockEndpoint{
+			MockEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_GetUser_valid, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusOK, Body: servicemocks.IamResponse_GetUser_valid, ContentType: "text/xml"},
 				},
 			},
-			ExpectedAccountID: awsmocks.IamResponse_GetUser_valid_expectedAccountID,
-			ExpectedPartition: awsmocks.IamResponse_GetUser_valid_expectedPartition,
+			ExpectedAccountID: servicemocks.IamResponse_GetUser_valid_expectedAccountID,
+			ExpectedPartition: servicemocks.IamResponse_GetUser_valid_expectedPartition,
 		},
 	}
 
@@ -211,7 +211,7 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, config, _ := mocks.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
+			closeIam, config, _ := mockdata.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
@@ -236,31 +236,31 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 	var testCases = []struct {
 		Description       string
-		MockEndpoints     []*awsmocks.MockEndpoint
+		MockEndpoints     []*servicemocks.MockEndpoint
 		ErrCount          int
 		ExpectedAccountID string
 		ExpectedPartition string
 	}{
 		{
 			Description: "iam:ListRoles unauthorized",
-			MockEndpoints: []*awsmocks.MockEndpoint{
+			MockEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusForbidden, Body: awsmocks.IamResponse_ListRoles_unauthorized, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusForbidden, Body: servicemocks.IamResponse_ListRoles_unauthorized, ContentType: "text/xml"},
 				},
 			},
 			ErrCount: 1,
 		},
 		{
 			Description: "iam:ListRoles success",
-			MockEndpoints: []*awsmocks.MockEndpoint{
+			MockEndpoints: []*servicemocks.MockEndpoint{
 				{
-					Request:  &awsmocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
-					Response: &awsmocks.MockResponse{StatusCode: http.StatusOK, Body: awsmocks.IamResponse_ListRoles_valid, ContentType: "text/xml"},
+					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=ListRoles&MaxItems=1&Version=2010-05-08"},
+					Response: &servicemocks.MockResponse{StatusCode: http.StatusOK, Body: servicemocks.IamResponse_ListRoles_valid, ContentType: "text/xml"},
 				},
 			},
-			ExpectedAccountID: awsmocks.IamResponse_ListRoles_valid_expectedAccountID,
-			ExpectedPartition: awsmocks.IamResponse_ListRoles_valid_expectedPartition,
+			ExpectedAccountID: servicemocks.IamResponse_ListRoles_valid_expectedAccountID,
+			ExpectedPartition: servicemocks.IamResponse_ListRoles_valid_expectedPartition,
 		},
 	}
 
@@ -268,7 +268,7 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, config, _ := mocks.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
+			closeIam, config, _ := mockdata.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
@@ -293,25 +293,25 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 	var testCases = []struct {
 		Description       string
-		MockEndpoints     []*awsmocks.MockEndpoint
+		MockEndpoints     []*servicemocks.MockEndpoint
 		ErrCount          int
 		ExpectedAccountID string
 		ExpectedPartition string
 	}{
 		{
 			Description: "sts:GetCallerIdentity unauthorized",
-			MockEndpoints: []*awsmocks.MockEndpoint{
-				awsmocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidEndpointAccessDenied,
 			},
 			ErrCount: 1,
 		},
 		{
 			Description: "sts:GetCallerIdentity success",
-			MockEndpoints: []*awsmocks.MockEndpoint{
-				awsmocks.MockStsGetCallerIdentityValidEndpoint,
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
-			ExpectedAccountID: awsmocks.MockStsGetCallerIdentityAccountID,
-			ExpectedPartition: awsmocks.MockStsGetCallerIdentityPartition,
+			ExpectedAccountID: servicemocks.MockStsGetCallerIdentityAccountID,
+			ExpectedPartition: servicemocks.MockStsGetCallerIdentityPartition,
 		},
 	}
 
@@ -319,7 +319,7 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeSts, config, _ := mocks.GetMockedAwsApiSessionV2("STS", testCase.MockEndpoints)
+			closeSts, config, _ := mockdata.GetMockedAwsApiSessionV2("STS", testCase.MockEndpoints)
 			defer closeSts()
 
 			stsClient := sts.NewFromConfig(config)
