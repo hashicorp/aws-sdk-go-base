@@ -858,7 +858,7 @@ source_profile = SourceSharedCredentials
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
 				}
 
-				testCase.Config.SharedConfigFilename = file.Name()
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
 			}
 
 			if testCase.SharedCredentialsFile != "" {
@@ -876,7 +876,7 @@ source_profile = SourceSharedCredentials
 					t.Fatalf("unexpected error writing shared credentials file: %s", err)
 				}
 
-				testCase.Config.SharedCredentialsFilename = file.Name()
+				testCase.Config.SharedCredentialsFiles = []string{file.Name()}
 				if testCase.ExpectedCredentialsValue.Source == sharedConfigCredentialsProvider {
 					testCase.ExpectedCredentialsValue.Source = fmt.Sprintf("%s: %s", sharedConfigCredentialsProvider, file.Name())
 				}

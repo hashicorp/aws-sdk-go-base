@@ -19,8 +19,8 @@ type Config struct {
 	Profile                     string
 	Region                      string
 	SecretKey                   string
-	SharedCredentialsFilename   string
-	SharedConfigFilename        string
+	SharedCredentialsFiles      []string
+	SharedConfigFiles           []string
 	SkipCredsValidation         bool
 	SkipMetadataApiCheck        bool
 	SkipRequestingAccountId     bool

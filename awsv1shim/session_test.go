@@ -904,7 +904,7 @@ region = us-east-1
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
 				}
 
-				testCase.Config.SharedConfigFilename = file.Name()
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
 			}
 
 			if testCase.SharedCredentialsFile != "" {
@@ -922,7 +922,7 @@ region = us-east-1
 					t.Fatalf("unexpected error writing shared credentials file: %s", err)
 				}
 
-				testCase.Config.SharedCredentialsFilename = file.Name()
+				testCase.Config.SharedCredentialsFiles = []string{file.Name()}
 			}
 
 			for k, v := range testCase.EnvironmentVariables {
