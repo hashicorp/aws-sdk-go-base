@@ -42,7 +42,9 @@ jobs:
           # https://github.com/actions/setup-go/pull/62
           go-version: ${{ steps.go-version.outputs.content }}
 
-      - run: go test ./...
+      - run: |
+          go test ./...
+          cd awsv1shim && go test ./...
 
   golangci-lint:
     runs-on: ubuntu-latest
