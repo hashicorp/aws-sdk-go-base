@@ -118,10 +118,10 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			awsTs := servicemocks.AwsMetadataApiMock(testCase.EC2MetadataEndpoints)
 			defer awsTs()
 
-			closeIam, iamConfig, _ := mockdata.GetMockedAwsApiSessionV2("IAM", testCase.IAMEndpoints)
+			closeIam, iamConfig, _ := mockdata.GetMockedAwsApiSession("IAM", testCase.IAMEndpoints)
 			defer closeIam()
 
-			closeSts, stsConfig, _ := mockdata.GetMockedAwsApiSessionV2("STS", testCase.STSEndpoints)
+			closeSts, stsConfig, _ := mockdata.GetMockedAwsApiSession("STS", testCase.STSEndpoints)
 			defer closeSts()
 
 			iamConn := iam.NewFromConfig(iamConfig)
@@ -211,7 +211,7 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, config, _ := mockdata.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
+			closeIam, config, _ := mockdata.GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
@@ -268,7 +268,7 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeIam, config, _ := mockdata.GetMockedAwsApiSessionV2("IAM", testCase.MockEndpoints)
+			closeIam, config, _ := mockdata.GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
@@ -319,7 +319,7 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			closeSts, config, _ := mockdata.GetMockedAwsApiSessionV2("STS", testCase.MockEndpoints)
+			closeSts, config, _ := mockdata.GetMockedAwsApiSession("STS", testCase.MockEndpoints)
 			defer closeSts()
 
 			stsClient := sts.NewFromConfig(config)

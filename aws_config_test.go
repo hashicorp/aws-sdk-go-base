@@ -833,7 +833,7 @@ source_profile = SourceSharedCredentials
 				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
 			}
 
-			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSessionV2("STS", testCase.MockStsEndpoints)
+			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
 			defer closeSts()
 
 			testCase.Config.StsEndpoint = stsEndpoint

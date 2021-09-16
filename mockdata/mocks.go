@@ -10,8 +10,8 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
 )
 
-// GetMockedAwsApiSessionV2 establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
-func GetMockedAwsApiSessionV2(svcName string, endpoints []*servicemocks.MockEndpoint) (func(), aws.Config, string) {
+// GetMockedAwsApiSession establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
+func GetMockedAwsApiSession(svcName string, endpoints []*servicemocks.MockEndpoint) (func(), aws.Config, string) {
 	ts := servicemocks.MockAwsApiServer(svcName, endpoints)
 
 	sc := credentials.NewStaticCredentialsProvider("accessKey", "secretKey", "")
