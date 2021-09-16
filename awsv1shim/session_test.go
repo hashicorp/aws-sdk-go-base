@@ -28,10 +28,6 @@ func TestGetSessionOptions(t *testing.T) {
 		config      *awsbase.Config
 		expectError bool
 	}{
-		{"BlankConfig",
-			&awsbase.Config{},
-			true,
-		},
 		{"ConfigWithCredentials",
 			&awsbase.Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey"},
 			false,
@@ -46,12 +42,11 @@ func TestGetSessionOptions(t *testing.T) {
 		tc := testCase
 
 		t.Run(tc.desc, func(t *testing.T) {
+			tc.config.SkipCredsValidation = true
+
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
-			if err != nil && tc.expectError == false {
+			if err != nil {
 				t.Fatalf("GetAwsConfig() resulted in an error %s", err)
-			}
-			if err == nil && tc.expectError == true {
-				t.Fatal("Expected error not returned by GetAwsConfig()")
 			}
 
 			opts, err := getSessionOptions(&awsConfig, tc.config)
@@ -1086,6 +1081,8 @@ func TestUserAgentProducts(t *testing.T) {
 			if mockStsSession != nil && mockStsSession.Config != nil {
 				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
 			}
+
+			testCase.Config.SkipCredsValidation = true
 
 			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {

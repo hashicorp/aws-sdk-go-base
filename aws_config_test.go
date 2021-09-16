@@ -878,7 +878,7 @@ source_profile = SourceSharedCredentials
 
 				testCase.Config.SharedCredentialsFiles = []string{file.Name()}
 				if testCase.ExpectedCredentialsValue.Source == sharedConfigCredentialsProvider {
-					testCase.ExpectedCredentialsValue.Source = fmt.Sprintf("%s: %s", sharedConfigCredentialsProvider, file.Name())
+					testCase.ExpectedCredentialsValue.Source = sharedConfigCredentialsSource(file.Name())
 				}
 			}
 
@@ -1042,6 +1042,8 @@ func TestUserAgentProducts(t *testing.T) {
 			for k, v := range testCase.EnvironmentVariables {
 				os.Setenv(k, v)
 			}
+
+			testCase.Config.SkipCredsValidation = true
 
 			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {

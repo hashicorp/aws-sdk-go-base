@@ -11,7 +11,6 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
 	awsbase "github.com/hashicorp/aws-sdk-go-base"
 	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
 	"github.com/hashicorp/go-cleanhttp"
@@ -126,12 +125,6 @@ func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error)
 			r.Retryable = aws.Bool(false)
 		}
 	})
-
-	if !c.SkipCredsValidation {
-		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(sts.New(sess)); err != nil {
-			return nil, fmt.Errorf("error validating provider credentials: %w", err)
-		}
-	}
 
 	return sess, nil
 }
