@@ -13,6 +13,7 @@ importlint:
 
 test:
 	go test -timeout=30s -parallel=4 ./...
+	cd awsv1shim && go test -timeout=30s -parallel=4 ./...
 
 tools:
 	cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
