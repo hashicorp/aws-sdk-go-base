@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
-	"github.com/hashicorp/aws-sdk-go-base/awsmocks"
+	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
 )
 
 func TestAWSGetCredentials_static(t *testing.T) {
@@ -51,11 +51,11 @@ func TestAWSGetCredentials_static(t *testing.T) {
 // credentials.
 func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 	// clear AWS_* environment variables
-	resetEnv := awsmocks.UnsetEnv(t)
+	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 
 	// capture the test server's close method, to call after the test returns
-	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
+	ts := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
 	defer ts()
 
 	// An empty config, no key supplied
@@ -72,10 +72,10 @@ func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 }
 
 func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
-	resetEnv := awsmocks.UnsetEnv(t)
+	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := awsmocks.AwsMetadataApiMock(append(awsmocks.Ec2metadata_securityCredentialsEndpoints, awsmocks.Ec2metadata_instanceIdEndpoint, awsmocks.Ec2metadata_iamInfoEndpoint))
+	ts := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
 	defer ts()
 	testCases := []struct {
 		Key, Secret, Token string
@@ -110,10 +110,10 @@ func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
 }
 
 func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
-	resetEnv := awsmocks.UnsetEnv(t)
+	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := awsmocks.InvalidAwsEnv()
+	ts := servicemocks.InvalidAwsEnv()
 	defer ts()
 
 	// An empty config, no key supplied
@@ -130,7 +130,7 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
 }
 
 func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
-	resetEnv := awsmocks.UnsetEnv(t)
+	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 
 	if err := os.Setenv("AWS_PROFILE", "myprofile"); err != nil {

@@ -1,4 +1,4 @@
-package awsmocks
+package servicemocks
 
 import (
 	"net/http"

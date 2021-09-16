@@ -1,4 +1,4 @@
-package awsmocks
+package servicemocks
 
 import (
 	"bytes"
@@ -10,19 +10,6 @@ import (
 	"net/url"
 	"os"
 	"time"
-
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/config"
-	credentialsv2 "github.com/aws/aws-sdk-go-v2/credentials"
-	ec2rolecredsv2 "github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
-	endpointcredsv2 "github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
-	stscredsv2 "github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws"
-	credentialsv1 "github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/ec2rolecreds"
-	"github.com/aws/aws-sdk-go/aws/credentials/endpointcreds"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/session"
 )
 
 const (
@@ -146,82 +133,6 @@ const (
 )
 
 var (
-	MockEc2MetadataCredentialsV1 = credentialsv1.Value{
-		AccessKeyID:     MockEc2MetadataAccessKey,
-		ProviderName:    ec2rolecreds.ProviderName,
-		SecretAccessKey: MockEc2MetadataSecretKey,
-		SessionToken:    MockEc2MetadataSessionToken,
-	}
-	MockEc2MetadataCredentialsV2 = awsv2.Credentials{
-		AccessKeyID:     MockEc2MetadataAccessKey,
-		Source:          ec2rolecredsv2.ProviderName,
-		SecretAccessKey: MockEc2MetadataSecretKey,
-		SessionToken:    MockEc2MetadataSessionToken,
-		CanExpire:       true,
-	}
-
-	MockEcsCredentialsCredentialsV1 = credentialsv1.Value{
-		AccessKeyID:     MockEcsCredentialsAccessKey,
-		ProviderName:    endpointcreds.ProviderName,
-		SecretAccessKey: MockEcsCredentialsSecretKey,
-		SessionToken:    MockEcsCredentialsSessionToken,
-	}
-	MockEcsCredentialsCredentialsV2 = awsv2.Credentials{
-		AccessKeyID:     MockEcsCredentialsAccessKey,
-		SecretAccessKey: MockEcsCredentialsSecretKey,
-		SessionToken:    MockEcsCredentialsSessionToken,
-		CanExpire:       true,
-		Source:          endpointcredsv2.ProviderName,
-	}
-
-	MockEnvCredentialsV1 = credentialsv1.Value{
-		AccessKeyID:     MockEnvAccessKey,
-		ProviderName:    credentialsv1.EnvProviderName,
-		SecretAccessKey: MockEnvSecretKey,
-	}
-	MockEnvCredentialsV2 = awsv2.Credentials{
-		AccessKeyID:     MockEnvAccessKey,
-		SecretAccessKey: MockEnvSecretKey,
-		Source:          config.CredentialsSourceName,
-	}
-
-	MockEnvCredentialsWithSessionTokenV1 = credentialsv1.Value{
-		AccessKeyID:     MockEnvAccessKey,
-		ProviderName:    credentialsv1.EnvProviderName,
-		SecretAccessKey: MockEnvSecretKey,
-		SessionToken:    MockEnvSessionToken,
-	}
-	MockEnvCredentialsWithSessionTokenV2 = awsv2.Credentials{
-		AccessKeyID:     MockEnvAccessKey,
-		SecretAccessKey: MockEnvSecretKey,
-		SessionToken:    MockEnvSessionToken,
-		Source:          config.CredentialsSourceName,
-	}
-
-	MockStaticCredentialsV1 = credentialsv1.Value{
-		AccessKeyID:     MockStaticAccessKey,
-		ProviderName:    credentialsv1.StaticProviderName,
-		SecretAccessKey: MockStaticSecretKey,
-	}
-	MockStaticCredentialsV2 = awsv2.Credentials{
-		AccessKeyID:     MockStaticAccessKey,
-		SecretAccessKey: MockStaticSecretKey,
-		Source:          credentialsv2.StaticCredentialsName,
-	}
-
-	MockStsAssumeRoleCredentialsV1 = credentialsv1.Value{
-		AccessKeyID:     MockStsAssumeRoleAccessKey,
-		ProviderName:    stscreds.ProviderName,
-		SecretAccessKey: MockStsAssumeRoleSecretKey,
-		SessionToken:    MockStsAssumeRoleSessionToken,
-	}
-	MockStsAssumeRoleCredentialsV2 = awsv2.Credentials{
-		AccessKeyID:     MockStsAssumeRoleAccessKey,
-		SecretAccessKey: MockStsAssumeRoleSecretKey,
-		SessionToken:    MockStsAssumeRoleSessionToken,
-		Source:          stscredsv2.ProviderName,
-		CanExpire:       true,
-	}
 	MockStsAssumeRoleInvalidEndpointInvalidClientTokenId = &MockEndpoint{
 		Request: &MockRequest{
 			Body: url.Values{
@@ -276,20 +187,6 @@ var (
 			ContentType: "text/xml",
 			StatusCode:  http.StatusOK,
 		},
-	}
-
-	MockStsAssumeRoleWithWebIdentityCredentialsV1 = credentialsv1.Value{
-		AccessKeyID:     MockStsAssumeRoleWithWebIdentityAccessKey,
-		ProviderName:    stscreds.WebIdentityProviderName,
-		SecretAccessKey: MockStsAssumeRoleWithWebIdentitySecretKey,
-		SessionToken:    MockStsAssumeRoleWithWebIdentitySessionToken,
-	}
-	MockStsAssumeRoleWithWebIdentityCredentialsV2 = awsv2.Credentials{
-		AccessKeyID:     MockStsAssumeRoleWithWebIdentityAccessKey,
-		SecretAccessKey: MockStsAssumeRoleWithWebIdentitySecretKey,
-		SessionToken:    MockStsAssumeRoleWithWebIdentitySessionToken,
-		Source:          stscredsv2.WebIdentityProviderName,
-		CanExpire:       true,
 	}
 
 	MockStsGetCallerIdentityInvalidEndpointAccessDenied = &MockEndpoint{
@@ -372,42 +269,6 @@ func MockAwsApiServer(svcName string, endpoints []*MockEndpoint) *httptest.Serve
 	}))
 
 	return ts
-}
-
-// GetMockedAwsApiSessionV1 establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
-func GetMockedAwsApiSessionV1(svcName string, endpoints []*MockEndpoint) (func(), *session.Session, error) {
-	ts := MockAwsApiServer(svcName, endpoints)
-
-	sc := credentialsv1.NewStaticCredentials("accessKey", "secretKey", "")
-
-	sess, err := session.NewSession(&aws.Config{
-		Credentials:                   sc,
-		Region:                        aws.String("us-east-1"),
-		Endpoint:                      aws.String(ts.URL),
-		CredentialsChainVerboseErrors: aws.Bool(true),
-	})
-
-	return ts.Close, sess, err
-}
-
-// GetMockedAwsApiSessionV2 establishes an AWS session to a simulated AWS API server for a given service and route endpoints.
-func GetMockedAwsApiSessionV2(svcName string, endpoints []*MockEndpoint) (func(), awsv2.Config) {
-	ts := MockAwsApiServer(svcName, endpoints)
-
-	sc := credentialsv2.NewStaticCredentialsProvider("accessKey", "secretKey", "")
-
-	sess := awsv2.Config{
-		Credentials: sc,
-		Region:      "us-east-1",
-		EndpointResolver: awsv2.EndpointResolverFunc(func(service, region string) (awsv2.Endpoint, error) {
-			return awsv2.Endpoint{
-				URL:    ts.URL,
-				Source: awsv2.EndpointSourceCustom,
-			}, nil
-		}),
-	}
-
-	return ts.Close, sess
 }
 
 // AwsMetadataApiMock establishes a httptest server to mock out the internal AWS Metadata

@@ -12,7 +12,7 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awsbase "github.com/hashicorp/aws-sdk-go-base"
-	"github.com/hashicorp/aws-sdk-go-base/tfawserr"
+	"github.com/hashicorp/aws-sdk-go-base/awsv1shim/tfawserr"
 	"github.com/hashicorp/go-cleanhttp"
 )
 
