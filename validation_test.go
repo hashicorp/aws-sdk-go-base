@@ -1,4 +1,4 @@
-package awsv1shim
+package awsbase
 
 import (
 	"testing"
