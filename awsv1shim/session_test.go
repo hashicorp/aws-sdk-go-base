@@ -2,21 +2,27 @@ package awsv1shim
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
+	"net"
 	"os"
 	"runtime"
 	"testing"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/client/metadata"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	awsbase "github.com/hashicorp/aws-sdk-go-base"
 	"github.com/hashicorp/aws-sdk-go-base/awsv1shim/mockdata"
+	"github.com/hashicorp/aws-sdk-go-base/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
 )
 
@@ -1003,7 +1009,7 @@ func TestUserAgentProducts(t *testing.T) {
 			},
 			Description: "customized User-Agent TF_APPEND_USER_AGENT",
 			EnvironmentVariables: map[string]string{
-				appendUserAgentEnvVar: "Last",
+				constants.AppendUserAgentEnvVar: "Last",
 			},
 			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -1052,7 +1058,7 @@ func TestUserAgentProducts(t *testing.T) {
 			},
 			Description: "customized User-Agent Products and TF_APPEND_USER_AGENT",
 			EnvironmentVariables: map[string]string{
-				appendUserAgentEnvVar: "Last",
+				constants.AppendUserAgentEnvVar: "Last",
 			},
 			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent() + " Last",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -1115,4 +1121,127 @@ func TestUserAgentProducts(t *testing.T) {
 
 func awsSdkGoUserAgent() string {
 	return fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+}
+
+func TestSessionRetryHandlers(t *testing.T) {
+	const maxRetries = 25
+
+	testcases := []struct {
+		Description              string
+		RetryCount               int
+		Error                    error
+		ExpectedRetryableValue   bool
+		ExpectRetryToBeAttempted bool
+	}{
+		{
+			Description:              "other error under maxRetries",
+			RetryCount:               maxRetries - 1,
+			Error:                    errors.New("some error"),
+			ExpectedRetryableValue:   true, // defaults to true for non-AWS errors
+			ExpectRetryToBeAttempted: true,
+		},
+		{
+			Description:              "other error over maxRetries",
+			RetryCount:               maxRetries,
+			Error:                    errors.New("some error"),
+			ExpectedRetryableValue:   true,  // defaults to true for non-AWS errors
+			ExpectRetryToBeAttempted: false, // Does not actually get retried, because over max retry limit
+		},
+		{
+			Description:              "send request no such host failed under MaxNetworkRetryCount",
+			RetryCount:               constants.MaxNetworkRetryCount - 1,
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("no such host")}),
+			ExpectedRetryableValue:   true,
+			ExpectRetryToBeAttempted: true,
+		},
+		{
+			Description:              "send request no such host failed over MaxNetworkRetryCount",
+			RetryCount:               constants.MaxNetworkRetryCount,
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("no such host")}),
+			ExpectedRetryableValue:   false,
+			ExpectRetryToBeAttempted: false,
+		},
+		{
+			Description:              "send request connection refused failed under MaxNetworkRetryCount",
+			RetryCount:               constants.MaxNetworkRetryCount - 1,
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("connection refused")}),
+			ExpectedRetryableValue:   true,
+			ExpectRetryToBeAttempted: true,
+		},
+		{
+			Description:              "send request connection refused failed over MaxNetworkRetryCount",
+			RetryCount:               constants.MaxNetworkRetryCount,
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("connection refused")}),
+			ExpectedRetryableValue:   false,
+			ExpectRetryToBeAttempted: false,
+		},
+		{
+			Description:              "send request other error failed under MaxNetworkRetryCount",
+			RetryCount:               constants.MaxNetworkRetryCount - 1,
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("other error")}),
+			ExpectedRetryableValue:   true,
+			ExpectRetryToBeAttempted: true,
+		},
+		{
+			Description:              "send request other error failed over MaxNetworkRetryCount",
+			RetryCount:               constants.MaxNetworkRetryCount,
+			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("other error")}),
+			ExpectedRetryableValue:   true,
+			ExpectRetryToBeAttempted: true,
+		},
+	}
+	for _, testcase := range testcases {
+		testcase := testcase
+
+		t.Run(testcase.Description, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			config := &awsbase.Config{
+				AccessKey:           servicemocks.MockStaticAccessKey,
+				Region:              "us-east-1",
+				MaxRetries:          maxRetries,
+				SecretKey:           servicemocks.MockStaticSecretKey,
+				SkipCredsValidation: true,
+			}
+			awsConfig, err := awsbase.GetAwsConfig(context.Background(), config)
+			if err != nil {
+				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
+			}
+			session, err := GetSession(&awsConfig, config)
+			if err != nil {
+				t.Fatalf("unexpected error from GetSession(): %s", err)
+			}
+
+			iamconn := iam.New(session)
+
+			request, _ := iamconn.GetUserRequest(&iam.GetUserInput{})
+			request.RetryCount = testcase.RetryCount
+			request.Error = testcase.Error
+
+			// Prevent the retryer from using the default retry delay
+			retryer := request.Retryer.(client.DefaultRetryer)
+			retryer.MinRetryDelay = 1 * time.Microsecond
+			retryer.MaxRetryDelay = 1 * time.Microsecond
+			request.Retryer = retryer
+
+			request.Handlers.Retry.Run(request)
+			request.Handlers.AfterRetry.Run(request)
+
+			if request.Retryable == nil {
+				t.Fatal("retryable is nil")
+			}
+			if actual, expected := aws.BoolValue(request.Retryable), testcase.ExpectedRetryableValue; actual != expected {
+				t.Errorf("expected Retryable to be %t, got %t", expected, actual)
+			}
+
+			expectedRetryCount := testcase.RetryCount
+			if testcase.ExpectRetryToBeAttempted {
+				expectedRetryCount++
+			}
+			if actual, expected := request.RetryCount, expectedRetryCount; actual != expected {
+				t.Errorf("expected RetryCount to be %d, got %d", expected, actual)
+			}
+		})
+	}
 }
