@@ -3,7 +3,7 @@ package awsbase
 import (
 	"fmt"
 
-	"github.com/hashicorp/aws-sdk-go-base/internal/endpoints"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
 )
 
 type InvalidRegionError struct {

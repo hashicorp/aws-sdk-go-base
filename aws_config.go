@@ -20,8 +20,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/middleware"
-	"github.com/hashicorp/aws-sdk-go-base/internal/constants"
-	"github.com/hashicorp/aws-sdk-go-base/internal/endpoints"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
 	"github.com/hashicorp/go-cleanhttp"
 )
 

@@ -10,7 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
-	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
+	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
 func TestAWSGetCredentials_static(t *testing.T) {

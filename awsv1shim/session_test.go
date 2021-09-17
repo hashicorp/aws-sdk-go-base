@@ -20,10 +20,10 @@ import (
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	awsbase "github.com/hashicorp/aws-sdk-go-base"
-	"github.com/hashicorp/aws-sdk-go-base/awsv1shim/mockdata"
-	"github.com/hashicorp/aws-sdk-go-base/internal/constants"
-	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
+	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
+	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/mockdata"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
+	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
 func TestGetSessionOptions(t *testing.T) {

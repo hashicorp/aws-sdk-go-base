@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/hashicorp/aws-sdk-go-base/mockdata"
-	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
+	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
+	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
 func TestGetAccountIDAndPartition(t *testing.T) {

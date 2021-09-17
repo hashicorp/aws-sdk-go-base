@@ -8,7 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/aws/aws-sdk-go/service/sts"
-	awsbase "github.com/hashicorp/aws-sdk-go-base"
+	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
 )
 
 func endpointResolver(c *awsbase.Config) endpoints.Resolver {

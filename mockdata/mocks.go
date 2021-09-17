@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
+	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
 // GetMockedAwsApiSession establishes an AWS session to a simulated AWS API server for a given service and route endpoints.

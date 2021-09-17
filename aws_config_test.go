@@ -21,9 +21,9 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	"github.com/hashicorp/aws-sdk-go-base/internal/constants"
-	"github.com/hashicorp/aws-sdk-go-base/mockdata"
-	"github.com/hashicorp/aws-sdk-go-base/servicemocks"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
+	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
+	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
 const (
