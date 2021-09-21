@@ -64,7 +64,9 @@ jobs:
 
       - run: cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
 
-      - run: golangci-lint run ./...
+      - run: |
+          golangci-lint run ./...
+          cd v2/awsv1shim && golangci-lint run ./...
 
   import-lint:
     runs-on: ubuntu-latest
@@ -84,6 +86,7 @@ jobs:
 
       - run: cd tools && go install github.com/pavius/impi/cmd/impi
 
+      # impi runs against the whole directory tree, ignoring modules
       - run: impi --local . --scheme stdThirdPartyLocal ./...
 
   semgrep:
