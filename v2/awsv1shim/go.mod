@@ -10,4 +10,4 @@ require (
 
 go 1.16
 
-replace github.com/hashicorp/aws-sdk-go-base/v2 => ../
+replace github.com/hashicorp/aws-sdk-go-base/v2 => ../..
