@@ -129,11 +129,11 @@ func commonLoadOptions(c *Config) []func(*config.LoadOptions) error {
 	}
 
 	apiOptions := make([]func(*middleware.Stack) error, 0)
-	if len(c.UserAgentProducts) > 0 {
+	if c.APNInfo != nil {
 		apiOptions = append(apiOptions, func(stack *middleware.Stack) error {
 			// Because the default User-Agent middleware prepends itself to the contents of the User-Agent header,
 			// we have to run after it and also prepend our custom User-Agent
-			return stack.Build.Add(customUserAgentMiddleware(c), middleware.After)
+			return stack.Build.Add(apnUserAgentMiddleware(*c.APNInfo), middleware.After)
 		})
 	}
 	if v := os.Getenv(constants.AppendUserAgentEnvVar); v != "" {

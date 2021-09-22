@@ -2,6 +2,7 @@ package awsbase
 
 type Config struct {
 	AccessKey              string
+	APNInfo                *APNInfo
 	AssumeRole             *AssumeRole
 	CallerDocumentationURL string
 	CallerName             string
@@ -18,7 +19,16 @@ type Config struct {
 	SkipMetadataApiCheck   bool
 	StsEndpoint            string
 	Token                  string
-	UserAgentProducts      []*UserAgentProduct
+}
+
+type APNInfo struct {
+	PartnerName string
+	Products    []APNProduct
+}
+
+type APNProduct struct {
+	Name    string
+	Version string
 }
 
 type AssumeRole struct {
@@ -30,10 +40,4 @@ type AssumeRole struct {
 	SessionName       string
 	Tags              map[string]string
 	TransitiveTagKeys []string
-}
-
-type UserAgentProduct struct {
-	Extra   []string
-	Name    string
-	Version string
 }
