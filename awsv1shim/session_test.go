@@ -21,7 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
-	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/mockdata"
+	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )

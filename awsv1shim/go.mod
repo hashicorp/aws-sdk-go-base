@@ -1,4 +1,4 @@
-module github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim
+module github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2
 
 require (
 	github.com/aws/aws-sdk-go v1.40.43
