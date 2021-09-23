@@ -12,7 +12,7 @@ type CannotAssumeRoleError struct {
 }
 
 func (e CannotAssumeRoleError) Error() string {
-	if e.Config == nil {
+	if e.Config == nil || e.Config.AssumeRole == nil {
 		return fmt.Sprintf("cannot assume role: %s", e.Err)
 	}
 
@@ -24,7 +24,7 @@ There are a number of possible causes of this - the most common are:
   * The role ARN is not valid
 
 Error: %s
-`, e.Config.AssumeRoleARN, e.Err)
+`, e.Config.AssumeRole.RoleARN, e.Err)
 }
 
 func (e CannotAssumeRoleError) Unwrap() error {
