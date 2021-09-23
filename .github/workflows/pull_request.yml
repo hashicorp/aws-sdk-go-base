@@ -98,3 +98,13 @@ jobs:
         uses: returntocorp/semgrep-action@v1
         env:
           REWRITE_RULE_IDS: 0
+
+  markdown-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: avto-dev/markdown-lint@v1
+        with:
+          config: ".markdownlint.yml"
+          args: "./README.md"
