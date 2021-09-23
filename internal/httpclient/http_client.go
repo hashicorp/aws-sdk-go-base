@@ -14,10 +14,15 @@ func DefaultHttpClient(c *config.Config) (*http.Client, error) {
 	httpClient := cleanhttp.DefaultClient()
 	transport := httpClient.Transport.(*http.Transport)
 
+	tlsConfig := transport.TLSClientConfig
+	if tlsConfig == nil {
+		tlsConfig = &tls.Config{}
+		transport.TLSClientConfig = tlsConfig
+	}
+	tlsConfig.MinVersion = tls.VersionTLS12
+
 	if c.Insecure {
-		transport.TLSClientConfig = &tls.Config{
-			InsecureSkipVerify: true,
-		}
+		tlsConfig.InsecureSkipVerify = true
 	}
 
 	if c.HTTPProxy != "" {
