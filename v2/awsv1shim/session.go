@@ -4,6 +4,7 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"context"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
@@ -14,7 +15,7 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
 	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/tfawserr"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
-	"github.com/hashicorp/go-cleanhttp"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/httpclient"
 )
 
 // getSessionOptions attempts to return valid AWS Go SDK session authentication
@@ -26,6 +27,13 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 		return nil, fmt.Errorf("error accessing credentials: %w", err)
 	}
 
+	httpClient, ok := awsC.HTTPClient.(*http.Client)
+	if !ok { // This is unlikely, but technically possible
+		httpClient, err = httpclient.DefaultHttpClient(c)
+		if err != nil {
+			return nil, err
+		}
+	}
 	options := &session.Options{
 		Config: aws.Config{
 			Credentials: credentials.NewStaticCredentials(
@@ -34,7 +42,7 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 				creds.SessionToken,
 			),
 			EndpointResolver: endpointResolver(c),
-			HTTPClient:       cleanhttp.DefaultClient(),
+			HTTPClient:       httpClient,
 			MaxRetries:       aws.Int(0),
 			Region:           aws.String(awsC.Region),
 		},
