@@ -16,6 +16,7 @@ type Config struct {
 	DebugLogging                bool
 	IamEndpoint                 string
 	Insecure                    bool
+	HTTPProxy                   string
 	MaxRetries                  int
 	Profile                     string
 	Region                      string
