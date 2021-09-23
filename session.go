@@ -61,7 +61,7 @@ func GetSessionOptions(c *Config) (*session.Options, error) {
 	if c.HTTPProxy != "" {
 		proxyUrl, err := url.Parse(c.HTTPProxy)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error parsing HTTP proxy URL: %w", err)
 		}
 
 		transport.Proxy = http.ProxyURL(proxyUrl)
