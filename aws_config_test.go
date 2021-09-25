@@ -1007,12 +1007,13 @@ func TestUserAgentProducts(t *testing.T) {
 						{
 							Name:    "second",
 							Version: "1.0.2",
+							Comment: "a comment",
 						},
 					},
 				},
 			},
 			Description:       "APN User-Agent Products",
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2, " + awsSdkGoUserAgent(),
+			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent(),
 		},
 		{
 			Config: &Config{
@@ -1037,7 +1038,7 @@ func TestUserAgentProducts(t *testing.T) {
 			EnvironmentVariables: map[string]string{
 				constants.AppendUserAgentEnvVar: "Last",
 			},
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2, " + awsSdkGoUserAgent() + " Last",
+			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last",
 		},
 	}
 

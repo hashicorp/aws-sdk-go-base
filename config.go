@@ -29,6 +29,7 @@ type APNInfo struct {
 type APNProduct struct {
 	Name    string
 	Version string
+	Comment string
 }
 
 type AssumeRole struct {
