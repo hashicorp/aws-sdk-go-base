@@ -15,8 +15,12 @@ import (
 )
 
 func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, error) {
-	loadOptions := append(
-		commonLoadOptions(c),
+	loadOptions, err := commonLoadOptions(c)
+	if err != nil {
+		return nil, err
+	}
+	loadOptions = append(
+		loadOptions,
 		config.WithSharedConfigProfile(c.Profile),
 		// Bypass retries when validating authentication
 		config.WithRetryer(func() aws.Retryer {
