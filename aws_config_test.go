@@ -997,43 +997,48 @@ func TestUserAgentProducts(t *testing.T) {
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
-				UserAgentProducts: []*UserAgentProduct{
-					{
-						Name:    "first",
-						Version: "1.0",
-					},
-					{
-						Name:    "second",
-						Version: "1.2.3",
-						Extra:   []string{"+https://www.example.com/"},
+				APNInfo: &APNInfo{
+					PartnerName: "partner",
+					Products: []APNProduct{
+						{
+							Name:    "first",
+							Version: "1.2.3",
+						},
+						{
+							Name:    "second",
+							Version: "1.0.2",
+							Comment: "a comment",
+						},
 					},
 				},
 			},
-			Description:       "customized User-Agent Products",
-			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent(),
+			Description:       "APN User-Agent Products",
+			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent(),
 		},
 		{
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
-				UserAgentProducts: []*UserAgentProduct{
-					{
-						Name:    "first",
-						Version: "1.0",
-					},
-					{
-						Name:    "second",
-						Version: "1.2.3",
-						Extra:   []string{"+https://www.example.com/"},
+				APNInfo: &APNInfo{
+					PartnerName: "partner",
+					Products: []APNProduct{
+						{
+							Name:    "first",
+							Version: "1.2.3",
+						},
+						{
+							Name:    "second",
+							Version: "1.0.2",
+						},
 					},
 				},
 			},
-			Description: "customized User-Agent Products and TF_APPEND_USER_AGENT",
+			Description: "APN User-Agent Products and TF_APPEND_USER_AGENT",
 			EnvironmentVariables: map[string]string{
 				constants.AppendUserAgentEnvVar: "Last",
 			},
-			ExpectedUserAgent: "first/1.0 second/1.2.3 (+https://www.example.com/) " + awsSdkGoUserAgent() + " Last",
+			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last",
 		},
 	}
 
