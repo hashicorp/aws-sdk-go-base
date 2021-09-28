@@ -1,5 +1,7 @@
 package config
 
+import "time"
+
 type Config struct {
 	AccessKey              string
 	APNInfo                *APNInfo
@@ -35,7 +37,7 @@ type APNProduct struct {
 
 type AssumeRole struct {
 	RoleARN           string
-	DurationSeconds   int
+	Duration          time.Duration
 	ExternalID        string
 	Policy            string
 	PolicyARNs        []string
