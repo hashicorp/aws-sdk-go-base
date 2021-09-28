@@ -1,4 +1,12 @@
-# v0.8.0 (Unreleased)
+# v1.1.0 (Unreleased)
+
+# v1.0.0 (September 28, 2021)
+
+ENHANCEMENTS
+
+* Support HTTP proxy configuration. #46
+* Enables verbose credential chain errors. #63
+* Extends `tfawserr.ErrCodeEquals` to chech multiple error codes. #55
 
 # v0.7.1 (April 14, 2021)
 
