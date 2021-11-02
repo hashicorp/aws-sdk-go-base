@@ -135,6 +135,11 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 			return stack.Build.Add(apnUserAgentMiddleware(*c.APNInfo), middleware.After)
 		})
 	}
+
+	if len(c.UserAgent) > 0 {
+		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(c.UserAgent.BuildUserAgentString()))
+	}
+
 	if v := os.Getenv(constants.AppendUserAgentEnvVar); v != "" {
 		log.Printf("[DEBUG] Using additional User-Agent Info: %s", v)
 		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(v))

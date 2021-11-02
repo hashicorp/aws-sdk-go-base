@@ -88,6 +88,10 @@ func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error)
 		)
 	}
 
+	if len(c.UserAgent) > 0 {
+		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(c.UserAgent.BuildUserAgentString()))
+	}
+
 	// Add custom input from ENV to the User-Agent request header
 	// Reference: https://github.com/terraform-providers/terraform-provider-aws/issues/9149
 	if v := os.Getenv(constants.AppendUserAgentEnvVar); v != "" {
