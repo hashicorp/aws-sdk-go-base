@@ -11,6 +11,6 @@ type Config = config.Config
 
 type APNInfo = config.APNInfo
 
-type APNProduct = config.APNProduct
-
 type AssumeRole = config.AssumeRole
+
+type UserAgentProduct = config.UserAgentProduct

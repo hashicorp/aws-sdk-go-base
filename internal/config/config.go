@@ -20,18 +20,21 @@ type Config struct {
 	SkipMetadataApiCheck   bool
 	StsEndpoint            string
 	Token                  string
+	UserAgent              UserAgentProducts
 }
 
 type APNInfo struct {
 	PartnerName string
-	Products    []APNProduct
+	Products    []UserAgentProduct
 }
 
-type APNProduct struct {
+type UserAgentProduct struct {
 	Name    string
 	Version string
 	Comment string
 }
+
+type UserAgentProducts []UserAgentProduct
 
 type AssumeRole struct {
 	RoleARN           string

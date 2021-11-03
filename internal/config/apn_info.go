@@ -14,16 +14,3 @@ func (apn APNInfo) BuildUserAgentString() string {
 	}
 	return builder.Build()
 }
-
-func (p APNProduct) buildUserAgentPart(b *smithyhttp.UserAgentBuilder) {
-	if p.Name != "" {
-		if p.Version != "" {
-			b.AddKeyValue(p.Name, p.Version)
-		} else {
-			b.AddKey(p.Name)
-		}
-	}
-	if p.Comment != "" {
-		b.AddKey("(" + p.Comment + ")")
-	}
-}
