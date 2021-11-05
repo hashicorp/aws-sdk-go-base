@@ -89,9 +89,9 @@ func TestGetAwsConfig(t *testing.T) {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &AssumeRole{
-					RoleARN:         servicemocks.MockStsAssumeRoleArn,
-					DurationSeconds: 3600,
-					SessionName:     servicemocks.MockStsAssumeRoleSessionName,
+					RoleARN:     servicemocks.MockStsAssumeRoleArn,
+					Duration:    1 * time.Hour,
+					SessionName: servicemocks.MockStsAssumeRoleSessionName,
 				},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,

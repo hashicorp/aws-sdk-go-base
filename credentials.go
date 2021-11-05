@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -73,7 +72,7 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 
 	appCreds := stscreds.NewAssumeRoleProvider(client, ar.RoleARN, func(opts *stscreds.AssumeRoleOptions) {
 		opts.RoleSessionName = ar.SessionName
-		opts.Duration = time.Duration(ar.DurationSeconds) * time.Second
+		opts.Duration = ar.Duration
 
 		if ar.ExternalID != "" {
 			opts.ExternalID = aws.String(ar.ExternalID)
