@@ -41,7 +41,6 @@ func TestGetAwsConfig(t *testing.T) {
 		EnvironmentVariables       map[string]string
 		ExpectedCredentialsValue   aws.Credentials
 		ExpectedRegion             string
-		ExpectedUserAgent          string
 		ExpectedError              func(err error) bool
 		MockStsEndpoints           []*servicemocks.MockEndpoint
 		SharedConfigurationFile    string
@@ -942,24 +941,6 @@ source_profile = SourceSharedCredentials
 			if expected, actual := testCase.ExpectedRegion, awsConfig.Region; expected != actual {
 				t.Fatalf("expected region (%s), got: %s", expected, actual)
 			}
-
-			// if testCase.ExpectedUserAgent != "" {
-			// 	clientInfo := metadata.ClientInfo{
-			// 		Endpoint:    "http://endpoint",
-			// 		SigningName: "",
-			// 	}
-			// 	conn := client.New(*actualSession.Config, clientInfo, actualSession.Handlers)
-
-			// 	req := conn.NewRequest(&request.Operation{Name: "Operation"}, nil, nil)
-
-			// 	if err := req.Build(); err != nil {
-			// 		t.Fatalf("expect no Request.Build() error, got %s", err)
-			// 	}
-
-			// 	if e, a := testCase.ExpectedUserAgent, req.HTTPRequest.Header.Get("User-Agent"); e != a {
-			// 		t.Errorf("expected User-Agent (%s), got: %s", e, a)
-			// 	}
-			// }
 		})
 	}
 }
