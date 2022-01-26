@@ -10,10 +10,12 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
 	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
 	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/tfawserr"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/httpclient"
 )
@@ -25,6 +27,16 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 	creds, err := awsC.Credentials.Retrieve(context.Background())
 	if err != nil {
 		return nil, fmt.Errorf("error accessing credentials: %w", err)
+	}
+
+	useFIPSEndpoint, _, err := awsconfig.ResolveUseFIPSEndpoint(context.Background(), awsC.ConfigSources)
+	if err != nil {
+		return nil, fmt.Errorf("error resolving configuration: %w", err)
+	}
+
+	useDualStackEndpoint, _, err := awsconfig.ResolveUseDualStackEndpoint(context.Background(), awsC.ConfigSources)
+	if err != nil {
+		return nil, fmt.Errorf("error resolving configuration: %w", err)
 	}
 
 	httpClient, ok := awsC.HTTPClient.(*http.Client)
@@ -41,14 +53,16 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 				creds.SecretAccessKey,
 				creds.SessionToken,
 			),
-			EndpointResolver: endpointResolver(c),
-			HTTPClient:       httpClient,
-			MaxRetries:       aws.Int(0),
-			Region:           aws.String(awsC.Region),
+			EndpointResolver:     endpointResolver(c),
+			HTTPClient:           httpClient,
+			MaxRetries:           aws.Int(0),
+			Region:               aws.String(awsC.Region),
+			UseFIPSEndpoint:      convertFIPSEndpointState(useFIPSEndpoint),
+			UseDualStackEndpoint: convertDualStackEndpointState(useDualStackEndpoint),
 		},
 	}
 
-	// This needs its own debugger. Don't reuse or wrap the AWS SDK for Go v2 logger, since it hardcodes the string "aws-sdk-go-v2"
+	// This needs its own debug logger. Don't reuse or wrap the AWS SDK for Go v2 logger, since it hardcodes the string "aws-sdk-go-v2"
 	if c.DebugLogging {
 		options.Config.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
 		options.Config.Logger = debugLogger{}
@@ -124,4 +138,26 @@ func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error)
 	})
 
 	return sess, nil
+}
+
+func convertFIPSEndpointState(value awsv2.FIPSEndpointState) endpoints.FIPSEndpointState {
+	switch value {
+	case awsv2.FIPSEndpointStateEnabled:
+		return endpoints.FIPSEndpointStateEnabled
+	case awsv2.FIPSEndpointStateDisabled:
+		return endpoints.FIPSEndpointStateDisabled
+	default:
+		return endpoints.FIPSEndpointStateUnset
+	}
+}
+
+func convertDualStackEndpointState(value awsv2.DualStackEndpointState) endpoints.DualStackEndpointState {
+	switch value {
+	case awsv2.DualStackEndpointStateEnabled:
+		return endpoints.DualStackEndpointStateEnabled
+	case awsv2.DualStackEndpointStateDisabled:
+		return endpoints.DualStackEndpointStateDisabled
+	default:
+		return endpoints.DualStackEndpointStateUnset
+	}
 }

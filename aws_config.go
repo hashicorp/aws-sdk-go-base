@@ -175,5 +175,17 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 	}
 
+	if c.UseDualStackEndpoint {
+		loadOptions = append(loadOptions,
+			config.WithUseDualStackEndpoint(aws.DualStackEndpointStateEnabled),
+		)
+	}
+
+	if c.UseFIPSEndpoint {
+		loadOptions = append(loadOptions,
+			config.WithUseFIPSEndpoint(aws.FIPSEndpointStateEnabled),
+		)
+	}
+
 	return loadOptions, nil
 }

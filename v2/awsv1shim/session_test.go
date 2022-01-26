@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/client/metadata"
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/google/go-cmp/cmp"
@@ -1203,6 +1204,221 @@ func TestUserAgentProducts(t *testing.T) {
 
 func awsSdkGoUserAgent() string {
 	return fmt.Sprintf("%s/%s (%s; %s; %s)", aws.SDKName, aws.SDKVersion, runtime.Version(), runtime.GOOS, runtime.GOARCH)
+}
+
+func TestServiceEndpointTypes(t *testing.T) {
+	testCases := map[string]struct {
+		Config                       *awsbase.Config
+		EnvironmentVariables         map[string]string
+		SharedConfigurationFile      string
+		ExpectedUseFIPSEndpoint      endpoints.FIPSEndpointState
+		ExpectedUseDualStackEndpoint endpoints.DualStackEndpointState
+	}{
+		"normal endpoint": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedUseFIPSEndpoint:      endpoints.FIPSEndpointStateUnset,
+			ExpectedUseDualStackEndpoint: endpoints.DualStackEndpointStateUnset,
+		},
+
+		// FIPS Endpoint
+		"FIPS endpoint config": {
+			Config: &awsbase.Config{
+				AccessKey:       servicemocks.MockStaticAccessKey,
+				Region:          "us-east-1",
+				SecretKey:       servicemocks.MockStaticSecretKey,
+				UseFIPSEndpoint: true,
+			},
+			ExpectedUseFIPSEndpoint: endpoints.FIPSEndpointStateEnabled,
+		},
+		"FIPS endpoint envvar": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_USE_FIPS_ENDPOINT": "true",
+			},
+			ExpectedUseFIPSEndpoint: endpoints.FIPSEndpointStateEnabled,
+		},
+		"FIPS endpoint shared configuration file": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+		[default]
+		use_fips_endpoint = true
+		`,
+			ExpectedUseFIPSEndpoint: endpoints.FIPSEndpointStateEnabled,
+		},
+
+		// DualStack Endpoint
+		"DualStack endpoint config": {
+			Config: &awsbase.Config{
+				AccessKey:            servicemocks.MockStaticAccessKey,
+				Region:               "us-east-1",
+				SecretKey:            servicemocks.MockStaticSecretKey,
+				UseDualStackEndpoint: true,
+			},
+			ExpectedUseDualStackEndpoint: endpoints.DualStackEndpointStateEnabled,
+		},
+		"DualStack endpoint envvar": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_USE_DUALSTACK_ENDPOINT": "true",
+			},
+			ExpectedUseDualStackEndpoint: endpoints.DualStackEndpointStateEnabled,
+		},
+		"DualStack endpoint shared configuration file": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+		[default]
+		use_dualstack_endpoint = true
+		`,
+			ExpectedUseDualStackEndpoint: endpoints.DualStackEndpointStateEnabled,
+		},
+
+		// FIPS and DualStack Endpoint
+		"Both endpoints config": {
+			Config: &awsbase.Config{
+				AccessKey:            servicemocks.MockStaticAccessKey,
+				Region:               "us-east-1",
+				SecretKey:            servicemocks.MockStaticSecretKey,
+				UseDualStackEndpoint: true,
+				UseFIPSEndpoint:      true,
+			},
+			ExpectedUseDualStackEndpoint: endpoints.DualStackEndpointStateEnabled,
+			ExpectedUseFIPSEndpoint:      endpoints.FIPSEndpointStateEnabled,
+		},
+		"Both endpoints FIPS config DualStack envvar": {
+			Config: &awsbase.Config{
+				AccessKey:       servicemocks.MockStaticAccessKey,
+				Region:          "us-east-1",
+				SecretKey:       servicemocks.MockStaticSecretKey,
+				UseFIPSEndpoint: true,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_USE_DUALSTACK_ENDPOINT": "true",
+			},
+			ExpectedUseDualStackEndpoint: endpoints.DualStackEndpointStateEnabled,
+			ExpectedUseFIPSEndpoint:      endpoints.FIPSEndpointStateEnabled,
+		},
+		"Both endpoints FIPS shared configuration file DualStack config": {
+			Config: &awsbase.Config{
+				AccessKey:            servicemocks.MockStaticAccessKey,
+				Region:               "us-east-1",
+				SecretKey:            servicemocks.MockStaticSecretKey,
+				UseDualStackEndpoint: true,
+			},
+			SharedConfigurationFile: `
+[default]
+use_fips_endpoint = true
+`,
+			ExpectedUseDualStackEndpoint: endpoints.DualStackEndpointStateEnabled,
+			ExpectedUseFIPSEndpoint:      endpoints.FIPSEndpointStateEnabled,
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			closeSts, mockStsSession, err := mockdata.GetMockedAwsApiSession("STS", []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
+			})
+			defer closeSts()
+
+			if err != nil {
+				t.Fatalf("unexpected error creating mock STS server: %s", err)
+			}
+
+			if mockStsSession != nil && mockStsSession.Config != nil {
+				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("GetAwsConfig() returned error: %s", err)
+			}
+			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
+			}
+
+			if e, a := testCase.ExpectedUseFIPSEndpoint, actualSession.Config.UseFIPSEndpoint; e != a {
+				t.Errorf("expected UseFIPSEndpoint %q, got: %q", FIPSEndpointStateString(e), FIPSEndpointStateString(a))
+			}
+
+			if e, a := testCase.ExpectedUseDualStackEndpoint, actualSession.Config.UseDualStackEndpoint; e != a {
+				t.Errorf("expected UseDualStackEndpoint %q, got: %q", DualStackEndpointStateString(e), DualStackEndpointStateString(a))
+			}
+		})
+	}
+}
+
+func FIPSEndpointStateString(state endpoints.FIPSEndpointState) string {
+	switch state {
+	case endpoints.FIPSEndpointStateUnset:
+		return "FIPSEndpointStateUnset"
+	case endpoints.FIPSEndpointStateEnabled:
+		return "FIPSEndpointStateEnabled"
+	case endpoints.FIPSEndpointStateDisabled:
+		return "FIPSEndpointStateDisabled"
+	}
+	return fmt.Sprintf("unknown endpoints.FIPSEndpointState (%d)", state)
+}
+
+func DualStackEndpointStateString(state endpoints.DualStackEndpointState) string {
+	switch state {
+	case endpoints.DualStackEndpointStateUnset:
+		return "DualStackEndpointStateUnset"
+	case endpoints.DualStackEndpointStateEnabled:
+		return "DualStackEndpointStateEnabled"
+	case endpoints.DualStackEndpointStateDisabled:
+		return "DualStackEndpointStateDisabled"
+	}
+	return fmt.Sprintf("unknown endpoints.FIPSEndpointStateUnset (%d)", state)
 }
 
 func TestSessionRetryHandlers(t *testing.T) {
