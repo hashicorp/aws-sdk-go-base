@@ -19,7 +19,7 @@ func GetMockedAwsApiSession(svcName string, endpoints []*servicemocks.MockEndpoi
 	awsConfig := aws.Config{
 		Credentials: sc,
 		Region:      "us-east-1",
-		EndpointResolver: aws.EndpointResolverFunc(func(service, region string) (aws.Endpoint, error) {
+		EndpointResolverWithOptions: aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 			return aws.Endpoint{
 				URL:    ts.URL,
 				Source: aws.EndpointSourceCustom,

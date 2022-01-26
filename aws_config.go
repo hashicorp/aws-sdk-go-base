@@ -147,7 +147,7 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 
 	loadOptions := []func(*config.LoadOptions) error{
 		config.WithRegion(c.Region),
-		config.WithEndpointResolver(endpointResolver(c)),
+		config.WithEndpointResolverWithOptions(endpointResolver(c)),
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
 	}

@@ -8,8 +8,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
-func endpointResolver(c *Config) aws.EndpointResolver {
-	resolver := func(service, region string) (aws.Endpoint, error) {
+func endpointResolver(c *Config) aws.EndpointResolverWithOptions {
+	resolver := func(service, region string, options ...interface{}) (aws.Endpoint, error) {
 		log.Printf("[DEBUG] Resolving endpoint for %q in %q", service, region)
 		switch service {
 		case iam.ServiceID:
@@ -33,5 +33,5 @@ func endpointResolver(c *Config) aws.EndpointResolver {
 		return aws.Endpoint{}, &aws.EndpointNotFoundError{}
 	}
 
-	return aws.EndpointResolverFunc(resolver)
+	return aws.EndpointResolverWithOptionsFunc(resolver)
 }
