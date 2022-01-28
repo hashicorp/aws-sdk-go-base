@@ -22,6 +22,8 @@ type Config struct {
 	SkipMetadataApiCheck   bool
 	StsEndpoint            string
 	Token                  string
+	UseDualStackEndpoint   bool
+	UseFIPSEndpoint        bool
 	UserAgent              UserAgentProducts
 }
 
