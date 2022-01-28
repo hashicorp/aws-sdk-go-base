@@ -15,8 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
-	"github.com/aws/aws-sdk-go-v2/service/iam"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
@@ -49,18 +47,18 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 			return retryer
 		}),
 	)
-	cfg, err := config.LoadDefaultConfig(ctx, loadOptions...)
+	awsConfig, err := config.LoadDefaultConfig(ctx, loadOptions...)
 	if err != nil {
-		return cfg, fmt.Errorf("loading configuration: %w", err)
+		return awsConfig, fmt.Errorf("loading configuration: %w", err)
 	}
 
 	if !c.SkipCredsValidation {
-		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, sts.NewFromConfig(cfg)); err != nil {
-			return cfg, fmt.Errorf("error validating provider credentials: %w", err)
+		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient(awsConfig, c)); err != nil {
+			return awsConfig, fmt.Errorf("error validating provider credentials: %w", err)
 		}
 	}
 
-	return cfg, nil
+	return awsConfig, nil
 }
 
 // networkErrorShortcutter is used to enable networking error shortcutting
@@ -87,9 +85,9 @@ func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Durat
 	return r.Retryer.RetryDelay(attempt, err)
 }
 
-func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, skipCredsValidation, skipRequestingAccountId bool) (string, string, error) {
-	if !skipCredsValidation {
-		stsClient := sts.NewFromConfig(awsConfig)
+func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, error) {
+	if !c.SkipCredsValidation {
+		stsClient := stsClient(awsConfig, c)
 		accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient)
 		if err != nil {
 			return "", "", fmt.Errorf("error validating provider credentials: %w", err)
@@ -98,14 +96,14 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, skip
 		return accountID, partition, nil
 	}
 
-	if !skipRequestingAccountId {
+	if !c.SkipRequestingAccountId {
 		credentialsProviderName := ""
 		if credentialsValue, err := awsConfig.Credentials.Retrieve(context.Background()); err == nil {
 			credentialsProviderName = credentialsValue.Source
 		}
 
-		iamClient := iam.NewFromConfig(awsConfig)
-		stsClient := sts.NewFromConfig(awsConfig)
+		iamClient := iamClient(awsConfig, c)
+		stsClient := stsClient(awsConfig, c)
 		accountID, partition, err := getAccountIDAndPartition(ctx, iamClient, stsClient, credentialsProviderName)
 
 		if err == nil {
@@ -147,7 +145,6 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 
 	loadOptions := []func(*config.LoadOptions) error{
 		config.WithRegion(c.Region),
-		config.WithEndpointResolverWithOptions(endpointResolver(c)),
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
 	}

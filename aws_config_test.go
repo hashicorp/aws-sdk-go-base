@@ -1113,7 +1113,7 @@ func TestUserAgentProducts(t *testing.T) {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
 
-			client := sts.NewFromConfig(awsConfig)
+			client := stsClient(awsConfig, testCase.Config)
 
 			_, err = client.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{},
 				func(opts *sts.Options) {
@@ -1426,52 +1426,50 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	defer servicemocks.PopEnv(oldEnv)
 
 	testCases := []struct {
-		desc                    string
-		config                  *Config
-		skipRequestingAccountId bool
-		expectedAcctID          string
-		expectedPartition       string
-		expectError             bool
-		mockStsEndpoints        []*servicemocks.MockEndpoint
+		desc              string
+		config            *Config
+		expectedAcctID    string
+		expectedPartition string
+		expectError       bool
+		mockStsEndpoints  []*servicemocks.MockEndpoint
 	}{
 		{
-			"StandardProvider_Config",
-			&Config{
+			desc: "StandardProvider_Config",
+			config: &Config{
 				AccessKey: "MockAccessKey",
 				SecretKey: "MockSecretKey",
 				Region:    "us-west-2"},
-			false,
-			"222222222222", "aws", false,
-			[]*servicemocks.MockEndpoint{
+			expectedAcctID: "222222222222", expectedPartition: "aws",
+			mockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
-			"SkipCredsValidation_Config",
-			&Config{
+			desc: "SkipCredsValidation_Config",
+			config: &Config{
 				AccessKey:           "MockAccessKey",
 				SecretKey:           "MockSecretKey",
 				Region:              "us-west-2",
 				SkipCredsValidation: true},
-			false,
-			"222222222222", "aws", false,
-			[]*servicemocks.MockEndpoint{
+			expectedAcctID: "222222222222", expectedPartition: "aws",
+			mockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
 		{
-			"SkipRequestingAccountId_Config",
-			&Config{
-				AccessKey:           "MockAccessKey",
-				SecretKey:           "MockSecretKey",
-				Region:              "us-west-2",
-				SkipCredsValidation: true},
-			true,
-			"", "aws", false, []*servicemocks.MockEndpoint{},
+			desc: "SkipRequestingAccountId_Config",
+			config: &Config{
+				AccessKey:               "MockAccessKey",
+				SecretKey:               "MockSecretKey",
+				Region:                  "us-west-2",
+				SkipCredsValidation:     true,
+				SkipRequestingAccountId: true},
+			expectedAcctID: "", expectedPartition: "aws",
+			mockStsEndpoints: []*servicemocks.MockEndpoint{},
 		},
 		{
-			"WithAssumeRole",
-			&Config{
+			desc: "WithAssumeRole",
+			config: &Config{
 				AccessKey: "MockAccessKey",
 				SecretKey: "MockSecretKey",
 				Region:    "us-west-2",
@@ -1480,8 +1478,8 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
 				},
 			},
-			false,
-			"555555555555", "aws", false, []*servicemocks.MockEndpoint{
+			expectedAcctID: "555555555555", expectedPartition: "aws",
+			mockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleValidEndpoint,
 				servicemocks.MockStsGetCallerIdentityValidAssumedRoleEndpoint,
 			},
@@ -1500,7 +1498,7 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 			if err != nil {
 				t.Fatalf("expected no error from GetAwsConfig(), got: %s", err)
 			}
-			acctID, part, err := GetAwsAccountIDAndPartition(context.Background(), awsConfig, tc.config.SkipCredsValidation, tc.skipRequestingAccountId)
+			acctID, part, err := GetAwsAccountIDAndPartition(context.Background(), awsConfig, tc.config)
 			if err != nil {
 				if !tc.expectError {
 					t.Fatalf("expected no error, got: %s", err)
