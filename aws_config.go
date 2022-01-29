@@ -181,6 +181,17 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		)
 	}
 
+	if c.EC2MetadataServiceEndpointMode != "" {
+		var endpointMode imds.EndpointModeState
+		err := endpointMode.SetFromString(c.EC2MetadataServiceEndpointMode)
+		if err != nil {
+			return nil, err
+		}
+		loadOptions = append(loadOptions,
+			config.WithEC2IMDSEndpointMode(endpointMode),
+		)
+	}
+
 	if c.SkipEC2MetadataApiCheck {
 		loadOptions = append(loadOptions,
 			config.WithEC2IMDSClientEnableState(imds.ClientDisabled),
