@@ -1,6 +1,7 @@
 package servicemocks
 
 import (
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -35,14 +36,15 @@ func PopEnv(env []string) {
 	}
 }
 
-// InvalidAwsEnv establishes a httptest server to simulate behaviour
+// InvalidEC2MetadataEndpoint establishes a httptest server to simulate behaviour
 // when endpoint doesn't respond as expected
-func InvalidAwsEnv() func() {
+func InvalidEC2MetadataEndpoint() func() {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Printf("[DEBUG] Received EC2 IMDS API %q request to %q", r.Method, r.RequestURI)
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 
-	os.Setenv("AWS_METADATA_URL", ts.URL+"/latest")
+	os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", ts.URL+"/latest")
 	return ts.Close
 }
 

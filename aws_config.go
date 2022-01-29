@@ -22,6 +22,18 @@ import (
 )
 
 func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
+	if metadataUrl := os.Getenv("AWS_METADATA_URL"); metadataUrl != "" {
+		log.Println(`[WARN] The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
+		if ec2MetadataServiceEndpoint := os.Getenv("AWS_EC2_METADATA_SERVICE_ENDPOINT"); ec2MetadataServiceEndpoint != "" {
+			if ec2MetadataServiceEndpoint != metadataUrl {
+				log.Printf(`[WARN] The environment variable "AWS_EC2_METADATA_SERVICE_ENDPOINT" is already set to %q. Ignoring "AWS_METADATA_URL".`, ec2MetadataServiceEndpoint)
+			}
+		} else {
+			log.Printf(`[WARN] Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl)
+			os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", metadataUrl)
+		}
+	}
+
 	credentialsProvider, err := getCredentialsProvider(ctx, c)
 	if err != nil {
 		return aws.Config{}, err

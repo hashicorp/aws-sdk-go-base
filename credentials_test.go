@@ -113,7 +113,7 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
 	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := servicemocks.InvalidAwsEnv()
+	ts := servicemocks.InvalidEC2MetadataEndpoint()
 	defer ts()
 
 	// An empty config, no key supplied
@@ -126,7 +126,6 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
 	if !IsNoValidCredentialSourcesError(err) {
 		t.Fatalf("expected NoValidCredentialSourcesError, got '%[1]T': %[1]s", err)
 	}
-
 }
 
 func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
