@@ -66,3 +66,21 @@ func DualStackEndpointStateString(state aws.DualStackEndpointState) string {
 	}
 	return fmt.Sprintf("unknown aws.FIPSEndpointStateUnset (%d)", state)
 }
+
+// Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/feature/ec2/imds/internal/config/resolvers.go
+type EC2IMDSEndpointResolver interface {
+	GetEC2IMDSEndpoint() (value string, found bool, err error)
+}
+
+// Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/feature/ec2/imds/internal/config/resolvers.go
+func ResolveEC2IMDSEndpointConfig(configSources []interface{}) (value string, found bool, err error) {
+	for _, cfg := range configSources {
+		if p, ok := cfg.(EC2IMDSEndpointResolver); ok {
+			value, found, err = p.GetEC2IMDSEndpoint()
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return
+}
