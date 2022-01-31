@@ -2,7 +2,10 @@
 
 An opinionated [AWS SDK for Go v2](https://github.com/aws/aws-sdk-go-v2) library for consistent authentication configuration between projects plus additional helper functions. This library was originally started in [HashiCorp Terraform](https://github.com/hashicorp/terraform), migrated with the [Terraform AWS Provider](https://github.com/terraform-providers/terraform-provider-aws) during the Terraform 0.10 Core and Provider split, and now is offered as a separate library to allow easier dependency management in the Terraform ecosystem.
 
-**NOTE:** This library is not currently designed or intended for usage outside the [Terraform S3 Backend](https://www.terraform.io/docs/backends/types/s3.html) and the [Terraform AWS Provider](https://www.terraform.io/docs/providers/aws/index.html).
+**NOTE:** This library is not currently designed or intended for usage outside
+the [Terraform S3 Backend](https://www.terraform.io/docs/backends/types/s3.html),
+the [Terraform AWS Provider](https://www.terraform.io/docs/providers/aws),
+and the [Terraform AWS Cloud Control Provider](https://registry.terraform.io/providers/hashicorp/awscc).
 
 This project publishes two Go modules, `aws-sdk-go-base/v2` and `aws-sdk-go-base/v2/awsv1shim/v2`.
 The module `aws-sdk-go-base/v2` returns configuration compatible with the [AWS SDK for Go v2](https://github.com/aws/aws-sdk-go-v2).
