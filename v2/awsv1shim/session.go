@@ -89,21 +89,7 @@ func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error)
 		sess = sess.Copy(&aws.Config{MaxRetries: aws.Int(c.MaxRetries)})
 	}
 
-	// AWS SDK Go automatically adds a User-Agent product to HTTP requests,
-	// which contains helpful information about the SDK version and runtime.
-	// The configuration of additional User-Agent header products should take
-	// precedence over that product. Since the AWS SDK Go request package
-	// functions only append, we must PushFront on the build handlers instead
-	// of PushBack.
-	if c.APNInfo != nil {
-		sess.Handlers.Build.PushFront(
-			request.MakeAddToUserAgentFreeFormHandler(c.APNInfo.BuildUserAgentString()),
-		)
-	}
-
-	if len(c.UserAgent) > 0 {
-		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(c.UserAgent.BuildUserAgentString()))
-	}
+	SetSessionUserAgent(sess, c.APNInfo, c.UserAgent)
 
 	// Add custom input from ENV to the User-Agent request header
 	// Reference: https://github.com/terraform-providers/terraform-provider-aws/issues/9149
@@ -158,5 +144,23 @@ func convertDualStackEndpointState(value awsv2.DualStackEndpointState) endpoints
 		return endpoints.DualStackEndpointStateDisabled
 	default:
 		return endpoints.DualStackEndpointStateUnset
+	}
+}
+
+func SetSessionUserAgent(sess *session.Session, apnInfo *awsbase.APNInfo, userAgentProducts awsbase.UserAgentProducts) {
+	// AWS SDK Go automatically adds a User-Agent product to HTTP requests,
+	// which contains helpful information about the SDK version and runtime.
+	// The configuration of additional User-Agent header products should take
+	// precedence over that product. Since the AWS SDK Go request package
+	// functions only append, we must PushFront on the build handlers instead
+	// of PushBack.
+	if apnInfo != nil {
+		sess.Handlers.Build.PushFront(
+			request.MakeAddToUserAgentFreeFormHandler(apnInfo.BuildUserAgentString()),
+		)
+	}
+
+	if len(userAgentProducts) > 0 {
+		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(userAgentProducts.BuildUserAgentString()))
 	}
 }
