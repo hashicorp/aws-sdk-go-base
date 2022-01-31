@@ -9,7 +9,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 )
 
@@ -25,6 +24,9 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		config.WithRetryer(func() aws.Retryer {
 			return aws.NopRetryer{}
 		}),
+		// The endpoint resolver is added here instead of in commonLoadOptions() so that it
+		// is not included in the aws.Config returned to the caller
+		config.WithEndpointResolverWithOptions(credentialsEndpointResolver(c)),
 	)
 	if c.AccessKey != "" || c.SecretKey != "" || c.Token != "" {
 		loadOptions = append(
@@ -68,7 +70,7 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 	log.Printf("[INFO] Attempting to AssumeRole %s (SessionName: %q, ExternalId: %q)",
 		ar.RoleARN, ar.SessionName, ar.ExternalID)
 
-	client := sts.NewFromConfig(awsConfig)
+	client := stsClient(awsConfig, c)
 
 	appCreds := stscreds.NewAssumeRoleProvider(client, ar.RoleARN, func(opts *stscreds.AssumeRoleOptions) {
 		opts.RoleSessionName = ar.SessionName

@@ -8,24 +8,33 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 )
 
-func endpointResolver(c *Config) aws.EndpointResolverWithOptions {
+// This endpoint resolver is needed when authenticating because the AWS SDK makes internal
+// calls to STS. The resolver should not be attached to the aws.Config returned to the
+// client, since it should configure its own overrides
+func credentialsEndpointResolver(c *Config) aws.EndpointResolverWithOptions {
 	resolver := func(service, region string, options ...interface{}) (aws.Endpoint, error) {
-		log.Printf("[DEBUG] Resolving endpoint for %q in %q", service, region)
 		switch service {
 		case iam.ServiceID:
 			if endpoint := c.IamEndpoint; endpoint != "" {
-				log.Printf("[INFO] Setting custom IAM endpoint: %s", endpoint)
+				log.Printf("[INFO] Credentials resolution: setting custom IAM endpoint: %s", endpoint)
 				return aws.Endpoint{
-					URL:    endpoint,
-					Source: aws.EndpointSourceCustom,
+					URL:           endpoint,
+					Source:        aws.EndpointSourceCustom,
+					SigningRegion: region,
 				}, nil
 			}
 		case sts.ServiceID:
 			if endpoint := c.StsEndpoint; endpoint != "" {
-				log.Printf("[INFO] Setting custom STS endpoint: %s", endpoint)
+				if c.StsRegion != "" {
+					log.Printf("[INFO] Credentials resolution: setting custom STS endpoint: %s (with signing region %s)", endpoint, c.StsRegion)
+					region = c.StsRegion
+				} else {
+					log.Printf("[INFO] Credentials resolution: setting custom STS endpoint: %s", endpoint)
+				}
 				return aws.Endpoint{
-					URL:    endpoint,
-					Source: aws.EndpointSourceCustom,
+					URL:           endpoint,
+					Source:        aws.EndpointSourceCustom,
+					SigningRegion: region,
 				}, nil
 			}
 		}
