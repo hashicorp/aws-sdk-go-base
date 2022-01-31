@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
@@ -812,10 +813,10 @@ source_profile = SourceSharedCredentials
 		},
 		{
 			Config: &Config{
-				Region:               "us-east-1",
-				SkipMetadataApiCheck: true,
+				Region:                  "us-east-1",
+				SkipEC2MetadataApiCheck: true,
 			},
-			Description:             "skip EC2 metadata API check",
+			Description:             "skip EC2 Metadata API check",
 			EnableEc2MetadataServer: true,
 			ExpectedError: func(err error) bool {
 				return IsNoValidCredentialSourcesError(err)
@@ -1416,6 +1417,312 @@ use_fips_endpoint = true
 			}
 			if a, e := useDualStackState, testCase.ExpectedUseDualStackEndpointState; a != e {
 				t.Errorf("expected UseDualStackEndpoint %q, got: %q", awsconfig.DualStackEndpointStateString(e), awsconfig.DualStackEndpointStateString(a))
+			}
+		})
+	}
+}
+
+func TestEC2MetadataServiceEndpoint(t *testing.T) {
+	testCases := map[string]struct {
+		Config                             *Config
+		EnvironmentVariables               map[string]string
+		SharedConfigurationFile            string
+		ExpectedEC2MetadataServiceEndpoint string
+	}{
+		"no configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedEC2MetadataServiceEndpoint: "",
+		},
+
+		"config": {
+			Config: &Config{
+				AccessKey:                  servicemocks.MockStaticAccessKey,
+				Region:                     "us-east-1",
+				SecretKey:                  servicemocks.MockStaticSecretKey,
+				EC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+			},
+			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+		},
+
+		"envvar": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT": "https://127.0.0.1:1234",
+			},
+			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+		},
+		"deprecated envvar": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_METADATA_URL": "https://127.0.0.1:1234",
+			},
+			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+		},
+		"envvar overrides deprecated envvar": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_METADATA_URL":                  "https://127.1.1.1:1111",
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT": "https://127.0.0.1:1234",
+			},
+			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+		},
+
+		"shared configuration file": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+[default]
+ec2_metadata_service_endpoint = https://127.0.0.1:1234
+`,
+			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+		},
+
+		"config overrides envvar": {
+			Config: &Config{
+				AccessKey:                  servicemocks.MockStaticAccessKey,
+				Region:                     "us-east-1",
+				SecretKey:                  servicemocks.MockStaticSecretKey,
+				EC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT": "https://127.1.1.1:1111",
+			},
+			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+		},
+		"config overrides deprecated envvar": {
+			Config: &Config{
+				AccessKey:                  servicemocks.MockStaticAccessKey,
+				Region:                     "us-east-1",
+				SecretKey:                  servicemocks.MockStaticSecretKey,
+				EC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_METADATA_URL": "https://127.1.1.1:1111",
+			},
+			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+		},
+
+		"envvar overrides shared configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT": "https://127.0.0.1:1234",
+			},
+			SharedConfigurationFile: `
+[default]
+ec2_metadata_service_endpoint = https://127.1.1.1:1111
+`,
+			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+		},
+		"deprecated envvar overrides shared configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_METADATA_URL": "https://127.0.0.1:1234",
+			},
+			SharedConfigurationFile: `
+[default]
+ec2_metadata_service_endpoint = https://127.1.1.1:1111
+`,
+			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			ec2MetadataServiceEndpoint, _, err := awsconfig.ResolveEC2IMDSEndpointConfig(awsConfig.ConfigSources)
+			if err != nil {
+				t.Fatalf("error in ResolveEC2IMDSEndpointConfig: %s", err)
+			}
+			if a, e := ec2MetadataServiceEndpoint, testCase.ExpectedEC2MetadataServiceEndpoint; a != e {
+				t.Errorf("expected EC2MetadataServiceEndpoint %q, got: %q", e, a)
+			}
+		})
+	}
+}
+
+func TestEC2MetadataServiceEndpointMode(t *testing.T) {
+	testCases := map[string]struct {
+		Config                                 *Config
+		EnvironmentVariables                   map[string]string
+		SharedConfigurationFile                string
+		ExpectedEC2MetadataServiceEndpointMode imds.EndpointModeState
+	}{
+		"no configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateUnset,
+		},
+
+		"config": {
+			Config: &Config{
+				AccessKey:                      servicemocks.MockStaticAccessKey,
+				Region:                         "us-east-1",
+				SecretKey:                      servicemocks.MockStaticSecretKey,
+				EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
+			},
+			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateIPv4,
+		},
+
+		"envvar": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE": EC2MetadataEndpointModeIPv6,
+			},
+			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateIPv6,
+		},
+
+		"shared configuration file": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+[default]
+ec2_metadata_service_endpoint_mode = IPv6
+`,
+			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateIPv6,
+		},
+
+		"config overrides envvar": {
+			Config: &Config{
+				AccessKey:                      servicemocks.MockStaticAccessKey,
+				Region:                         "us-east-1",
+				SecretKey:                      servicemocks.MockStaticSecretKey,
+				EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE": EC2MetadataEndpointModeIPv6,
+			},
+			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateIPv4,
+		},
+
+		"envvar overrides shared configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE": EC2MetadataEndpointModeIPv6,
+			},
+			SharedConfigurationFile: `
+[default]
+ec2_metadata_service_endpoint_mode = IPv4
+`,
+			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateIPv6,
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			ec2MetadataServiceEndpointMode, _, err := awsconfig.ResolveEC2IMDSEndpointModeConfig(awsConfig.ConfigSources)
+			if err != nil {
+				t.Fatalf("error in ResolveEC2IMDSEndpointConfig: %s", err)
+			}
+			if a, e := ec2MetadataServiceEndpointMode, testCase.ExpectedEC2MetadataServiceEndpointMode; a != e {
+				t.Errorf("expected EC2MetadataServiceEndpointMode %q, got: %q", awsconfig.EC2IMDSEndpointModeString(e), awsconfig.EC2IMDSEndpointModeString(a))
 			}
 		})
 	}

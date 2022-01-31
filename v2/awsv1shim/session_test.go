@@ -856,8 +856,8 @@ region = us-east-1
 		},
 		{
 			Config: &awsbase.Config{
-				Region:               "us-east-1",
-				SkipMetadataApiCheck: true,
+				Region:                  "us-east-1",
+				SkipEC2MetadataApiCheck: true,
 			},
 			Description:             "skip EC2 metadata API check",
 			EnableEc2MetadataServer: true,

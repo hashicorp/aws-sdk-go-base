@@ -3,30 +3,32 @@ package config
 import "time"
 
 type Config struct {
-	AccessKey               string
-	APNInfo                 *APNInfo
-	AssumeRole              *AssumeRole
-	CallerDocumentationURL  string
-	CallerName              string
-	DebugLogging            bool
-	HTTPProxy               string
-	IamEndpoint             string
-	Insecure                bool
-	MaxRetries              int
-	Profile                 string
-	Region                  string
-	SecretKey               string
-	SharedCredentialsFiles  []string
-	SharedConfigFiles       []string
-	SkipCredsValidation     bool
-	SkipMetadataApiCheck    bool
-	SkipRequestingAccountId bool
-	StsEndpoint             string
-	StsRegion               string
-	Token                   string
-	UseDualStackEndpoint    bool
-	UseFIPSEndpoint         bool
-	UserAgent               UserAgentProducts
+	AccessKey                      string
+	APNInfo                        *APNInfo
+	AssumeRole                     *AssumeRole
+	CallerDocumentationURL         string
+	CallerName                     string
+	DebugLogging                   bool
+	EC2MetadataServiceEndpoint     string
+	EC2MetadataServiceEndpointMode string
+	HTTPProxy                      string
+	IamEndpoint                    string
+	Insecure                       bool
+	MaxRetries                     int
+	Profile                        string
+	Region                         string
+	SecretKey                      string
+	SharedCredentialsFiles         []string
+	SharedConfigFiles              []string
+	SkipCredsValidation            bool
+	SkipEC2MetadataApiCheck        bool
+	SkipRequestingAccountId        bool
+	StsEndpoint                    string
+	StsRegion                      string
+	Token                          string
+	UseDualStackEndpoint           bool
+	UseFIPSEndpoint                bool
+	UserAgent                      UserAgentProducts
 }
 
 type APNInfo struct {

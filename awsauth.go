@@ -147,13 +147,3 @@ func parseAccountIDAndPartitionFromARN(inputARN string) (string, string, error) 
 	}
 	return arn.AccountID, arn.Partition, nil
 }
-
-// func setOptionalEndpoint(cfg *aws.Config) string {
-// 	endpoint := os.Getenv("AWS_METADATA_URL")
-// 	if endpoint != "" {
-// 		log.Printf("[INFO] Setting custom metadata endpoint: %q", endpoint)
-// 		cfg.Endpoint = aws.String(endpoint)
-// 		return endpoint
-// 	}
-// 	return ""
-// }
