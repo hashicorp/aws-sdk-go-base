@@ -1621,7 +1621,7 @@ func TestEC2MetadataServiceEndpointMode(t *testing.T) {
 				AccessKey:                      servicemocks.MockStaticAccessKey,
 				Region:                         "us-east-1",
 				SecretKey:                      servicemocks.MockStaticSecretKey,
-				EC2MetadataServiceEndpointMode: "IPv4",
+				EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
 			},
 			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateIPv4,
 		},
@@ -1633,7 +1633,7 @@ func TestEC2MetadataServiceEndpointMode(t *testing.T) {
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
-				"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE": "IPv6",
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE": EC2MetadataEndpointModeIPv6,
 			},
 			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateIPv6,
 		},
@@ -1656,10 +1656,10 @@ ec2_metadata_service_endpoint_mode = IPv6
 				AccessKey:                      servicemocks.MockStaticAccessKey,
 				Region:                         "us-east-1",
 				SecretKey:                      servicemocks.MockStaticSecretKey,
-				EC2MetadataServiceEndpointMode: "IPv4",
+				EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
 			},
 			EnvironmentVariables: map[string]string{
-				"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE": "IPv6",
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE": EC2MetadataEndpointModeIPv6,
 			},
 			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateIPv4,
 		},
@@ -1671,7 +1671,7 @@ ec2_metadata_service_endpoint_mode = IPv6
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
-				"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE": "IPv6",
+				"AWS_EC2_METADATA_SERVICE_ENDPOINT_MODE": EC2MetadataEndpointModeIPv6,
 			},
 			SharedConfigurationFile: `
 [default]

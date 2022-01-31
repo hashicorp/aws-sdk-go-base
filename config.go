@@ -14,3 +14,15 @@ type APNInfo = config.APNInfo
 type AssumeRole = config.AssumeRole
 
 type UserAgentProduct = config.UserAgentProduct
+
+const (
+	EC2MetadataEndpointModeIPv4 = "IPv4"
+	EC2MetadataEndpointModeIPv6 = "IPv6"
+)
+
+func EC2MetadataEndpointMode_Values() []string {
+	return []string{
+		EC2MetadataEndpointModeIPv4,
+		EC2MetadataEndpointModeIPv6,
+	}
+}
