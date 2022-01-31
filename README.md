@@ -51,19 +51,13 @@ $ cd v2/awsv1shim && golangci-lint run ./...
 The two modules can be released separately.
 If changes are only made to `awsv1shim`, `aws-sdk-go-base` should **not** be released.
 However, if changes are made to `aws-sdk-go-base`, both modules should be released.
-If `aws-sdk-go-base` is being released, it should be released first, since `awsv1shim` depends on it.
 
-### Releasing `aws-sdk-go-base`
-
-* Push a new version tag to GitHub, in the form `vX.Y.Z`
-* Close the associated GitHub milestone
-* Create a release on GitHub
-
-### Releasing `awsv1shim`
-
-* If needed, update the version of `aws-sdk-go-base` to the version published above
-    * Update the version in the `go.mod` file
-    * Run `go mod tidy`
-* Push a new version tag to GitHub, in the form `v2/awsv1shim/vX.Y.Z`
-* Close the associated GitHub milestone
-* Create a release on GitHub
+1. If creating a new release of `aws-sdk-go-base`
+    1. Update the reference in the `awsv1shim` `go.mod` file
+    1. Run `go mod tidy`
+1. Push the updated files to GitHub
+1. Push new version tags to GitHub. For more details on Go module versioning, see <https://go.dev/doc/modules/version-numbers>.
+    * For `aws-sdk-go-base`, use the form `vX.Y.Z`
+    * For `awsv1shim`, use the form `v2/awsv1shim/vX.Y.Z`
+1. Close the associated GitHub milestone
+1. Create the releases on GitHub
