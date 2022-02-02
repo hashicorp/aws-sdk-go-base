@@ -41,7 +41,7 @@ func TestGetSessionOptions(t *testing.T) {
 			false,
 		},
 		{"ConfigWithCredsAndOptions",
-			&awsbase.Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey", Insecure: true, DebugLogging: true},
+			&awsbase.Config{AccessKey: "MockAccessKey", SecretKey: "MockSecretKey", Insecure: true},
 			false,
 		},
 	}
@@ -799,9 +799,8 @@ region = us-east-1
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
 				},
-				DebugLogging: true,
-				Region:       "us-east-1",
-				SecretKey:    servicemocks.MockStaticSecretKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description: "assume role error",
 			ExpectedError: func(err error) bool {

@@ -757,9 +757,8 @@ region = us-east-1
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
 				},
-				DebugLogging: true,
-				Region:       "us-east-1",
-				SecretKey:    servicemocks.MockStaticSecretKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description: "assume role error",
 			ExpectedError: func(err error) bool {
@@ -2004,7 +2003,6 @@ func TestRetryHandlers(t *testing.T) {
 				MaxRetries:          maxRetries,
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
-				DebugLogging:        true,
 			}
 			awsConfig, err := GetAwsConfig(context.Background(), config)
 			if err != nil {
