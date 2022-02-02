@@ -54,17 +54,13 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 				creds.SessionToken,
 			),
 			HTTPClient:           httpClient,
+			LogLevel:             aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors),
+			Logger:               debugLogger{},
 			MaxRetries:           aws.Int(0),
 			Region:               aws.String(awsC.Region),
 			UseFIPSEndpoint:      convertFIPSEndpointState(useFIPSEndpoint),
 			UseDualStackEndpoint: convertDualStackEndpointState(useDualStackEndpoint),
 		},
-	}
-
-	// This needs its own debug logger. Don't reuse or wrap the AWS SDK for Go v2 logger, since it hardcodes the string "aws-sdk-go-v2"
-	if c.DebugLogging {
-		options.Config.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
-		options.Config.Logger = debugLogger{}
 	}
 
 	return options, nil

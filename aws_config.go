@@ -159,19 +159,14 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		config.WithRegion(c.Region),
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
+		config.WithClientLogMode(aws.LogRequestWithBody | aws.LogResponseWithBody | aws.LogRetries),
+		config.WithLogger(debugLogger{}),
 	}
 
 	if len(c.SharedConfigFiles) > 0 {
 		loadOptions = append(
 			loadOptions,
 			config.WithSharedConfigFiles(c.SharedConfigFiles),
-		)
-	}
-
-	if c.DebugLogging {
-		loadOptions = append(loadOptions,
-			config.WithClientLogMode(aws.LogRequestWithBody|aws.LogResponseWithBody|aws.LogRetries),
-			config.WithLogger(debugLogger{}),
 		)
 	}
 
