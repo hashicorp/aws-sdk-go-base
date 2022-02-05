@@ -1185,6 +1185,170 @@ func fullValueTypeName(v reflect.Value) string {
 	return fmt.Sprintf("%s.%s", requestType.PkgPath(), requestType.Name())
 }
 
+func TestRegion(t *testing.T) {
+	testCases := map[string]struct {
+		Config                  *Config
+		EnvironmentVariables    map[string]string
+		SharedConfigurationFile string
+		ExpectedRegion          string
+	}{
+		"no configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedRegion: "",
+		},
+
+		"config": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedRegion: "us-east-1",
+		},
+
+		"AWS_REGION": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_REGION": "us-east-1",
+			},
+			ExpectedRegion: "us-east-1",
+		},
+		"AWS_DEFAULT_REGION": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_DEFAULT_REGION": "us-east-1",
+			},
+			ExpectedRegion: "us-east-1",
+		},
+		"AWS_REGION overrides AWS_DEFAULT_REGION": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_REGION":         "us-east-1",
+				"AWS_DEFAULT_REGION": "us-west-2",
+			},
+			ExpectedRegion: "us-east-1",
+		},
+
+		"shared configuration file": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+[default]
+region = us-east-1
+`,
+			ExpectedRegion: "us-east-1",
+		},
+
+		"config overrides AWS_REGION": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+				Region:    "us-east-1",
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_REGION": "us-west-2",
+			},
+			ExpectedRegion: "us-east-1",
+		},
+		"config overrides AWS_DEFAULT_REGION": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+				Region:    "us-east-1",
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_DEFAULT_REGION": "us-west-2",
+			},
+			ExpectedRegion: "us-east-1",
+		},
+
+		"AWS_REGION overrides shared configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_REGION": "us-east-1",
+			},
+			SharedConfigurationFile: `
+[default]
+region = us-west-2
+`,
+			ExpectedRegion: "us-east-1",
+		},
+		"AWS_DEFAULT_REGION overrides shared configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_DEFAULT_REGION": "us-east-1",
+			},
+			SharedConfigurationFile: `
+[default]
+region = us-west-2
+`,
+			ExpectedRegion: "us-east-1",
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			if a, e := awsConfig.Region, testCase.ExpectedRegion; a != e {
+				t.Errorf("expected Region %q, got: %q", e, a)
+			}
+		})
+	}
+}
+
 func TestMaxAttempts(t *testing.T) {
 	testCases := map[string]struct {
 		Config                  *Config
