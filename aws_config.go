@@ -7,6 +7,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -41,6 +42,11 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 
 	var retryer aws.Retryer
 	retryer = retry.NewStandard()
+	if maxAttempts := os.Getenv("AWS_MAX_ATTEMPTS"); maxAttempts != "" {
+		if i, err := strconv.Atoi(maxAttempts); err == nil {
+			retryer = retry.AddWithMaxAttempts(retryer, i)
+		}
+	}
 	if c.MaxRetries != 0 {
 		retryer = retry.AddWithMaxAttempts(retryer, c.MaxRetries)
 	}
