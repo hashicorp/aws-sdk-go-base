@@ -81,8 +81,9 @@ func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error)
 		return nil, fmt.Errorf("Error creating AWS session: %w", err)
 	}
 
-	if c.MaxRetries > 0 {
-		sess = sess.Copy(&aws.Config{MaxRetries: aws.Int(c.MaxRetries)})
+	// Set retries after resolving credentials to prevent retries during resolution
+	if retryer := awsC.Retryer(); retryer != nil {
+		sess = sess.Copy(&aws.Config{MaxRetries: aws.Int(retryer.MaxAttempts())})
 	}
 
 	SetSessionUserAgent(sess, c.APNInfo, c.UserAgent)

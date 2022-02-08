@@ -1185,6 +1185,134 @@ func fullValueTypeName(v reflect.Value) string {
 	return fmt.Sprintf("%s.%s", requestType.PkgPath(), requestType.Name())
 }
 
+func TestMaxAttempts(t *testing.T) {
+	testCases := map[string]struct {
+		Config                  *Config
+		EnvironmentVariables    map[string]string
+		SharedConfigurationFile string
+		ExpectedMaxAttempts     int
+	}{
+		"no configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedMaxAttempts: retry.DefaultMaxAttempts,
+		},
+
+		"config": {
+			Config: &Config{
+				AccessKey:  servicemocks.MockStaticAccessKey,
+				Region:     "us-east-1",
+				SecretKey:  servicemocks.MockStaticSecretKey,
+				MaxRetries: 5,
+			},
+			ExpectedMaxAttempts: 5,
+		},
+
+		"AWS_MAX_ATTEMPTS": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_MAX_ATTEMPTS": "5",
+			},
+			ExpectedMaxAttempts: 5,
+		},
+
+		// 		"shared configuration file": {
+		// 			Config: &Config{
+		// 				AccessKey: servicemocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: servicemocks.MockStaticSecretKey,
+		// 			},
+		// 			SharedConfigurationFile: `
+		// [default]
+		// max_attempts = 5
+		// `,
+		// 			ExpectedMaxAttempts: 5,
+		// 		},
+
+		"config overrides AWS_MAX_ATTEMPTS": {
+			Config: &Config{
+				AccessKey:  servicemocks.MockStaticAccessKey,
+				Region:     "us-east-1",
+				SecretKey:  servicemocks.MockStaticSecretKey,
+				MaxRetries: 10,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_MAX_ATTEMPTS": "5",
+			},
+			ExpectedMaxAttempts: 10,
+		},
+
+		// 		"AWS_MAX_ATTEMPTS overrides shared configuration": {
+		// 			Config: &Config{
+		// 				AccessKey: servicemocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: servicemocks.MockStaticSecretKey,
+		// 			},
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_MAX_ATTEMPTS": "5",
+		// 			},
+		// 			SharedConfigurationFile: `
+		// [default]
+		// max_attempts = 10
+		// `,
+		// 			ExpectedMaxAttempts: 5,
+		// 		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			retryer := awsConfig.Retryer()
+			if retryer == nil {
+				t.Fatal("no retryer set")
+			}
+			if a, e := retryer.MaxAttempts(), testCase.ExpectedMaxAttempts; a != e {
+				t.Errorf(`expected MaxAttempts "%d", got: "%d"`, e, a)
+			}
+		})
+	}
+}
+
 func TestServiceEndpointTypes(t *testing.T) {
 	testCases := map[string]struct {
 		Config                            *Config
