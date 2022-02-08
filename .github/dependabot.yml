@@ -1,0 +1,30 @@
+version: 2
+updates:
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "gomod"
+    directory: "/"
+    ignore:
+      - dependency-name: "golang.org/x/tools"
+      - dependency-name: "google.golang.org/grpc"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "gomod"
+    directory: "/v2/awsv1shim"
+    ignore:
+      - dependency-name: "golang.org/x/tools"
+      - dependency-name: "google.golang.org/grpc"
+    schedule:
+      interval: "daily"
+
+  - package-ecosystem: "gomod"
+    directory: "/tools"
+    ignore:
+      - dependency-name: "golang.org/x/tools"
+      - dependency-name: "google.golang.org/grpc"
+    schedule:
+      interval: "daily"
