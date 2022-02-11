@@ -49,6 +49,7 @@ func (p partition) Partition() Partition {
 }
 
 // TODO: this should be generated from the AWS SDK source data
+// Data from https://github.com/aws/aws-sdk-go/blob/main/models/endpoints/endpoints.json.
 var partitions = []partition{
 	{
 		id:          "aws",
@@ -58,9 +59,11 @@ var partitions = []partition{
 			"ap-east-1",      // Asia Pacific (Hong Kong).
 			"ap-northeast-1", // Asia Pacific (Tokyo).
 			"ap-northeast-2", // Asia Pacific (Seoul).
+			"ap-northeast-3", // Asia Pacific (Osaka).
 			"ap-south-1",     // Asia Pacific (Mumbai).
 			"ap-southeast-1", // Asia Pacific (Singapore).
 			"ap-southeast-2", // Asia Pacific (Sydney).
+			"ap-southeast-3", // Asia Pacific (Jakarta).
 			"ca-central-1",   // Canada (Central).
 			"eu-central-1",   // Europe (Frankfurt).
 			"eu-north-1",     // Europe (Stockholm).
@@ -97,13 +100,14 @@ var partitions = []partition{
 		regionRegex: regexp.MustCompile(`^us\-iso\-\w+\-\d+$`),
 		regions: []string{
 			"us-iso-east-1", // US ISO East.
+			"us-iso-west-1", // US ISO WEST.
 		},
 	},
 	{
 		id:          "aws-iso-b",
 		regionRegex: regexp.MustCompile(`^us\-isob\-\w+\-\d+$`),
 		regions: []string{
-			"us-isob-east-1", // US ISO East.
+			"us-isob-east-1", // US ISOB East (Ohio).
 		},
 	},
 }
