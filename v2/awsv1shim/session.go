@@ -41,10 +41,11 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 
 	httpClient, ok := awsC.HTTPClient.(*http.Client)
 	if !ok { // This is unlikely, but technically possible
-		httpClient, err = httpclient.DefaultHttpClient(c)
+		client, err := httpclient.DefaultHttpClient(c)
 		if err != nil {
 			return nil, err
 		}
+		httpClient = client.Freeze().(*http.Client)
 	}
 	options := &session.Options{
 		Config: aws.Config{
