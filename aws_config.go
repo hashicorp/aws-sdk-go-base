@@ -20,6 +20,8 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/httpclient"
+	"github.com/hashicorp/go-multierror"
+	"github.com/mitchellh/go-homedir"
 )
 
 func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
@@ -170,9 +172,13 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 	}
 
 	if len(c.SharedConfigFiles) > 0 {
+		configFiles, err := expandFilePaths(c.SharedConfigFiles)
+		if err != nil {
+			return nil, fmt.Errorf("error expanding shared config files: %w", err)
+		}
 		loadOptions = append(
 			loadOptions,
-			config.WithSharedConfigFiles(c.SharedConfigFiles),
+			config.WithSharedConfigFiles(configFiles),
 		)
 	}
 
@@ -215,4 +221,24 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 	}
 
 	return loadOptions, nil
+}
+
+func expandFilePaths(in []string) ([]string, error) {
+	var errs *multierror.Error
+	result := make([]string, 0, len(in))
+	for _, v := range in {
+		p, err := expandFilePath(v)
+		if err != nil {
+			errs = multierror.Append(errs, err)
+			continue
+		}
+		result = append(result, p)
+	}
+	return result, errs.ErrorOrNil()
+}
+
+func expandFilePath(in string) (s string, err error) {
+	e := os.ExpandEnv(in)
+	s, err = homedir.Expand(e)
+	return
 }

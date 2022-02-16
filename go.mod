@@ -10,6 +10,7 @@ require (
 	github.com/aws/smithy-go v1.10.0
 	github.com/google/go-cmp v0.5.7
 	github.com/hashicorp/go-multierror v1.1.1
+	github.com/mitchellh/go-homedir v1.1.0
 )
 
 go 1.16
