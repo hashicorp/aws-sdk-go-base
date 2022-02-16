@@ -1553,6 +1553,7 @@ func DualStackEndpointStateString(state endpoints.DualStackEndpointState) string
 func TestCustomCABundle(t *testing.T) {
 	testCases := map[string]struct {
 		Config                          *awsbase.Config
+		SetConfig                       bool
 		SetEnvironmentVariable          bool
 		SetSharedConfigurationFile      bool
 		ExpectTLSClientConfigRootCAsSet bool
@@ -1566,15 +1567,15 @@ func TestCustomCABundle(t *testing.T) {
 			ExpectTLSClientConfigRootCAsSet: false,
 		},
 
-		// "config": {
-		// 	Config: &awsbase.Config{
-		// 		AccessKey:                      servicemocks.MockStaticAccessKey,
-		// 		Region:                         "us-east-1",
-		// 		SecretKey:                      servicemocks.MockStaticSecretKey,
-		// 		EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
-		// 	},
-		// 	ExpectTLSClientConfigRootCAsSet: true,
-		// },
+		"config": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetConfig:                       true,
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
 
 		"envvar": {
 			Config: &awsbase.Config{
@@ -1636,9 +1637,12 @@ func TestCustomCABundle(t *testing.T) {
 
 			pemFile, err := servicemocks.TempPEMFile()
 			defer os.Remove(pemFile)
-			t.Logf("PEM file name: %s", pemFile)
 			if err != nil {
 				t.Fatalf("error creating PEM file: %s", err)
+			}
+
+			if testCase.SetConfig {
+				testCase.Config.CustomCABundle = pemFile
 			}
 
 			if testCase.SetEnvironmentVariable {

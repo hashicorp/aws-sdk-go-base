@@ -8,6 +8,7 @@ type Config struct {
 	AssumeRole                     *AssumeRole
 	CallerDocumentationURL         string
 	CallerName                     string
+	CustomCABundle                 string
 	EC2MetadataServiceEndpoint     string
 	EC2MetadataServiceEndpointMode string
 	HTTPProxy                      string

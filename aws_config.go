@@ -1,6 +1,7 @@
 package awsbase
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -178,6 +179,16 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		loadOptions = append(
 			loadOptions,
 			config.WithSharedConfigFiles(configFiles),
+		)
+	}
+
+	if c.CustomCABundle != "" {
+		bundle, err := os.ReadFile(c.CustomCABundle)
+		if err != nil {
+			return nil, fmt.Errorf("error reading custom CA bundle %q: %w", c.CustomCABundle, err)
+		}
+		loadOptions = append(loadOptions,
+			config.WithCustomCABundle(bytes.NewReader(bundle)),
 		)
 	}
 

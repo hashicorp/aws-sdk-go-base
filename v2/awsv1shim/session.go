@@ -1,6 +1,7 @@
 package awsv1shim
 
 import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
+	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -41,6 +42,7 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 	if err != nil {
 		return nil, err
 	}
+
 	options := &session.Options{
 		Config: aws.Config{
 			Credentials: credentials.NewStaticCredentials(
@@ -56,6 +58,14 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 			UseFIPSEndpoint:      convertFIPSEndpointState(useFIPSEndpoint),
 			UseDualStackEndpoint: convertDualStackEndpointState(useDualStackEndpoint),
 		},
+	}
+
+	if c.CustomCABundle != "" {
+		bundle, err := os.ReadFile(c.CustomCABundle)
+		if err != nil {
+			return nil, fmt.Errorf("error reading custom CA bundle %q: %w", c.CustomCABundle, err)
+		}
+		options.CustomCABundle = bytes.NewReader(bundle)
 	}
 
 	return options, nil

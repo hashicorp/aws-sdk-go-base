@@ -2023,6 +2023,7 @@ ec2_metadata_service_endpoint_mode = IPv4
 func TestCustomCABundle(t *testing.T) {
 	testCases := map[string]struct {
 		Config                          *Config
+		SetConfig                       bool
 		SetEnvironmentVariable          bool
 		SetSharedConfigurationFile      bool
 		ExpectTLSClientConfigRootCAsSet bool
@@ -2036,15 +2037,15 @@ func TestCustomCABundle(t *testing.T) {
 			ExpectTLSClientConfigRootCAsSet: false,
 		},
 
-		// "config": {
-		// 	Config: &Config{
-		// 		AccessKey:                      servicemocks.MockStaticAccessKey,
-		// 		Region:                         "us-east-1",
-		// 		SecretKey:                      servicemocks.MockStaticSecretKey,
-		// 		EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
-		// 	},
-		// 	ExpectTLSClientConfigRootCAsSet: true,
-		// },
+		"config": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetConfig:                       true,
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
 
 		"envvar": {
 			Config: &Config{
@@ -2109,6 +2110,10 @@ func TestCustomCABundle(t *testing.T) {
 			t.Logf("PEM file name: %s", pemFile)
 			if err != nil {
 				t.Fatalf("error creating PEM file: %s", err)
+			}
+
+			if testCase.SetConfig {
+				testCase.Config.CustomCABundle = pemFile
 			}
 
 			if testCase.SetEnvironmentVariable {

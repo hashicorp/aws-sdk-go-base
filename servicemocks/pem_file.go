@@ -5,7 +5,7 @@ import (
 )
 
 func TempPEMFile() (string, error) {
-	file, err := ioutil.TempFile(".", "bundle-*.pem")
+	file, err := ioutil.TempFile("", "bundle-*.pem")
 	if err != nil {
 		return "", err
 	}
