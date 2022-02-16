@@ -2350,3 +2350,61 @@ func (r *withNoDelay) RetryDelay(attempt int, err error) (time.Duration, error) 
 
 	return 0 * time.Second, nil
 }
+
+func TestExpandFilePath(t *testing.T) {
+	testcases := map[string]struct {
+		path     string
+		expected string
+		envvars  map[string]string
+	}{
+		"filename": {
+			path:     "file",
+			expected: "file",
+		},
+		"file in current dir": {
+			path:     "./file",
+			expected: "./file",
+		},
+		"file with tilde": {
+			path:     "~/file",
+			expected: "/my/home/dir/file",
+			envvars: map[string]string{
+				"HOME": "/my/home/dir",
+			},
+		},
+		"file with envvar": {
+			path:     "$HOME/file",
+			expected: "/home/dir/file",
+			envvars: map[string]string{
+				"HOME": "/home/dir",
+			},
+		},
+		"full file in envvar": {
+			path:     "$CONF_FILE",
+			expected: "/path/to/conf/file",
+			envvars: map[string]string{
+				"CONF_FILE": "/path/to/conf/file",
+			},
+		},
+	}
+
+	for name, testcase := range testcases {
+		t.Run(name, func(t *testing.T) {
+			oldEnv := servicemocks.StashEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testcase.envvars {
+				os.Setenv(k, v)
+			}
+
+			a, err := expandFilePath(testcase.path)
+			if err != nil {
+				t.Fatalf("unexpected error: %s", err)
+			}
+
+			if a != testcase.expected {
+				t.Errorf("expected expansion to %q, got %q", testcase.expected, a)
+			}
+		})
+	}
+}

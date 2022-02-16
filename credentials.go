@@ -41,9 +41,13 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		)
 	}
 	if len(c.SharedCredentialsFiles) > 0 {
+		credsFiles, err := expandFilePaths(c.SharedCredentialsFiles)
+		if err != nil {
+			return nil, fmt.Errorf("error expanding shared credentials files: %w", err)
+		}
 		loadOptions = append(
 			loadOptions,
-			config.WithSharedCredentialsFiles(c.SharedCredentialsFiles),
+			config.WithSharedCredentialsFiles(credsFiles),
 		)
 	}
 
