@@ -19,7 +19,6 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
-	"github.com/hashicorp/aws-sdk-go-base/v2/internal/httpclient"
 	"github.com/hashicorp/go-multierror"
 	"github.com/mitchellh/go-homedir"
 )
@@ -140,7 +139,7 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 }
 
 func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
-	httpClient, err := httpclient.DefaultHttpClient(c)
+	httpClient, err := defaultHttpClient(c)
 	if err != nil {
 		return nil, err
 	}

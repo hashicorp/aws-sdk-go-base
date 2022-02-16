@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
 	"reflect"
 	"runtime"
@@ -2014,6 +2015,146 @@ ec2_metadata_service_endpoint_mode = IPv4
 			}
 			if a, e := ec2MetadataServiceEndpointMode, testCase.ExpectedEC2MetadataServiceEndpointMode; a != e {
 				t.Errorf("expected EC2MetadataServiceEndpointMode %q, got: %q", awsconfig.EC2IMDSEndpointModeString(e), awsconfig.EC2IMDSEndpointModeString(a))
+			}
+		})
+	}
+}
+
+func TestCustomCABundle(t *testing.T) {
+	testCases := map[string]struct {
+		Config                          *Config
+		SetEnvironmentVariable          bool
+		SetSharedConfigurationFile      bool
+		ExpectTLSClientConfigRootCAsSet bool
+	}{
+		"no configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectTLSClientConfigRootCAsSet: false,
+		},
+
+		// "config": {
+		// 	Config: &Config{
+		// 		AccessKey:                      servicemocks.MockStaticAccessKey,
+		// 		Region:                         "us-east-1",
+		// 		SecretKey:                      servicemocks.MockStaticSecretKey,
+		// 		EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
+		// 	},
+		// 	ExpectTLSClientConfigRootCAsSet: true,
+		// },
+
+		"envvar": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetEnvironmentVariable:          true,
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
+
+		// Not implemented in AWS SDK for Go v2: https://github.com/aws/aws-sdk-go-v2/issues/1589
+		// "shared configuration file": {
+		// 	Config: &Config{
+		// 		AccessKey: servicemocks.MockStaticAccessKey,
+		// 		Region:    "us-east-1",
+		// 		SecretKey: servicemocks.MockStaticSecretKey,
+		// 	},
+		// 	SetSharedConfigurationFile:      true,
+		// 	ExpectTLSClientConfigRootCAsSet: true,
+		// },
+
+		// 		"config overrides envvar": {
+		// 			Config: &Config{
+		// 				AccessKey:                      servicemocks.MockStaticAccessKey,
+		// 				Region:                         "us-east-1",
+		// 				SecretKey:                      servicemocks.MockStaticSecretKey,
+		// 				EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
+		// 			},
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_CA_BUNDLE": EC2MetadataEndpointModeIPv6,
+		// 			},
+		// 			ExpectTLSClientConfigRootCAsSet: true,
+		// 		},
+
+		// 		"envvar overrides shared configuration": {
+		// 			Config: &Config{
+		// 				AccessKey: servicemocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: servicemocks.MockStaticSecretKey,
+		// 			},
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_CA_BUNDLE": EC2MetadataEndpointModeIPv6,
+		// 			},
+		// 			SharedConfigurationFile: `
+		// [default]
+		// ec2_metadata_service_endpoint_mode = IPv4
+		// `,
+		// ExpectTLSClientConfigRootCAsSet: true,
+		// },
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			pemFile, err := servicemocks.TempPEMFile()
+			defer os.Remove(pemFile)
+			t.Logf("PEM file name: %s", pemFile)
+			if err != nil {
+				t.Fatalf("error creating PEM file: %s", err)
+			}
+
+			if testCase.SetEnvironmentVariable {
+				os.Setenv("AWS_CA_BUNDLE", pemFile)
+			}
+
+			if testCase.SetSharedConfigurationFile {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(
+					file.Name(),
+					[]byte(fmt.Sprintf(`
+[default]
+ca_bundle = %s
+`, pemFile)),
+					0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			type transportGetter interface {
+				GetTransport() *http.Transport
+			}
+
+			trGetter := awsConfig.HTTPClient.(transportGetter)
+			tr := trGetter.GetTransport()
+
+			if a, e := tr.TLSClientConfig.RootCAs != nil, testCase.ExpectTLSClientConfigRootCAsSet; a != e {
+				t.Errorf("expected(%t) CA Bundle, got: %t", e, a)
 			}
 		})
 	}
