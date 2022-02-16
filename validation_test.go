@@ -14,6 +14,10 @@ func TestValidateRegion(t *testing.T) {
 			ExpectError: false,
 		},
 		{
+			Region:      "ap-northeast-3",
+			ExpectError: false,
+		},
+		{
 			Region:      "us-gov-west-1",
 			ExpectError: false,
 		},
