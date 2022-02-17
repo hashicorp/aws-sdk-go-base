@@ -1649,11 +1649,17 @@ func TestCustomCABundle(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
-			servicemocks.RestoreEnv(oldEnv, "TMPDIR")
 
 			for k, v := range testCase.EnvironmentVariables {
 				os.Setenv(k, v)
 			}
+
+			tempdir, err := ioutil.TempDir("", "temp")
+			if err != nil {
+				t.Fatalf("error creating temp dir: %s", err)
+			}
+			defer os.Remove(tempdir)
+			os.Setenv("TMPDIR", tempdir)
 
 			pemFile, err := servicemocks.TempPEMFile()
 			defer os.Remove(pemFile)

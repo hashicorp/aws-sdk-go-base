@@ -36,21 +36,6 @@ func PopEnv(env []string) {
 	}
 }
 
-func RestoreEnv(env []string, key string) {
-	for _, e := range env {
-		p := strings.SplitN(e, "=", 2)
-		k, v := p[0], ""
-		if k != key {
-			continue
-		}
-		if len(p) > 1 {
-			v = p[1]
-		}
-		os.Setenv(k, v)
-		break
-	}
-}
-
 // InvalidEC2MetadataEndpoint establishes a httptest server to simulate behaviour
 // when endpoint doesn't respond as expected
 func InvalidEC2MetadataEndpoint() func() {
