@@ -4,11 +4,13 @@
 BUG FIXES
 
 * Restores expansion of `~/` in file paths. ([#118](https://github.com/hashicorp/aws-sdk-go-base/pull/118))
+* Fixes error when setting custom CA bundle. ([#122](https://github.com/hashicorp/aws-sdk-go-base/pull/122))
 
 ENHANCEMENTS
 
 * Adds expansion of environment variables in file paths. ([#118](https://github.com/hashicorp/aws-sdk-go-base/pull/118))
 * Updates list of valid regions. ([#111](https://github.com/hashicorp/aws-sdk-go-base/pull/111))
+* Adds parameter `CustomCABundle`. ([#122](https://github.com/hashicorp/aws-sdk-go-base/pull/122))
 
 # v2.0.0-beta.7 (2022-02-14)
 
