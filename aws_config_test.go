@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
@@ -2026,6 +2027,8 @@ func TestCustomCABundle(t *testing.T) {
 		SetConfig                       bool
 		SetEnvironmentVariable          bool
 		SetSharedConfigurationFile      bool
+		ExpandEnvVars                   bool
+		EnvironmentVariables            map[string]string
 		ExpectTLSClientConfigRootCAsSet bool
 	}{
 		"no configuration": {
@@ -2044,6 +2047,17 @@ func TestCustomCABundle(t *testing.T) {
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetConfig:                       true,
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
+
+		"expanded config": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetConfig:                       true,
+			ExpandEnvVars:                   true,
 			ExpectTLSClientConfigRootCAsSet: true,
 		},
 
@@ -2068,19 +2082,20 @@ func TestCustomCABundle(t *testing.T) {
 		// 	ExpectTLSClientConfigRootCAsSet: true,
 		// },
 
-		// 		"config overrides envvar": {
-		// 			Config: &Config{
-		// 				AccessKey:                      servicemocks.MockStaticAccessKey,
-		// 				Region:                         "us-east-1",
-		// 				SecretKey:                      servicemocks.MockStaticSecretKey,
-		// 				EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
-		// 			},
-		// 			EnvironmentVariables: map[string]string{
-		// 				"AWS_CA_BUNDLE": EC2MetadataEndpointModeIPv6,
-		// 			},
-		// 			ExpectTLSClientConfigRootCAsSet: true,
-		// 		},
+		"config overrides envvar": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetConfig: true,
+			EnvironmentVariables: map[string]string{
+				"AWS_CA_BUNDLE": "no-such-file",
+			},
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
 
+		// Not implemented in AWS SDK for Go v2: https://github.com/aws/aws-sdk-go-v2/issues/1589
 		// 		"envvar overrides shared configuration": {
 		// 			Config: &Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
@@ -2104,12 +2119,27 @@ func TestCustomCABundle(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.RestoreEnv(oldEnv, "TMPDIR")
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
 
 			pemFile, err := servicemocks.TempPEMFile()
 			defer os.Remove(pemFile)
-			t.Logf("PEM file name: %s", pemFile)
 			if err != nil {
 				t.Fatalf("error creating PEM file: %s", err)
+			}
+
+			if testCase.ExpandEnvVars {
+				tmpdir := os.Getenv("TMPDIR")
+				rel, err := filepath.Rel(tmpdir, pemFile)
+				if err != nil {
+					t.Fatalf("error making path relative: %s", err)
+				}
+				t.Logf("relative: %s", rel)
+				pemFile = filepath.Join("$TMPDIR", rel)
+				t.Logf("env tempfile: %s", pemFile)
 			}
 
 			if testCase.SetConfig {
@@ -2495,62 +2525,4 @@ func (r *withNoDelay) RetryDelay(attempt int, err error) (time.Duration, error) 
 	}
 
 	return 0 * time.Second, nil
-}
-
-func TestExpandFilePath(t *testing.T) {
-	testcases := map[string]struct {
-		path     string
-		expected string
-		envvars  map[string]string
-	}{
-		"filename": {
-			path:     "file",
-			expected: "file",
-		},
-		"file in current dir": {
-			path:     "./file",
-			expected: "./file",
-		},
-		"file with tilde": {
-			path:     "~/file",
-			expected: "/my/home/dir/file",
-			envvars: map[string]string{
-				"HOME": "/my/home/dir",
-			},
-		},
-		"file with envvar": {
-			path:     "$HOME/file",
-			expected: "/home/dir/file",
-			envvars: map[string]string{
-				"HOME": "/home/dir",
-			},
-		},
-		"full file in envvar": {
-			path:     "$CONF_FILE",
-			expected: "/path/to/conf/file",
-			envvars: map[string]string{
-				"CONF_FILE": "/path/to/conf/file",
-			},
-		},
-	}
-
-	for name, testcase := range testcases {
-		t.Run(name, func(t *testing.T) {
-			oldEnv := servicemocks.StashEnv()
-			defer servicemocks.PopEnv(oldEnv)
-
-			for k, v := range testcase.envvars {
-				os.Setenv(k, v)
-			}
-
-			a, err := expandFilePath(testcase.path)
-			if err != nil {
-				t.Fatalf("unexpected error: %s", err)
-			}
-
-			if a != testcase.expected {
-				t.Errorf("expected expansion to %q, got %q", testcase.expected, a)
-			}
-		})
-	}
 }

@@ -1,6 +1,13 @@
 package config
 
-import "time"
+import (
+	"bytes"
+	"fmt"
+	"os"
+	"time"
+
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
+)
 
 type Config struct {
 	AccessKey                      string
@@ -31,19 +38,6 @@ type Config struct {
 	UserAgent                      UserAgentProducts
 }
 
-type APNInfo struct {
-	PartnerName string
-	Products    []UserAgentProduct
-}
-
-type UserAgentProduct struct {
-	Name    string
-	Version string
-	Comment string
-}
-
-type UserAgentProducts []UserAgentProduct
-
 type AssumeRole struct {
 	RoleARN           string
 	Duration          time.Duration
@@ -53,4 +47,19 @@ type AssumeRole struct {
 	SessionName       string
 	Tags              map[string]string
 	TransitiveTagKeys []string
+}
+
+func (c Config) CustomCABundleReader() (*bytes.Reader, error) {
+	if c.CustomCABundle == "" {
+		return nil, nil
+	}
+	bundleFile, err := expand.FilePath(c.CustomCABundle)
+	if err != nil {
+		return nil, fmt.Errorf("expanding custom CA bundle: %w", err)
+	}
+	bundle, err := os.ReadFile(bundleFile)
+	if err != nil {
+		return nil, fmt.Errorf("reading custom CA bundle: %w", err)
+	}
+	return bytes.NewReader(bundle), nil
 }

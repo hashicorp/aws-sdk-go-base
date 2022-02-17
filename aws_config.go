@@ -1,7 +1,6 @@
 package awsbase
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -20,8 +19,7 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
-	"github.com/hashicorp/go-multierror"
-	"github.com/mitchellh/go-homedir"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 )
 
 func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
@@ -172,9 +170,9 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 	}
 
 	if len(c.SharedConfigFiles) > 0 {
-		configFiles, err := expandFilePaths(c.SharedConfigFiles)
+		configFiles, err := expand.FilePaths(c.SharedConfigFiles)
 		if err != nil {
-			return nil, fmt.Errorf("error expanding shared config files: %w", err)
+			return nil, fmt.Errorf("expanding shared config files: %w", err)
 		}
 		loadOptions = append(
 			loadOptions,
@@ -183,12 +181,12 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 	}
 
 	if c.CustomCABundle != "" {
-		bundle, err := os.ReadFile(c.CustomCABundle)
+		reader, err := c.CustomCABundleReader()
 		if err != nil {
-			return nil, fmt.Errorf("error reading custom CA bundle %q: %w", c.CustomCABundle, err)
+			return nil, err
 		}
 		loadOptions = append(loadOptions,
-			config.WithCustomCABundle(bytes.NewReader(bundle)),
+			config.WithCustomCABundle(reader),
 		)
 	}
 
@@ -231,24 +229,4 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 	}
 
 	return loadOptions, nil
-}
-
-func expandFilePaths(in []string) ([]string, error) {
-	var errs *multierror.Error
-	result := make([]string, 0, len(in))
-	for _, v := range in {
-		p, err := expandFilePath(v)
-		if err != nil {
-			errs = multierror.Append(errs, err)
-			continue
-		}
-		result = append(result, p)
-	}
-	return result, errs.ErrorOrNil()
-}
-
-func expandFilePath(in string) (s string, err error) {
-	e := os.ExpandEnv(in)
-	s, err = homedir.Expand(e)
-	return
 }

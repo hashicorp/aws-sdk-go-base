@@ -8,6 +8,7 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"path/filepath"
 	"runtime"
 	"testing"
 	"time"
@@ -1556,6 +1557,8 @@ func TestCustomCABundle(t *testing.T) {
 		SetConfig                       bool
 		SetEnvironmentVariable          bool
 		SetSharedConfigurationFile      bool
+		ExpandEnvVars                   bool
+		EnvironmentVariables            map[string]string
 		ExpectTLSClientConfigRootCAsSet bool
 	}{
 		"no configuration": {
@@ -1574,6 +1577,17 @@ func TestCustomCABundle(t *testing.T) {
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetConfig:                       true,
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
+
+		"expanded config": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetConfig:                       true,
+			ExpandEnvVars:                   true,
 			ExpectTLSClientConfigRootCAsSet: true,
 		},
 
@@ -1598,19 +1612,20 @@ func TestCustomCABundle(t *testing.T) {
 		// 	ExpectTLSClientConfigRootCAsSet: true,
 		// },
 
-		// 		"config overrides envvar": {
-		// 			Config: &awsbase.Config{
-		// 				AccessKey:                      servicemocks.MockStaticAccessKey,
-		// 				Region:                         "us-east-1",
-		// 				SecretKey:                      servicemocks.MockStaticSecretKey,
-		// 				EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
-		// 			},
-		// 			EnvironmentVariables: map[string]string{
-		// 				"AWS_CA_BUNDLE": EC2MetadataEndpointModeIPv6,
-		// 			},
-		// 			ExpectTLSClientConfigRootCAsSet: true,
-		// 		},
+		"config overrides envvar": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetConfig: true,
+			EnvironmentVariables: map[string]string{
+				"AWS_CA_BUNDLE": "no-such-file",
+			},
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
 
+		// Not implemented in AWS SDK for Go v2: https://github.com/aws/aws-sdk-go-v2/issues/1589
 		// 		"envvar overrides shared configuration": {
 		// 			Config: &awsbase.Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
@@ -1634,11 +1649,27 @@ func TestCustomCABundle(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.RestoreEnv(oldEnv, "TMPDIR")
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
 
 			pemFile, err := servicemocks.TempPEMFile()
 			defer os.Remove(pemFile)
 			if err != nil {
 				t.Fatalf("error creating PEM file: %s", err)
+			}
+
+			if testCase.ExpandEnvVars {
+				tmpdir := os.Getenv("TMPDIR")
+				rel, err := filepath.Rel(tmpdir, pemFile)
+				if err != nil {
+					t.Fatalf("error making path relative: %s", err)
+				}
+				t.Logf("relative: %s", rel)
+				pemFile = filepath.Join("$TMPDIR", rel)
+				t.Logf("env tempfile: %s", pemFile)
 			}
 
 			if testCase.SetConfig {

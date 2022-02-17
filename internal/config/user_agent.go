@@ -4,6 +4,14 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
+type UserAgentProduct struct {
+	Name    string
+	Version string
+	Comment string
+}
+
+type UserAgentProducts []UserAgentProduct
+
 func (ua UserAgentProducts) BuildUserAgentString() string {
 	builder := smithyhttp.NewUserAgentBuilder()
 	for _, p := range ua {

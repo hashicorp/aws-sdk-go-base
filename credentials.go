@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 )
 
 func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, error) {
@@ -41,9 +42,9 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		)
 	}
 	if len(c.SharedCredentialsFiles) > 0 {
-		credsFiles, err := expandFilePaths(c.SharedCredentialsFiles)
+		credsFiles, err := expand.FilePaths(c.SharedCredentialsFiles)
 		if err != nil {
-			return nil, fmt.Errorf("error expanding shared credentials files: %w", err)
+			return nil, fmt.Errorf("expanding shared credentials files: %w", err)
 		}
 		loadOptions = append(
 			loadOptions,

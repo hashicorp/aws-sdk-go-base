@@ -1,7 +1,6 @@
 package awsv1shim
 
 import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
-	"bytes"
 	"context"
 	"fmt"
 	"log"
@@ -61,11 +60,11 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 	}
 
 	if c.CustomCABundle != "" {
-		bundle, err := os.ReadFile(c.CustomCABundle)
+		reader, err := c.CustomCABundleReader()
 		if err != nil {
-			return nil, fmt.Errorf("error reading custom CA bundle %q: %w", c.CustomCABundle, err)
+			return nil, err
 		}
-		options.CustomCABundle = bytes.NewReader(bundle)
+		options.CustomCABundle = reader
 	}
 
 	return options, nil
