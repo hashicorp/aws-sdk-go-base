@@ -4,6 +4,11 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
+type APNInfo struct {
+	PartnerName string
+	Products    []UserAgentProduct
+}
+
 // Builds the user-agent string for APN
 func (apn APNInfo) BuildUserAgentString() string {
 	builder := smithyhttp.NewUserAgentBuilder()

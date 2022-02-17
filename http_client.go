@@ -1,4 +1,4 @@
-package httpclient
+package awsbase
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/config"
 )
 
-func DefaultHttpClient(c *config.Config) (*awshttp.BuildableClient, error) {
+func defaultHttpClient(c *config.Config) (*awshttp.BuildableClient, error) {
 	var err error
 
 	httpClient := awshttp.NewBuildableClient().

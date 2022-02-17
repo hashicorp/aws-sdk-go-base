@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net"
+	"net/http"
 	"os"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"strings"
@@ -2019,6 +2021,186 @@ ec2_metadata_service_endpoint_mode = IPv4
 	}
 }
 
+func TestCustomCABundle(t *testing.T) {
+	testCases := map[string]struct {
+		Config                          *Config
+		SetConfig                       bool
+		SetEnvironmentVariable          bool
+		SetSharedConfigurationFile      bool
+		ExpandEnvVars                   bool
+		EnvironmentVariables            map[string]string
+		ExpectTLSClientConfigRootCAsSet bool
+	}{
+		"no configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectTLSClientConfigRootCAsSet: false,
+		},
+
+		"config": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetConfig:                       true,
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
+
+		"expanded config": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetConfig:                       true,
+			ExpandEnvVars:                   true,
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
+
+		"envvar": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetEnvironmentVariable:          true,
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
+
+		// Not implemented in AWS SDK for Go v2: https://github.com/aws/aws-sdk-go-v2/issues/1589
+		// "shared configuration file": {
+		// 	Config: &Config{
+		// 		AccessKey: servicemocks.MockStaticAccessKey,
+		// 		Region:    "us-east-1",
+		// 		SecretKey: servicemocks.MockStaticSecretKey,
+		// 	},
+		// 	SetSharedConfigurationFile:      true,
+		// 	ExpectTLSClientConfigRootCAsSet: true,
+		// },
+
+		"config overrides envvar": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetConfig: true,
+			EnvironmentVariables: map[string]string{
+				"AWS_CA_BUNDLE": "no-such-file",
+			},
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
+
+		// Not implemented in AWS SDK for Go v2: https://github.com/aws/aws-sdk-go-v2/issues/1589
+		// 		"envvar overrides shared configuration": {
+		// 			Config: &Config{
+		// 				AccessKey: servicemocks.MockStaticAccessKey,
+		// 				Region:    "us-east-1",
+		// 				SecretKey: servicemocks.MockStaticSecretKey,
+		// 			},
+		// 			EnvironmentVariables: map[string]string{
+		// 				"AWS_CA_BUNDLE": EC2MetadataEndpointModeIPv6,
+		// 			},
+		// 			SharedConfigurationFile: `
+		// [default]
+		// ec2_metadata_service_endpoint_mode = IPv4
+		// `,
+		// ExpectTLSClientConfigRootCAsSet: true,
+		// },
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			tempdir, err := ioutil.TempDir("", "temp")
+			if err != nil {
+				t.Fatalf("error creating temp dir: %s", err)
+			}
+			defer os.Remove(tempdir)
+			os.Setenv("TMPDIR", tempdir)
+
+			pemFile, err := servicemocks.TempPEMFile()
+			defer os.Remove(pemFile)
+			if err != nil {
+				t.Fatalf("error creating PEM file: %s", err)
+			}
+
+			if testCase.ExpandEnvVars {
+				tmpdir := os.Getenv("TMPDIR")
+				rel, err := filepath.Rel(tmpdir, pemFile)
+				if err != nil {
+					t.Fatalf("error making path relative: %s", err)
+				}
+				t.Logf("relative: %s", rel)
+				pemFile = filepath.Join("$TMPDIR", rel)
+				t.Logf("env tempfile: %s", pemFile)
+			}
+
+			if testCase.SetConfig {
+				testCase.Config.CustomCABundle = pemFile
+			}
+
+			if testCase.SetEnvironmentVariable {
+				os.Setenv("AWS_CA_BUNDLE", pemFile)
+			}
+
+			if testCase.SetSharedConfigurationFile {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(
+					file.Name(),
+					[]byte(fmt.Sprintf(`
+[default]
+ca_bundle = %s
+`, pemFile)),
+					0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			type transportGetter interface {
+				GetTransport() *http.Transport
+			}
+
+			trGetter := awsConfig.HTTPClient.(transportGetter)
+			tr := trGetter.GetTransport()
+
+			if a, e := tr.TLSClientConfig.RootCAs != nil, testCase.ExpectTLSClientConfigRootCAsSet; a != e {
+				t.Errorf("expected(%t) CA Bundle, got: %t", e, a)
+			}
+		})
+	}
+}
+
 func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	oldEnv := servicemocks.InitSessionTestEnv()
 	defer servicemocks.PopEnv(oldEnv)
@@ -2349,62 +2531,4 @@ func (r *withNoDelay) RetryDelay(attempt int, err error) (time.Duration, error) 
 	}
 
 	return 0 * time.Second, nil
-}
-
-func TestExpandFilePath(t *testing.T) {
-	testcases := map[string]struct {
-		path     string
-		expected string
-		envvars  map[string]string
-	}{
-		"filename": {
-			path:     "file",
-			expected: "file",
-		},
-		"file in current dir": {
-			path:     "./file",
-			expected: "./file",
-		},
-		"file with tilde": {
-			path:     "~/file",
-			expected: "/my/home/dir/file",
-			envvars: map[string]string{
-				"HOME": "/my/home/dir",
-			},
-		},
-		"file with envvar": {
-			path:     "$HOME/file",
-			expected: "/home/dir/file",
-			envvars: map[string]string{
-				"HOME": "/home/dir",
-			},
-		},
-		"full file in envvar": {
-			path:     "$CONF_FILE",
-			expected: "/path/to/conf/file",
-			envvars: map[string]string{
-				"CONF_FILE": "/path/to/conf/file",
-			},
-		},
-	}
-
-	for name, testcase := range testcases {
-		t.Run(name, func(t *testing.T) {
-			oldEnv := servicemocks.StashEnv()
-			defer servicemocks.PopEnv(oldEnv)
-
-			for k, v := range testcase.envvars {
-				os.Setenv(k, v)
-			}
-
-			a, err := expandFilePath(testcase.path)
-			if err != nil {
-				t.Fatalf("unexpected error: %s", err)
-			}
-
-			if a != testcase.expected {
-				t.Errorf("expected expansion to %q, got %q", testcase.expected, a)
-			}
-		})
-	}
 }
