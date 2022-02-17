@@ -47,3 +47,20 @@ BREAKING CHANGES
 
 * Renames parameter `SkipMetadataApiCheck` to `SkipEC2MetadataApiCheck`. ([#92](https://github.com/hashicorp/aws-sdk-go-base/pull/92))
 * Renames assume role parameter `DurationSeconds` to `Duration`. ([#84](https://github.com/hashicorp/aws-sdk-go-base/pull/84))
+
+# v2.0.0-beta.3 (2021-11-03)
+
+ENHANCEMENTS
+
+* Adds parameter `UserAgent` to append to user-agent string. ([#86](https://github.com/hashicorp/aws-sdk-go-base/pull/86))
+
+# v2.0.0-beta.2 (2021-09-27)
+
+ENHANCEMENTS
+
+* Adds parameter `HTTPProxy`. ([#81](https://github.com/hashicorp/aws-sdk-go-base/pull/81))
+* Adds parameter `APNInfo` to add APN data to user-agent string. ([#82](https://github.com/hashicorp/aws-sdk-go-base/pull/82))
+
+BREAKING CHANGES
+
+* Moves assume role parameters to `AssumeRole` struct. ([#78](https://github.com/hashicorp/aws-sdk-go-base/pull/78))
