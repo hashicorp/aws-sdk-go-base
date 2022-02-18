@@ -8,7 +8,6 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -22,11 +21,6 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 // options based on pre-existing credential provider, configured profile, or
 // fallback to automatically a determined session via the AWS Go SDK.
 func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options, error) {
-	creds, err := awsC.Credentials.Retrieve(context.Background())
-	if err != nil {
-		return nil, fmt.Errorf("error accessing credentials: %w", err)
-	}
-
 	useFIPSEndpoint, _, err := awsconfig.ResolveUseFIPSEndpoint(context.Background(), awsC.ConfigSources)
 	if err != nil {
 		return nil, fmt.Errorf("error resolving configuration: %w", err)
@@ -44,11 +38,7 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 
 	options := &session.Options{
 		Config: aws.Config{
-			Credentials: credentials.NewStaticCredentials(
-				creds.AccessKeyID,
-				creds.SecretAccessKey,
-				creds.SessionToken,
-			),
+			Credentials:          newV2Credentials(awsC.Credentials),
 			HTTPClient:           httpClient,
 			LogLevel:             aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors),
 			Logger:               debugLogger{},
