@@ -52,7 +52,7 @@ func (p *v2CredentialsProvider) RetrieveWithContext(ctx credentials.Context) (cr
 }
 
 func (p *v2CredentialsProvider) IsExpired() bool {
-	v2creds := p.getCreds()
+	v2creds := p.credentials()
 	if v2creds != nil {
 		return v2creds.Expired()
 	}
@@ -60,7 +60,7 @@ func (p *v2CredentialsProvider) IsExpired() bool {
 }
 
 func (p *v2CredentialsProvider) ExpiresAt() time.Time {
-	v2creds := p.getCreds()
+	v2creds := p.credentials()
 	if v2creds != nil {
 		return v2creds.Expires
 	}
@@ -71,7 +71,7 @@ func (p *v2CredentialsProvider) Retrieve() (credentials.Value, error) {
 	return p.RetrieveWithContext(context.Background())
 }
 
-func (p *v2CredentialsProvider) getCreds() *awsv2.Credentials {
+func (p *v2CredentialsProvider) credentials() *awsv2.Credentials {
 	v := p.v2creds.Load()
 	if v == nil {
 		return nil
