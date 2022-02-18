@@ -1,5 +1,7 @@
 <!-- markdownlint-disable single-title -->
-# v2.0.0-beta.8 (Unreleased)
+# v2.0.0 (Unreleased)
+
+# v2.0.0-beta.8 (2022-02-18)
 
 BUG FIXES
 
