@@ -10,7 +10,6 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
-	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 )
 
 func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, string, error) {
@@ -20,7 +19,6 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	}
 	loadOptions = append(
 		loadOptions,
-		config.WithSharedConfigProfile(c.Profile),
 		// Bypass retries when validating authentication
 		config.WithRetryer(func() aws.Retryer {
 			return aws.NopRetryer{}
@@ -29,6 +27,50 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		// is not included in the aws.Config returned to the caller
 		config.WithEndpointResolverWithOptions(credentialsEndpointResolver(c)),
 	)
+
+	envConfig, err := config.NewEnvConfig()
+	if err != nil {
+		return nil, "", err
+	}
+
+	profile := c.Profile
+	if profile == "" {
+		profile = envConfig.SharedConfigProfile
+	}
+
+	sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
+	if err != nil {
+		return nil, "", err
+	}
+	if len(sharedCredentialsFiles) == 0 {
+		sharedCredentialsFiles = []string{envConfig.SharedCredentialsFile}
+	}
+
+	sharedConfigFiles, err := c.ResolveSharedConfigFiles()
+	if err != nil {
+		return nil, "", err
+	}
+	if len(sharedConfigFiles) == 0 {
+		sharedConfigFiles = []string{envConfig.SharedConfigFile}
+	}
+
+	// The default AWS SDK authentication flow silently ignores invalid Profiles. Pre-validate that the Profile exists
+	// https://github.com/aws/aws-sdk-go-v2/issues/1591
+	if profile != "" {
+		_, err := config.LoadSharedConfigProfile(ctx, profile, func(opts *config.LoadSharedConfigOptions) {
+			opts.CredentialsFiles = sharedCredentialsFiles
+			opts.ConfigFiles = sharedConfigFiles
+		})
+		if err != nil {
+			return nil, "", err
+		}
+		loadOptions = append(
+			loadOptions,
+			config.WithSharedConfigProfile(c.Profile),
+		)
+
+	}
+
 	if c.AccessKey != "" || c.SecretKey != "" || c.Token != "" {
 		loadOptions = append(
 			loadOptions,
@@ -39,16 +81,6 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 					c.Token,
 				),
 			),
-		)
-	}
-	if len(c.SharedCredentialsFiles) > 0 {
-		credsFiles, err := expand.FilePaths(c.SharedCredentialsFiles)
-		if err != nil {
-			return nil, "", fmt.Errorf("expanding shared credentials files: %w", err)
-		}
-		loadOptions = append(
-			loadOptions,
-			config.WithSharedCredentialsFiles(credsFiles),
 		)
 	}
 

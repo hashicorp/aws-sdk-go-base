@@ -20,7 +20,6 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
-	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 )
 
 func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
@@ -176,14 +175,25 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		config.WithLogger(debugLogger{}),
 	}
 
-	if len(c.SharedConfigFiles) > 0 {
-		configFiles, err := expand.FilePaths(c.SharedConfigFiles)
-		if err != nil {
-			return nil, fmt.Errorf("expanding shared config files: %w", err)
-		}
+	sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
+	if err != nil {
+		return nil, err
+	}
+	if len(sharedCredentialsFiles) > 0 {
 		loadOptions = append(
 			loadOptions,
-			config.WithSharedConfigFiles(configFiles),
+			config.WithSharedCredentialsFiles(sharedCredentialsFiles),
+		)
+	}
+
+	sharedConfigFiles, err := c.ResolveSharedConfigFiles()
+	if err != nil {
+		return nil, err
+	}
+	if len(sharedConfigFiles) > 0 {
+		loadOptions = append(
+			loadOptions,
+			config.WithSharedConfigFiles(sharedConfigFiles),
 		)
 	}
 

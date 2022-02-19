@@ -63,3 +63,19 @@ func (c Config) CustomCABundleReader() (*bytes.Reader, error) {
 	}
 	return bytes.NewReader(bundle), nil
 }
+
+func (c Config) ResolveSharedConfigFiles() ([]string, error) {
+	v, err := expand.FilePaths(c.SharedConfigFiles)
+	if err != nil {
+		return []string{}, fmt.Errorf("expanding shared config files: %w", err)
+	}
+	return v, nil
+}
+
+func (c Config) ResolveSharedCredentialsFiles() ([]string, error) {
+	v, err := expand.FilePaths(c.SharedCredentialsFiles)
+	if err != nil {
+		return []string{}, fmt.Errorf("expanding shared credentials files: %w", err)
+	}
+	return v, nil
+}

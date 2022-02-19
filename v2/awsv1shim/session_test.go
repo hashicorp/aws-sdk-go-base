@@ -13,7 +13,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go-v2/aws/retry"
+	retryv2 "github.com/aws/aws-sdk-go-v2/aws/retry"
+	configv2 "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -857,6 +858,40 @@ region = us-east-1
 			},
 			ExpectedRegion: "us-east-1",
 		},
+		{
+			Config: &awsbase.Config{
+				Region: "us-east-1",
+			},
+			Description: "invalid profile name from envvar",
+			EnvironmentVariables: map[string]string{
+				"AWS_PROFILE": "no-such-profile",
+			},
+			ExpectedError: func(err error) bool {
+				var e configv2.SharedConfigProfileNotExistError
+				return errors.As(err, &e)
+			},
+			SharedCredentialsFile: `
+[some-profile]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+`,
+		},
+		{
+			Config: &awsbase.Config{
+				Profile: "no-such-profile",
+				Region:  "us-east-1",
+			},
+			Description: "invalid profile name from config",
+			ExpectedError: func(err error) bool {
+				var e configv2.SharedConfigProfileNotExistError
+				return errors.As(err, &e)
+			},
+			SharedCredentialsFile: `
+[some-profile]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+`,
+		},
 	}
 
 	for _, testCase := range testCases {
@@ -1213,7 +1248,7 @@ func TestMaxAttempts(t *testing.T) {
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			ExpectedMaxAttempts: retry.DefaultMaxAttempts,
+			ExpectedMaxAttempts: retryv2.DefaultMaxAttempts,
 		},
 
 		"config": {
