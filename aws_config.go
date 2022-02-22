@@ -15,6 +15,7 @@ import (
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/smithy-go/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
@@ -35,7 +36,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		}
 	}
 
-	credentialsProvider, err := getCredentialsProvider(ctx, c)
+	credentialsProvider, source, err := getCredentialsProvider(ctx, c)
 	if err != nil {
 		return aws.Config{}, err
 	}
@@ -65,6 +66,12 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 			return retryer
 		}),
 	)
+	if source == ec2rolecreds.ProviderName {
+		loadOptions = append(
+			loadOptions,
+			config.WithEC2IMDSRegion(),
+		)
+	}
 	awsConfig, err := config.LoadDefaultConfig(ctx, loadOptions...)
 	if err != nil {
 		return awsConfig, fmt.Errorf("loading configuration: %w", err)

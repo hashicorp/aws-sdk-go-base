@@ -1195,6 +1195,7 @@ func TestRegion(t *testing.T) {
 	testCases := map[string]struct {
 		Config                  *Config
 		EnvironmentVariables    map[string]string
+		IMDSRegion              string
 		SharedConfigurationFile string
 		ExpectedRegion          string
 	}{
@@ -1256,6 +1257,12 @@ func TestRegion(t *testing.T) {
 [default]
 region = us-east-1
 `,
+			ExpectedRegion: "us-east-1",
+		},
+
+		"IMDS": {
+			Config:         &Config{},
+			IMDSRegion:     "us-east-1",
 			ExpectedRegion: "us-east-1",
 		},
 
@@ -1321,6 +1328,16 @@ region = us-west-2
 
 			for k, v := range testCase.EnvironmentVariables {
 				os.Setenv(k, v)
+			}
+
+			if testCase.IMDSRegion != "" {
+				closeEc2Metadata := servicemocks.AwsMetadataApiMock(append(
+					servicemocks.Ec2metadata_securityCredentialsEndpoints,
+					servicemocks.Ec2metadata_instanceIdEndpoint,
+					servicemocks.Ec2metadata_iamInfoEndpoint,
+					servicemocks.Ec2metadata_instanceIdentityEndpoint(testCase.IMDSRegion),
+				))
+				defer closeEc2Metadata()
 			}
 
 			if testCase.SharedConfigurationFile != "" {
