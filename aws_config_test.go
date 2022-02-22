@@ -1361,7 +1361,6 @@ func TestMaxAttempts(t *testing.T) {
 		"no configuration": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectedMaxAttempts: retry.DefaultMaxAttempts,
@@ -1370,7 +1369,6 @@ func TestMaxAttempts(t *testing.T) {
 		"config": {
 			Config: &Config{
 				AccessKey:  servicemocks.MockStaticAccessKey,
-				Region:     "us-east-1",
 				SecretKey:  servicemocks.MockStaticSecretKey,
 				MaxRetries: 5,
 			},
@@ -1380,7 +1378,6 @@ func TestMaxAttempts(t *testing.T) {
 		"AWS_MAX_ATTEMPTS": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1392,7 +1389,6 @@ func TestMaxAttempts(t *testing.T) {
 		// 		"shared configuration file": {
 		// 			Config: &Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
-		// 				Region:    "us-east-1",
 		// 				SecretKey: servicemocks.MockStaticSecretKey,
 		// 			},
 		// 			SharedConfigurationFile: `
@@ -1405,7 +1401,6 @@ func TestMaxAttempts(t *testing.T) {
 		"config overrides AWS_MAX_ATTEMPTS": {
 			Config: &Config{
 				AccessKey:  servicemocks.MockStaticAccessKey,
-				Region:     "us-east-1",
 				SecretKey:  servicemocks.MockStaticSecretKey,
 				MaxRetries: 10,
 			},
@@ -1418,7 +1413,6 @@ func TestMaxAttempts(t *testing.T) {
 		// 		"AWS_MAX_ATTEMPTS overrides shared configuration": {
 		// 			Config: &Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
-		// 				Region:    "us-east-1",
 		// 				SecretKey: servicemocks.MockStaticSecretKey,
 		// 			},
 		// 			EnvironmentVariables: map[string]string{
@@ -1490,7 +1484,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"normal endpoint": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectedUseFIPSEndpointState:      aws.FIPSEndpointStateUnset,
@@ -1501,7 +1494,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"FIPS endpoint config": {
 			Config: &Config{
 				AccessKey:       servicemocks.MockStaticAccessKey,
-				Region:          "us-east-1",
 				SecretKey:       servicemocks.MockStaticSecretKey,
 				UseFIPSEndpoint: true,
 			},
@@ -1510,7 +1502,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"FIPS endpoint envvar": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1521,7 +1512,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"FIPS endpoint shared configuration file": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SharedConfigurationFile: `
@@ -1533,7 +1523,6 @@ use_fips_endpoint = true
 		"FIPS endpoint config overrides env var": {
 			Config: &Config{
 				AccessKey:       servicemocks.MockStaticAccessKey,
-				Region:          "us-east-1",
 				SecretKey:       servicemocks.MockStaticSecretKey,
 				UseFIPSEndpoint: true,
 			},
@@ -1545,7 +1534,6 @@ use_fips_endpoint = true
 		"FIPS endpoint env var overrides shared configuration file": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1562,7 +1550,6 @@ use_fips_endpoint = false
 		"DualStack endpoint config": {
 			Config: &Config{
 				AccessKey:            servicemocks.MockStaticAccessKey,
-				Region:               "us-east-1",
 				SecretKey:            servicemocks.MockStaticSecretKey,
 				UseDualStackEndpoint: true,
 			},
@@ -1571,7 +1558,6 @@ use_fips_endpoint = false
 		"DualStack endpoint envvar": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1582,7 +1568,6 @@ use_fips_endpoint = false
 		"DualStack endpoint shared configuration file": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SharedConfigurationFile: `
@@ -1594,7 +1579,6 @@ use_dualstack_endpoint = true
 		"DualStack endpoint config overrides env var": {
 			Config: &Config{
 				AccessKey:            servicemocks.MockStaticAccessKey,
-				Region:               "us-east-1",
 				SecretKey:            servicemocks.MockStaticSecretKey,
 				UseDualStackEndpoint: true,
 			},
@@ -1606,7 +1590,6 @@ use_dualstack_endpoint = true
 		"DualStack endpoint env var overrides shared configuration file": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1623,7 +1606,6 @@ use_dualstack_endpoint = false
 		"Both endpoints config": {
 			Config: &Config{
 				AccessKey:            servicemocks.MockStaticAccessKey,
-				Region:               "us-east-1",
 				SecretKey:            servicemocks.MockStaticSecretKey,
 				UseDualStackEndpoint: true,
 				UseFIPSEndpoint:      true,
@@ -1634,7 +1616,6 @@ use_dualstack_endpoint = false
 		"Both endpoints FIPS config DualStack envvar": {
 			Config: &Config{
 				AccessKey:       servicemocks.MockStaticAccessKey,
-				Region:          "us-east-1",
 				SecretKey:       servicemocks.MockStaticSecretKey,
 				UseFIPSEndpoint: true,
 			},
@@ -1647,7 +1628,6 @@ use_dualstack_endpoint = false
 		"Both endpoints FIPS shared configuration file DualStack config": {
 			Config: &Config{
 				AccessKey:            servicemocks.MockStaticAccessKey,
-				Region:               "us-east-1",
 				SecretKey:            servicemocks.MockStaticSecretKey,
 				UseDualStackEndpoint: true,
 			},
@@ -1725,7 +1705,6 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 		"no configuration": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectedEC2MetadataServiceEndpoint: "",
@@ -1734,7 +1713,6 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 		"config": {
 			Config: &Config{
 				AccessKey:                  servicemocks.MockStaticAccessKey,
-				Region:                     "us-east-1",
 				SecretKey:                  servicemocks.MockStaticSecretKey,
 				EC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
 			},
@@ -1744,7 +1722,6 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 		"envvar": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1755,7 +1732,6 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 		"deprecated envvar": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1766,7 +1742,6 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 		"envvar overrides deprecated envvar": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1779,7 +1754,6 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 		"shared configuration file": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SharedConfigurationFile: `
@@ -1792,7 +1766,6 @@ ec2_metadata_service_endpoint = https://127.0.0.1:1234
 		"config overrides envvar": {
 			Config: &Config{
 				AccessKey:                  servicemocks.MockStaticAccessKey,
-				Region:                     "us-east-1",
 				SecretKey:                  servicemocks.MockStaticSecretKey,
 				EC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
 			},
@@ -1804,7 +1777,6 @@ ec2_metadata_service_endpoint = https://127.0.0.1:1234
 		"config overrides deprecated envvar": {
 			Config: &Config{
 				AccessKey:                  servicemocks.MockStaticAccessKey,
-				Region:                     "us-east-1",
 				SecretKey:                  servicemocks.MockStaticSecretKey,
 				EC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
 			},
@@ -1817,7 +1789,6 @@ ec2_metadata_service_endpoint = https://127.0.0.1:1234
 		"envvar overrides shared configuration": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1832,7 +1803,6 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 		"deprecated envvar overrides shared configuration": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1903,7 +1873,6 @@ func TestEC2MetadataServiceEndpointMode(t *testing.T) {
 		"no configuration": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectedEC2MetadataServiceEndpointMode: imds.EndpointModeStateUnset,
@@ -1912,7 +1881,6 @@ func TestEC2MetadataServiceEndpointMode(t *testing.T) {
 		"config": {
 			Config: &Config{
 				AccessKey:                      servicemocks.MockStaticAccessKey,
-				Region:                         "us-east-1",
 				SecretKey:                      servicemocks.MockStaticSecretKey,
 				EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
 			},
@@ -1922,7 +1890,6 @@ func TestEC2MetadataServiceEndpointMode(t *testing.T) {
 		"envvar": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1934,7 +1901,6 @@ func TestEC2MetadataServiceEndpointMode(t *testing.T) {
 		"shared configuration file": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SharedConfigurationFile: `
@@ -1947,7 +1913,6 @@ ec2_metadata_service_endpoint_mode = IPv6
 		"config overrides envvar": {
 			Config: &Config{
 				AccessKey:                      servicemocks.MockStaticAccessKey,
-				Region:                         "us-east-1",
 				SecretKey:                      servicemocks.MockStaticSecretKey,
 				EC2MetadataServiceEndpointMode: EC2MetadataEndpointModeIPv4,
 			},
@@ -1960,7 +1925,6 @@ ec2_metadata_service_endpoint_mode = IPv6
 		"envvar overrides shared configuration": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -2034,7 +1998,6 @@ func TestCustomCABundle(t *testing.T) {
 		"no configuration": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectTLSClientConfigRootCAsSet: false,
@@ -2043,7 +2006,6 @@ func TestCustomCABundle(t *testing.T) {
 		"config": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetConfig:                       true,
@@ -2053,7 +2015,6 @@ func TestCustomCABundle(t *testing.T) {
 		"expanded config": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetConfig:                       true,
@@ -2064,7 +2025,6 @@ func TestCustomCABundle(t *testing.T) {
 		"envvar": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetEnvironmentVariable:          true,
@@ -2075,7 +2035,6 @@ func TestCustomCABundle(t *testing.T) {
 		// "shared configuration file": {
 		// 	Config: &Config{
 		// 		AccessKey: servicemocks.MockStaticAccessKey,
-		// 		Region:    "us-east-1",
 		// 		SecretKey: servicemocks.MockStaticSecretKey,
 		// 	},
 		// 	SetSharedConfigurationFile:      true,
@@ -2085,7 +2044,6 @@ func TestCustomCABundle(t *testing.T) {
 		"config overrides envvar": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetConfig: true,
@@ -2099,7 +2057,6 @@ func TestCustomCABundle(t *testing.T) {
 		// 		"envvar overrides shared configuration": {
 		// 			Config: &Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
-		// 				Region:    "us-east-1",
 		// 				SecretKey: servicemocks.MockStaticSecretKey,
 		// 			},
 		// 			EnvironmentVariables: map[string]string{
