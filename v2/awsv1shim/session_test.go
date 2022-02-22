@@ -878,7 +878,11 @@ region = us-east-1
 			defer servicemocks.PopEnv(oldEnv)
 
 			if testCase.EnableEc2MetadataServer {
-				closeEc2Metadata := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
+				closeEc2Metadata := servicemocks.AwsMetadataApiMock(append(
+					servicemocks.Ec2metadata_securityCredentialsEndpoints,
+					servicemocks.Ec2metadata_instanceIdEndpoint,
+					servicemocks.Ec2metadata_iamInfoEndpoint,
+				))
 				defer closeEc2Metadata()
 			}
 

@@ -55,7 +55,11 @@ func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 	defer resetEnv()
 
 	// capture the test server's close method, to call after the test returns
-	ts := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
+	ts := servicemocks.AwsMetadataApiMock(append(
+		servicemocks.Ec2metadata_securityCredentialsEndpoints,
+		servicemocks.Ec2metadata_instanceIdEndpoint,
+		servicemocks.Ec2metadata_iamInfoEndpoint,
+	))
 	defer ts()
 
 	// An empty config, no key supplied
@@ -75,7 +79,11 @@ func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
 	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
+	ts := servicemocks.AwsMetadataApiMock(append(
+		servicemocks.Ec2metadata_securityCredentialsEndpoints,
+		servicemocks.Ec2metadata_instanceIdEndpoint,
+		servicemocks.Ec2metadata_iamInfoEndpoint,
+	))
 	defer ts()
 	testCases := []struct {
 		Key, Secret, Token string

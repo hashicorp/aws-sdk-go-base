@@ -385,18 +385,41 @@ var Ec2metadata_securityCredentialsEndpoints = []*MetadataResponse{
 		Body: "test_role",
 	},
 	{
-		Uri:  "/latest/meta-data/iam/security-credentials/test_role",
-		Body: "{\"Code\":\"Success\",\"LastUpdated\":\"2015-12-11T17:17:25Z\",\"Type\":\"AWS-HMAC\",\"AccessKeyId\":\"Ec2MetadataAccessKey\",\"SecretAccessKey\":\"Ec2MetadataSecretKey\",\"Token\":\"Ec2MetadataSessionToken\"}",
+		Uri: "/latest/meta-data/iam/security-credentials/test_role",
+		Body: `{
+	"Code": "Success",
+	"LastUpdated": "2015-12-11T17:17:25Z",
+	"Type": "AWS-HMAC",
+	"AccessKeyId": "Ec2MetadataAccessKey",
+	"SecretAccessKey": "Ec2MetadataSecretKey",
+	"Token": "Ec2MetadataSessionToken"
+}`,
 	},
 }
 
 var Ec2metadata_iamInfoEndpoint = &MetadataResponse{
-	Uri:  "/latest/meta-data/iam/info",
-	Body: "{\"Code\": \"Success\",\"LastUpdated\": \"2016-03-17T12:27:32Z\",\"InstanceProfileArn\": \"arn:aws:iam::000000000000:instance-profile/my-instance-profile\",\"InstanceProfileId\": \"AIPAABCDEFGHIJKLMN123\"}",
+	Uri: "/latest/meta-data/iam/info",
+	Body: `{
+	"Code": "Success",
+	"LastUpdated": "2016-03-17T12:27:32Z",
+	"InstanceProfileArn": "arn:aws:iam::000000000000:instance-profile/my-instance-profile",
+	"InstanceProfileId": "AIPAABCDEFGHIJKLMN123"
+}`,
 }
 
 const Ec2metadata_iamInfoEndpoint_expectedAccountID = `000000000000`
 const Ec2metadata_iamInfoEndpoint_expectedPartition = `aws`
+
+func Ec2metadata_instanceIdentityEndpoint(region string) *MetadataResponse {
+	return &MetadataResponse{
+		Uri: "/latest/dynamic/instance-identity/document",
+		Body: fmt.Sprintf(`{
+	"version": "2017-09-30",
+	"instanceId": "mock-instance-id",
+	"region": %q
+}`, region),
+	}
+}
 
 const IamResponse_GetUser_valid = `<GetUserResponse xmlns="https://iam.amazonaws.com/doc/2010-05-08/">
   <GetUserResult>

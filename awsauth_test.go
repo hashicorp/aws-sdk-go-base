@@ -149,7 +149,11 @@ func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 		resetEnv := servicemocks.UnsetEnv(t)
 		defer resetEnv()
 
-		awsTs := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
+		awsTs := servicemocks.AwsMetadataApiMock(append(
+			servicemocks.Ec2metadata_securityCredentialsEndpoints,
+			servicemocks.Ec2metadata_instanceIdEndpoint,
+			servicemocks.Ec2metadata_iamInfoEndpoint,
+		))
 		defer awsTs()
 
 		id, partition, err := getAccountIDAndPartitionFromEC2Metadata(context.Background())
