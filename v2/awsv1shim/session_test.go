@@ -537,7 +537,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:              "web identity token access key",
-			EnableEc2MetadataServer:  true,
 			EnableWebIdentityToken:   true,
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
 			ExpectedRegion:           "us-east-1",
@@ -580,7 +579,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:                "ECS credentials access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockEcsCredentialsCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -597,7 +595,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:                "ECS credentials access key config AssumeRoleARN access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -648,7 +645,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description:              "config AccessKey over EC2 metadata access key",
-			EnableEc2MetadataServer:  true,
 			ExpectedCredentialsValue: mockdata.MockStaticCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -662,7 +658,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description:                "config AccessKey over ECS credentials access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockStaticCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -699,7 +694,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
 			},
-			EnableEc2MetadataServer:  true,
 			ExpectedCredentialsValue: mockdata.MockEnvCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -715,7 +709,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
 			},
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockEnvCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -727,8 +720,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description:             "shared credentials default aws_access_key_id over EC2 metadata access key",
-			EnableEc2MetadataServer: true,
+			Description: "shared credentials default aws_access_key_id over EC2 metadata access key",
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
 				ProviderName:    credentials.SharedCredsProviderName,
@@ -749,7 +741,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:                "shared credentials default aws_access_key_id over ECS credentials access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
@@ -771,7 +762,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:                "ECS credentials access key over EC2 metadata access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockEcsCredentialsCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -861,8 +851,7 @@ region = us-east-1
 				Region:                  "us-east-1",
 				SkipEC2MetadataApiCheck: true,
 			},
-			Description:             "skip EC2 metadata API check",
-			EnableEc2MetadataServer: true,
+			Description: "skip EC2 metadata API check",
 			ExpectedError: func(err error) bool {
 				return awsbase.IsNoValidCredentialSourcesError(err)
 			},
