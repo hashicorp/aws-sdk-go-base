@@ -13,10 +13,10 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 )
 
-func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, error) {
+func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, string, error) {
 	loadOptions, err := commonLoadOptions(c)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	loadOptions = append(
 		loadOptions,
@@ -44,7 +44,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	if len(c.SharedCredentialsFiles) > 0 {
 		credsFiles, err := expand.FilePaths(c.SharedCredentialsFiles)
 		if err != nil {
-			return nil, fmt.Errorf("expanding shared credentials files: %w", err)
+			return nil, "", fmt.Errorf("expanding shared credentials files: %w", err)
 		}
 		loadOptions = append(
 			loadOptions,
@@ -54,19 +54,21 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 
 	cfg, err := config.LoadDefaultConfig(ctx, loadOptions...)
 	if err != nil {
-		return nil, fmt.Errorf("loading configuration: %w", err)
+		return nil, "", fmt.Errorf("loading configuration: %w", err)
 	}
 
-	_, err = cfg.Credentials.Retrieve(ctx)
+	creds, err := cfg.Credentials.Retrieve(ctx)
 	if err != nil {
-		return nil, c.NewNoValidCredentialSourcesError(err)
+		return nil, "", c.NewNoValidCredentialSourcesError(err)
 	}
 
 	if c.AssumeRole == nil || c.AssumeRole.RoleARN == "" {
-		return cfg.Credentials, nil
+		return cfg.Credentials, creds.Source, nil
 	}
 
-	return assumeRoleCredentialsProvider(ctx, cfg, c)
+	provider, err := assumeRoleCredentialsProvider(ctx, cfg, c)
+
+	return provider, creds.Source, err
 }
 
 func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {

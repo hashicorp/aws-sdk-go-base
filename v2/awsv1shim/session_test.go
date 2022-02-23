@@ -537,7 +537,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:              "web identity token access key",
-			EnableEc2MetadataServer:  true,
 			EnableWebIdentityToken:   true,
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
 			ExpectedRegion:           "us-east-1",
@@ -580,7 +579,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:                "ECS credentials access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockEcsCredentialsCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -597,7 +595,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:                "ECS credentials access key config AssumeRoleARN access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -648,7 +645,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description:              "config AccessKey over EC2 metadata access key",
-			EnableEc2MetadataServer:  true,
 			ExpectedCredentialsValue: mockdata.MockStaticCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -662,7 +658,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description:                "config AccessKey over ECS credentials access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockStaticCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -699,7 +694,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
 			},
-			EnableEc2MetadataServer:  true,
 			ExpectedCredentialsValue: mockdata.MockEnvCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -715,7 +709,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
 			},
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockEnvCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -727,8 +720,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description:             "shared credentials default aws_access_key_id over EC2 metadata access key",
-			EnableEc2MetadataServer: true,
+			Description: "shared credentials default aws_access_key_id over EC2 metadata access key",
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
 				ProviderName:    credentials.SharedCredsProviderName,
@@ -749,7 +741,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:                "shared credentials default aws_access_key_id over ECS credentials access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
@@ -771,7 +762,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:                "ECS credentials access key over EC2 metadata access key",
-			EnableEc2MetadataServer:    true,
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockEcsCredentialsCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -861,8 +851,7 @@ region = us-east-1
 				Region:                  "us-east-1",
 				SkipEC2MetadataApiCheck: true,
 			},
-			Description:             "skip EC2 metadata API check",
-			EnableEc2MetadataServer: true,
+			Description: "skip EC2 metadata API check",
 			ExpectedError: func(err error) bool {
 				return awsbase.IsNoValidCredentialSourcesError(err)
 			},
@@ -878,7 +867,11 @@ region = us-east-1
 			defer servicemocks.PopEnv(oldEnv)
 
 			if testCase.EnableEc2MetadataServer {
-				closeEc2Metadata := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
+				closeEc2Metadata := servicemocks.AwsMetadataApiMock(append(
+					servicemocks.Ec2metadata_securityCredentialsEndpoints,
+					servicemocks.Ec2metadata_instanceIdEndpoint,
+					servicemocks.Ec2metadata_iamInfoEndpoint,
+				))
 				defer closeEc2Metadata()
 			}
 
@@ -1218,7 +1211,6 @@ func TestMaxAttempts(t *testing.T) {
 		"no configuration": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectedMaxAttempts: retry.DefaultMaxAttempts,
@@ -1227,7 +1219,6 @@ func TestMaxAttempts(t *testing.T) {
 		"config": {
 			Config: &awsbase.Config{
 				AccessKey:  servicemocks.MockStaticAccessKey,
-				Region:     "us-east-1",
 				SecretKey:  servicemocks.MockStaticSecretKey,
 				MaxRetries: 5,
 			},
@@ -1237,7 +1228,6 @@ func TestMaxAttempts(t *testing.T) {
 		"AWS_MAX_ATTEMPTS": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1249,7 +1239,6 @@ func TestMaxAttempts(t *testing.T) {
 		// 		"shared configuration file": {
 		// 			Config: &awsbase.Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
-		// 				Region:    "us-east-1",
 		// 				SecretKey: servicemocks.MockStaticSecretKey,
 		// 			},
 		// 			SharedConfigurationFile: `
@@ -1262,7 +1251,6 @@ func TestMaxAttempts(t *testing.T) {
 		"config overrides AWS_MAX_ATTEMPTS": {
 			Config: &awsbase.Config{
 				AccessKey:  servicemocks.MockStaticAccessKey,
-				Region:     "us-east-1",
 				SecretKey:  servicemocks.MockStaticSecretKey,
 				MaxRetries: 10,
 			},
@@ -1275,7 +1263,6 @@ func TestMaxAttempts(t *testing.T) {
 		// 		"AWS_MAX_ATTEMPTS overrides shared configuration": {
 		// 			Config: &awsbase.Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
-		// 				Region:    "us-east-1",
 		// 				SecretKey: servicemocks.MockStaticSecretKey,
 		// 			},
 		// 			EnvironmentVariables: map[string]string{
@@ -1347,7 +1334,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"normal endpoint": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectedUseFIPSEndpoint:      endpoints.FIPSEndpointStateUnset,
@@ -1358,7 +1344,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"FIPS endpoint config": {
 			Config: &awsbase.Config{
 				AccessKey:       servicemocks.MockStaticAccessKey,
-				Region:          "us-east-1",
 				SecretKey:       servicemocks.MockStaticSecretKey,
 				UseFIPSEndpoint: true,
 			},
@@ -1367,7 +1352,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"FIPS endpoint envvar": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1378,7 +1362,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"FIPS endpoint shared configuration file": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SharedConfigurationFile: `
@@ -1392,7 +1375,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"DualStack endpoint config": {
 			Config: &awsbase.Config{
 				AccessKey:            servicemocks.MockStaticAccessKey,
-				Region:               "us-east-1",
 				SecretKey:            servicemocks.MockStaticSecretKey,
 				UseDualStackEndpoint: true,
 			},
@@ -1401,7 +1383,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"DualStack endpoint envvar": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -1412,7 +1393,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"DualStack endpoint shared configuration file": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SharedConfigurationFile: `
@@ -1426,7 +1406,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"Both endpoints config": {
 			Config: &awsbase.Config{
 				AccessKey:            servicemocks.MockStaticAccessKey,
-				Region:               "us-east-1",
 				SecretKey:            servicemocks.MockStaticSecretKey,
 				UseDualStackEndpoint: true,
 				UseFIPSEndpoint:      true,
@@ -1437,7 +1416,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"Both endpoints FIPS config DualStack envvar": {
 			Config: &awsbase.Config{
 				AccessKey:       servicemocks.MockStaticAccessKey,
-				Region:          "us-east-1",
 				SecretKey:       servicemocks.MockStaticSecretKey,
 				UseFIPSEndpoint: true,
 			},
@@ -1450,7 +1428,6 @@ func TestServiceEndpointTypes(t *testing.T) {
 		"Both endpoints FIPS shared configuration file DualStack config": {
 			Config: &awsbase.Config{
 				AccessKey:            servicemocks.MockStaticAccessKey,
-				Region:               "us-east-1",
 				SecretKey:            servicemocks.MockStaticSecretKey,
 				UseDualStackEndpoint: true,
 			},
@@ -1564,7 +1541,6 @@ func TestCustomCABundle(t *testing.T) {
 		"no configuration": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectTLSClientConfigRootCAsSet: false,
@@ -1573,7 +1549,6 @@ func TestCustomCABundle(t *testing.T) {
 		"config": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetConfig:                       true,
@@ -1583,7 +1558,6 @@ func TestCustomCABundle(t *testing.T) {
 		"expanded config": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetConfig:                       true,
@@ -1594,7 +1568,6 @@ func TestCustomCABundle(t *testing.T) {
 		"envvar": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetEnvironmentVariable:          true,
@@ -1605,7 +1578,6 @@ func TestCustomCABundle(t *testing.T) {
 		// "shared configuration file": {
 		// 	Config: &awsbase.Config{
 		// 		AccessKey: servicemocks.MockStaticAccessKey,
-		// 		Region:    "us-east-1",
 		// 		SecretKey: servicemocks.MockStaticSecretKey,
 		// 	},
 		// 	SetSharedConfigurationFile:      true,
@@ -1615,7 +1587,6 @@ func TestCustomCABundle(t *testing.T) {
 		"config overrides envvar": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SetConfig: true,
@@ -1629,7 +1600,6 @@ func TestCustomCABundle(t *testing.T) {
 		// 		"envvar overrides shared configuration": {
 		// 			Config: &awsbase.Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
-		// 				Region:    "us-east-1",
 		// 				SecretKey: servicemocks.MockStaticSecretKey,
 		// 			},
 		// 			EnvironmentVariables: map[string]string{
@@ -1810,7 +1780,6 @@ func TestSessionRetryHandlers(t *testing.T) {
 
 			config := &awsbase.Config{
 				AccessKey:           servicemocks.MockStaticAccessKey,
-				Region:              "us-east-1",
 				MaxRetries:          maxRetries,
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,

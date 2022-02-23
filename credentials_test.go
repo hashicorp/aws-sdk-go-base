@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
@@ -36,9 +37,13 @@ func TestAWSGetCredentials_static(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds, err := getCredentialsProvider(context.Background(), &cfg)
+		creds, source, err := getCredentialsProvider(context.Background(), &cfg)
 		if err != nil {
 			t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
+		}
+
+		if a, e := source, credentials.StaticCredentialsName; a != e {
+			t.Errorf("Expected initial source to be %q, %q given", e, a)
 		}
 
 		validateCredentialsProvider(creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
@@ -55,15 +60,23 @@ func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 	defer resetEnv()
 
 	// capture the test server's close method, to call after the test returns
-	ts := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
+	ts := servicemocks.AwsMetadataApiMock(append(
+		servicemocks.Ec2metadata_securityCredentialsEndpoints,
+		servicemocks.Ec2metadata_instanceIdEndpoint,
+		servicemocks.Ec2metadata_iamInfoEndpoint,
+	))
 	defer ts()
 
 	// An empty config, no key supplied
 	cfg := Config{}
 
-	creds, err := getCredentialsProvider(context.Background(), &cfg)
+	creds, source, err := getCredentialsProvider(context.Background(), &cfg)
 	if err != nil {
 		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
+	}
+
+	if a, e := source, ec2rolecreds.ProviderName; a != e {
+		t.Errorf("Expected initial source to be %q, %q given", e, a)
 	}
 
 	validateCredentialsProvider(creds, "Ec2MetadataAccessKey", "Ec2MetadataSecretKey", "Ec2MetadataSessionToken", ec2rolecreds.ProviderName, t)
@@ -75,7 +88,11 @@ func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
 	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := servicemocks.AwsMetadataApiMock(append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint))
+	ts := servicemocks.AwsMetadataApiMock(append(
+		servicemocks.Ec2metadata_securityCredentialsEndpoints,
+		servicemocks.Ec2metadata_instanceIdEndpoint,
+		servicemocks.Ec2metadata_iamInfoEndpoint,
+	))
 	defer ts()
 	testCases := []struct {
 		Key, Secret, Token string
@@ -99,7 +116,7 @@ func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds, err := getCredentialsProvider(context.Background(), &cfg)
+		creds, _, err := getCredentialsProvider(context.Background(), &cfg)
 		if err != nil {
 			t.Fatalf("unexpected '%[1]T' error: %[1]s", err)
 		}
@@ -119,7 +136,7 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
 	// An empty config, no key supplied
 	cfg := Config{}
 
-	_, err := getCredentialsProvider(context.Background(), &cfg)
+	_, _, err := getCredentialsProvider(context.Background(), &cfg)
 	if err == nil {
 		t.Fatal("expected error returned when getting creds w/ invalid EC2 IMDS endpoint")
 	}
@@ -147,23 +164,66 @@ func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
 	}
 
 	// Confirm AWS_SHARED_CREDENTIALS_FILE is working
-	credsEnv, err := getCredentialsProvider(context.Background(), &Config{
+	credsEnv, source, err := getCredentialsProvider(context.Background(), &Config{
 		Profile: "myprofile",
 	})
 	if err != nil {
 		t.Fatalf("unexpected '%[1]T' error getting credentials provider from environment: %[1]s", err)
 	}
+	if a, e := source, sharedConfigCredentialsSource(fileEnvName); a != e {
+		t.Errorf("Expected initial source to be %q, %q given", e, a)
+	}
 	validateCredentialsProvider(credsEnv, "accesskey1", "secretkey1", "", sharedConfigCredentialsSource(fileEnvName), t)
 
 	// Confirm CredsFilename overrides AWS_SHARED_CREDENTIALS_FILE
-	credsParam, err := getCredentialsProvider(context.Background(), &Config{
+	credsParam, source, err := getCredentialsProvider(context.Background(), &Config{
 		Profile:                "myprofile",
 		SharedCredentialsFiles: []string{fileParamName},
 	})
 	if err != nil {
 		t.Fatalf("unexpected '%[1]T' error getting credentials provider from configuration: %[1]s", err)
 	}
+	if a, e := source, sharedConfigCredentialsSource(fileParamName); a != e {
+		t.Errorf("Expected initial source to be %q, %q given", e, a)
+	}
 	validateCredentialsProvider(credsParam, "accesskey2", "secretkey2", "", sharedConfigCredentialsSource(fileParamName), t)
+}
+
+func TestAWSGetCredentials_assumeRole(t *testing.T) {
+	key := "test"
+	secret := "secret"
+
+	cfg := Config{
+		AccessKey: key,
+		SecretKey: secret,
+		AssumeRole: &AssumeRole{
+			RoleARN:     servicemocks.MockStsAssumeRoleArn,
+			SessionName: servicemocks.MockStsAssumeRoleSessionName,
+		},
+	}
+
+	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
+		servicemocks.MockStsAssumeRoleValidEndpoint,
+		servicemocks.MockStsGetCallerIdentityValidAssumedRoleEndpoint,
+	})
+	defer ts.Close()
+	cfg.StsEndpoint = ts.URL
+
+	creds, source, err := getCredentialsProvider(context.Background(), &cfg)
+	if err != nil {
+		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
+	}
+
+	if a, e := source, credentials.StaticCredentialsName; a != e {
+		t.Errorf("Expected initial source to be %q, %q given", e, a)
+	}
+
+	validateCredentialsProvider(creds,
+		servicemocks.MockStsAssumeRoleAccessKey,
+		servicemocks.MockStsAssumeRoleSecretKey,
+		servicemocks.MockStsAssumeRoleSessionToken,
+		stscreds.ProviderName, t)
+	testCredentialsProviderWrappedWithCache(creds, t)
 }
 
 var credentialsFileContentsEnv = `[myprofile]
