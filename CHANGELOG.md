@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BUG FIXES
+
+* Now returns an error if an invalid profile is specified. ([#128](https://github.com/hashicorp/aws-sdk-go-base/pull/128))
+
 ENHANCEMENTS
 
 * Retrieves region from IMDS when credentials sourced from IMDS. ([#131](https://github.com/hashicorp/aws-sdk-go-base/pull/131))
