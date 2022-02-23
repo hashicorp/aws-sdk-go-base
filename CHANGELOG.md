@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+ENHANCEMENTS
+
+* Retrieves region from IMDS when credentials sourced from IMDS. ([#131](https://github.com/hashicorp/aws-sdk-go-base/pull/131))
+
 # v2.0.0-beta.8 (2022-02-18)
 
 BUG FIXES
