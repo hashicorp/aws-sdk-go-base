@@ -1278,6 +1278,16 @@ region = us-east-1
 			ExpectedRegion: "us-east-1",
 		},
 
+		"config overrides IMDS": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+				Region:    "us-west-2",
+			},
+			IMDSRegion:     "us-east-1",
+			ExpectedRegion: "us-west-2",
+		},
+
 		"AWS_REGION overrides shared configuration": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
@@ -1304,6 +1314,18 @@ region = us-west-2
 [default]
 region = us-west-2
 `,
+			ExpectedRegion: "us-east-1",
+		},
+
+		"AWS_REGION overrides IMDS": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_REGION": "us-east-1",
+			},
+			IMDSRegion:     "us-west-2",
 			ExpectedRegion: "us-east-1",
 		},
 	}
