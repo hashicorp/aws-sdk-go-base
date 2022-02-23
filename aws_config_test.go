@@ -813,6 +813,40 @@ source_profile = SourceSharedCredentials
 			},
 			ExpectedRegion: "us-east-1",
 		},
+		{
+			Config: &Config{
+				Region: "us-east-1",
+			},
+			Description: "invalid profile name from envvar",
+			EnvironmentVariables: map[string]string{
+				"AWS_PROFILE": "no-such-profile",
+			},
+			ExpectedError: func(err error) bool {
+				var e config.SharedConfigProfileNotExistError
+				return errors.As(err, &e)
+			},
+			SharedCredentialsFile: `
+[some-profile]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+`,
+		},
+		{
+			Config: &Config{
+				Profile: "no-such-profile",
+				Region:  "us-east-1",
+			},
+			Description: "invalid profile name from config",
+			ExpectedError: func(err error) bool {
+				var e config.SharedConfigProfileNotExistError
+				return errors.As(err, &e)
+			},
+			SharedCredentialsFile: `
+[some-profile]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+`,
+		},
 	}
 
 	for _, testCase := range testCases {
