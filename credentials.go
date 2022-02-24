@@ -38,26 +38,26 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		profile = envConfig.SharedConfigProfile
 	}
 
-	sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
-	if err != nil {
-		return nil, "", err
-	}
-	if len(sharedCredentialsFiles) == 0 {
-		sharedCredentialsFiles = []string{envConfig.SharedCredentialsFile}
-	}
-
-	sharedConfigFiles, err := c.ResolveSharedConfigFiles()
-	if err != nil {
-		return nil, "", err
-	}
-	if len(sharedConfigFiles) == 0 {
-		sharedConfigFiles = []string{envConfig.SharedConfigFile}
-	}
-
 	// The default AWS SDK authentication flow silently ignores invalid Profiles. Pre-validate that the Profile exists
 	// https://github.com/aws/aws-sdk-go-v2/issues/1591
 	if profile != "" {
-		_, err := config.LoadSharedConfigProfile(ctx, profile, func(opts *config.LoadSharedConfigOptions) {
+		sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
+		if err != nil {
+			return nil, "", err
+		}
+		if len(sharedCredentialsFiles) == 0 {
+			sharedCredentialsFiles = []string{envConfig.SharedCredentialsFile}
+		}
+
+		sharedConfigFiles, err := c.ResolveSharedConfigFiles()
+		if err != nil {
+			return nil, "", err
+		}
+		if len(sharedConfigFiles) == 0 {
+			sharedConfigFiles = []string{envConfig.SharedConfigFile}
+		}
+
+		_, err = config.LoadSharedConfigProfile(ctx, profile, func(opts *config.LoadSharedConfigOptions) {
 			opts.CredentialsFiles = sharedCredentialsFiles
 			opts.ConfigFiles = sharedConfigFiles
 		})
@@ -68,7 +68,6 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 			loadOptions,
 			config.WithSharedConfigProfile(c.Profile),
 		)
-
 	}
 
 	if c.AccessKey != "" || c.SecretKey != "" || c.Token != "" {
