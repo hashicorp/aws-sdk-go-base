@@ -64,6 +64,10 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		if err != nil {
 			return nil, "", err
 		}
+	}
+	// We need to validate both the configured and envvar named profiles for validity,
+	// but to use proper precedence, we only set the configured named profile
+	if c.Profile != "" {
 		loadOptions = append(
 			loadOptions,
 			config.WithSharedConfigProfile(c.Profile),

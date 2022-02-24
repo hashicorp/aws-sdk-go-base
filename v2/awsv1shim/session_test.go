@@ -892,6 +892,48 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 `,
 		},
+		{
+			Config:      &awsbase.Config{},
+			Description: "AWS_ACCESS_KEY_ID overrides AWS_PROFILE",
+			EnvironmentVariables: map[string]string{
+				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
+				"AWS_PROFILE":           "SharedCredentialsProfile",
+			},
+			SharedCredentialsFile: `
+[default]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+
+[SharedCredentialsProfile]
+aws_access_key_id = ProfileSharedCredentialsAccessKey
+aws_secret_access_key = ProfileSharedCredentialsSecretKey
+`,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+			ExpectedCredentialsValue: mockdata.MockEnvCredentials,
+		},
+		{
+			Config: &awsbase.Config{
+				Region: "us-east-1",
+			},
+			Description: "AWS_ACCESS_KEY_ID does not override invalid profile name from envvar",
+			EnvironmentVariables: map[string]string{
+				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
+				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
+				"AWS_PROFILE":           "no-such-profile",
+			},
+			ExpectedError: func(err error) bool {
+				var e configv2.SharedConfigProfileNotExistError
+				return errors.As(err, &e)
+			},
+			SharedCredentialsFile: `
+[some-profile]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+`,
+		},
 	}
 
 	for _, testCase := range testCases {
