@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"os"
 	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -34,13 +35,18 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		return nil, "", err
 	}
 
+	if c.Profile != "" && os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
+		log.Printf(`[WARN] A Profile was specified along with the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY". ` +
+			"The Profile is now used instead of the environment variable credentials. This may lead to unexpected behavior.")
+	}
+
+	// The default AWS SDK authentication flow silently ignores invalid Profiles. Pre-validate that the Profile exists
+	// https://github.com/aws/aws-sdk-go-v2/issues/1591
 	profile := c.Profile
 	if profile == "" {
 		profile = envConfig.SharedConfigProfile
 	}
 
-	// The default AWS SDK authentication flow silently ignores invalid Profiles. Pre-validate that the Profile exists
-	// https://github.com/aws/aws-sdk-go-v2/issues/1591
 	if profile != "" {
 		sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
 		if err != nil {
@@ -125,6 +131,11 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 
 	creds, err := cfg.Credentials.Retrieve(ctx)
 	if err != nil {
+		if c.Profile != "" && os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
+			err = fmt.Errorf(`A Profile was specified along with the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY". The Profile is now used instead of the environment variable credentials.
+
+Error: %w`, err)
+		}
 		return nil, "", c.NewNoValidCredentialSourcesError(err)
 	}
 
