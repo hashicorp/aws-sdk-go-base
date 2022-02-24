@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -45,16 +46,34 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		if err != nil {
 			return nil, "", err
 		}
-		if len(sharedCredentialsFiles) == 0 {
-			sharedCredentialsFiles = []string{envConfig.SharedCredentialsFile}
+		if len(sharedCredentialsFiles) != 0 {
+			f := make([]string, len(sharedCredentialsFiles))
+			for i, v := range sharedCredentialsFiles {
+				f[i] = fmt.Sprintf(`"%s"`, v)
+			}
+			log.Printf("[DEBUG] Using shared credentials files from configuration: [%s]", strings.Join(f, ", "))
+		} else {
+			if envConfig.SharedCredentialsFile != "" {
+				log.Printf("[DEBUG] Using shared credentials file environment variables: %q", envConfig.SharedCredentialsFile)
+				sharedCredentialsFiles = []string{envConfig.SharedCredentialsFile}
+			}
 		}
 
 		sharedConfigFiles, err := c.ResolveSharedConfigFiles()
 		if err != nil {
 			return nil, "", err
 		}
-		if len(sharedConfigFiles) == 0 {
-			sharedConfigFiles = []string{envConfig.SharedConfigFile}
+		if len(sharedConfigFiles) != 0 {
+			f := make([]string, len(sharedConfigFiles))
+			for i, v := range sharedConfigFiles {
+				f[i] = fmt.Sprintf(`"%s"`, v)
+			}
+			log.Printf("[DEBUG] Using shared configuration files from configuration: %v", strings.Join(f, ", "))
+		} else {
+			if envConfig.SharedConfigFile != "" {
+				log.Printf("[DEBUG] Using shared configuration file environment variables: %s", envConfig.SharedConfigFile)
+				sharedConfigFiles = []string{envConfig.SharedConfigFile}
+			}
 		}
 
 		_, err = config.LoadSharedConfigProfile(ctx, profile, func(opts *config.LoadSharedConfigOptions) {
@@ -68,6 +87,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	// We need to validate both the configured and envvar named profiles for validity,
 	// but to use proper precedence, we only set the configured named profile
 	if c.Profile != "" {
+		log.Printf("[DEBUG] Using profile from configuration: %q", c.Profile)
 		loadOptions = append(
 			loadOptions,
 			config.WithSharedConfigProfile(c.Profile),
@@ -75,6 +95,17 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	}
 
 	if c.AccessKey != "" || c.SecretKey != "" || c.Token != "" {
+		params := make([]string, 0, 3) //nolint:gomnd
+		if c.AccessKey != "" {
+			params = append(params, "access key")
+		}
+		if c.SecretKey != "" {
+			params = append(params, "secret key")
+		}
+		if c.Token != "" {
+			params = append(params, "token")
+		}
+		log.Printf("[DEBUG] Using %s from configuration", strings.Join(params, ", "))
 		loadOptions = append(
 			loadOptions,
 			config.WithCredentialsProvider(
@@ -101,6 +132,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		return cfg.Credentials, creds.Source, nil
 	}
 
+	log.Printf("[INFO] Retrieved initial credentials from %q", creds.Source)
 	provider, err := assumeRoleCredentialsProvider(ctx, cfg, c)
 
 	return provider, creds.Source, err
@@ -109,8 +141,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
 	ar := c.AssumeRole
 	// When assuming a role, we need to first authenticate the base credentials above, then assume the desired role
-	log.Printf("[INFO] Attempting to AssumeRole %s (SessionName: %q, ExternalId: %q)",
-		ar.RoleARN, ar.SessionName, ar.ExternalID)
+	log.Printf("[INFO] Assuming IAM Role %q (SessionName: %q, ExternalId: %q)", ar.RoleARN, ar.SessionName, ar.ExternalID)
 
 	client := stsClient(awsConfig, c)
 
