@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.10 (2022-02-25)
+
 ENHANCEMENTS
 
 * Adds logging for explicitly set authentication parameters. ([#146](https://github.com/hashicorp/aws-sdk-go-base/pull/146))
