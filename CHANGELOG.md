@@ -1,6 +1,11 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+ENHANCEMENTS
+
+* Adds logging for explicitly set authentication parameters. ([#146](https://github.com/hashicorp/aws-sdk-go-base/pull/146))
+* Adds warning log when `Profile` and static credentials environment variables are set. ([#146](https://github.com/hashicorp/aws-sdk-go-base/pull/146))
+
 # v2.0.0-beta.9 (2022-02-23)
 
 BUG FIXES
