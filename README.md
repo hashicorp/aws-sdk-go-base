@@ -55,10 +55,10 @@ However, if changes are made to `aws-sdk-go-base`, both modules should be releas
 1. If creating a new release of `aws-sdk-go-base`
     1. Update the reference in the `awsv1shim` `go.mod` file
     1. Run `go mod tidy`
+1. Update the CHANGELOG.md file
 1. Push the updated files to GitHub
-1. Push new version tags to GitHub. For more details on Go module versioning, see <https://go.dev/doc/modules/version-numbers>.
+1. Push new version tags to GitHub. For more details on Go module versioning, see <https://go.dev/doc/modules/version-numbers>. (Commands `git tag -a -m "" <version tag>`, `git push --tags`)
     * For `aws-sdk-go-base`, use the form `vX.Y.Z`
     * For `awsv1shim`, use the form `v2/awsv1shim/vX.Y.Z`
-1. Update the CHANGELOG.md file
 1. Close the associated GitHub milestone
 1. Create the releases on GitHub
