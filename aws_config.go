@@ -35,10 +35,12 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 		}
 	}
 
-	credentialsProvider, source, err := getCredentialsProvider(ctx, c)
+	credentialsProvider, initialSource, err := getCredentialsProvider(ctx, c)
 	if err != nil {
 		return aws.Config{}, err
 	}
+	creds, _ := credentialsProvider.Retrieve(ctx)
+	log.Printf("[INFO] Retrieved credentials from %q", creds.Source)
 
 	var retryer aws.Retryer
 	retryer = retry.NewStandard()
@@ -65,7 +67,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 			return retryer
 		}),
 	)
-	if source == ec2rolecreds.ProviderName {
+	if initialSource == ec2rolecreds.ProviderName {
 		loadOptions = append(
 			loadOptions,
 			config.WithEC2IMDSRegion(),
