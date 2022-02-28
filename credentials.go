@@ -83,8 +83,12 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		}
 
 		_, err = config.LoadSharedConfigProfile(ctx, profile, func(opts *config.LoadSharedConfigOptions) {
-			opts.CredentialsFiles = sharedCredentialsFiles
-			opts.ConfigFiles = sharedConfigFiles
+			if len(sharedCredentialsFiles) != 0 {
+				opts.CredentialsFiles = sharedCredentialsFiles
+			}
+			if len(sharedConfigFiles) != 0 {
+				opts.ConfigFiles = sharedConfigFiles
+			}
 		})
 		if err != nil {
 			return nil, "", err
