@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BUG FIXES
+
+* No longer overrides shared config and credentials files when using defaults. ([#151](https://github.com/hashicorp/aws-sdk-go-base/pull/151))
+
 # v2.0.0-beta.10 (2022-02-25)
 
 ENHANCEMENTS
