@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.10.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.16.0
 	github.com/google/go-cmp v0.5.7
-	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.12
+	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.13
 	github.com/hashicorp/go-cleanhttp v0.5.2
 )
 
