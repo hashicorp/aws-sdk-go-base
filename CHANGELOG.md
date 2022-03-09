@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+NOTES
+
+* Filters CR characters out of AWS SDK for Go v1 logs. ([#174](https://github.com/hashicorp/aws-sdk-go-base/pull/174))
+
 # v2.0.0-beta.12 (2022-03-02)
 
 NOTES
