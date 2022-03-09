@@ -1,4 +1,6 @@
-# v1.1.0 (Unreleased)
+# v1.2.0 (Unreleased)
+
+# v1.1.0 (March 9, 2022)
 
 NOTES
 
