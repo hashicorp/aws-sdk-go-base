@@ -14,5 +14,7 @@ func (l debugLogger) Log(args ...interface{}) {
 			tokens = append(tokens, token)
 		}
 	}
-	log.Printf("[DEBUG] [aws-sdk-go] %s", strings.Join(tokens, " "))
+	s := strings.Join(tokens, " ")
+	s = strings.ReplaceAll(s, "\r", "") // Works around https://github.com/jen20/teamcity-go-test/pull/2
+	log.Printf("[DEBUG] [aws-sdk-go] %s", s)
 }
