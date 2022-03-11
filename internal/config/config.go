@@ -37,6 +37,7 @@ type Config struct {
 	UseDualStackEndpoint           bool
 	UseFIPSEndpoint                bool
 	UserAgent                      UserAgentProducts
+	WebIdentityToken               string
 }
 
 type AssumeRole struct {
@@ -79,4 +80,8 @@ func (c Config) ResolveSharedCredentialsFiles() ([]string, error) {
 		return []string{}, fmt.Errorf("expanding shared credentials files: %w", err)
 	}
 	return v, nil
+}
+
+func (c Config) GetIdentityToken() ([]byte, error) {
+	return []byte(c.WebIdentityToken), nil
 }
