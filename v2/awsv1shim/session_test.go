@@ -1607,13 +1607,14 @@ func DualStackEndpointStateString(state endpoints.DualStackEndpointState) string
 
 func TestCustomCABundle(t *testing.T) {
 	testCases := map[string]struct {
-		Config                          *awsbase.Config
-		SetConfig                       bool
-		SetEnvironmentVariable          bool
-		SetSharedConfigurationFile      bool
-		ExpandEnvVars                   bool
-		EnvironmentVariables            map[string]string
-		ExpectTLSClientConfigRootCAsSet bool
+		Config                              *awsbase.Config
+		SetConfig                           bool
+		SetEnvironmentVariable              bool
+		SetSharedConfigurationFile          bool
+		SetSharedConfigurationFileToInvalid bool
+		ExpandEnvVars                       bool
+		EnvironmentVariables                map[string]string
+		ExpectTLSClientConfigRootCAsSet     bool
 	}{
 		"no configuration": {
 			Config: &awsbase.Config{
@@ -1651,15 +1652,14 @@ func TestCustomCABundle(t *testing.T) {
 			ExpectTLSClientConfigRootCAsSet: true,
 		},
 
-		// Not implemented in AWS SDK for Go v2: https://github.com/aws/aws-sdk-go-v2/issues/1589
-		// "shared configuration file": {
-		// 	Config: &awsbase.Config{
-		// 		AccessKey: servicemocks.MockStaticAccessKey,
-		// 		SecretKey: servicemocks.MockStaticSecretKey,
-		// 	},
-		// 	SetSharedConfigurationFile:      true,
-		// 	ExpectTLSClientConfigRootCAsSet: true,
-		// },
+		"shared configuration file": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetSharedConfigurationFile:      true,
+			ExpectTLSClientConfigRootCAsSet: true,
+		},
 
 		"config overrides envvar": {
 			Config: &awsbase.Config{
@@ -1673,21 +1673,15 @@ func TestCustomCABundle(t *testing.T) {
 			ExpectTLSClientConfigRootCAsSet: true,
 		},
 
-		// Not implemented in AWS SDK for Go v2: https://github.com/aws/aws-sdk-go-v2/issues/1589
-		// 		"envvar overrides shared configuration": {
-		// 			Config: &awsbase.Config{
-		// 				AccessKey: servicemocks.MockStaticAccessKey,
-		// 				SecretKey: servicemocks.MockStaticSecretKey,
-		// 			},
-		// 			EnvironmentVariables: map[string]string{
-		// 				"AWS_CA_BUNDLE": EC2MetadataEndpointModeIPv6,
-		// 			},
-		// 			SharedConfigurationFile: `
-		// [default]
-		// ec2_metadata_service_endpoint_mode = IPv4
-		// `,
-		// ExpectTLSClientConfigRootCAsSet: true,
-		// },
+		"envvar overrides shared configuration": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetEnvironmentVariable:              true,
+			SetSharedConfigurationFileToInvalid: true,
+			ExpectTLSClientConfigRootCAsSet:     true,
+		},
 	}
 
 	for testName, testCase := range testCases {
@@ -1748,6 +1742,30 @@ func TestCustomCABundle(t *testing.T) {
 [default]
 ca_bundle = %s
 `, pemFile)),
+					0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			if testCase.SetSharedConfigurationFileToInvalid {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(
+					file.Name(),
+					[]byte(`
+[default]
+ca_bundle = no-such-file
+`),
 					0600)
 
 				if err != nil {

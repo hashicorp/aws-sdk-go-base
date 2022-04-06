@@ -30,4 +30,6 @@ rules:
           regex: '^"github.com/aws/aws-sdk-go-v2/.+"$'
       - pattern-not: |
           import ("github.com/aws/aws-sdk-go-v2/aws/transport/http")
+      - pattern-not: |
+          import ("github.com/aws/aws-sdk-go-v2/config")
     severity: ERROR
