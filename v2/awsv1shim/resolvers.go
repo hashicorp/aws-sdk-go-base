@@ -1,23 +1,23 @@
 package awsv1shim
 
-import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
+import (
 	"bytes"
 	"context"
 	"io"
 	"io/ioutil"
 	"log"
 
-	"github.com/aws/aws-sdk-go-v2/config"
+	configv2 "github.com/aws/aws-sdk-go-v2/config"
 )
 
 func resolveCustomCABundle(ctx context.Context, configSources []interface{}) (value io.Reader, found bool, err error) {
 	for _, source := range configSources {
 		switch cfg := source.(type) {
-		case config.LoadOptions:
+		case configv2.LoadOptions:
 			value, found, err = loadOptionsGetCustomCABundle(ctx, cfg)
-		case config.EnvConfig:
+		case configv2.EnvConfig:
 			value, found, err = envConfigGetCustomCABundle(ctx, cfg)
-		case config.SharedConfig:
+		case configv2.SharedConfig:
 			value, found, err = sharedConfigGetCustomCABundle(ctx, cfg)
 		default:
 			log.Printf("[WARN] Unrecognized config source: %T", source)
@@ -32,7 +32,7 @@ func resolveCustomCABundle(ctx context.Context, configSources []interface{}) (va
 }
 
 // Copied from https://github.com/aws/aws-sdk-go-v2/blob/889e1da2776ae5bd6d056cf44f6ce6d043237769/config/load_options.go#L334-L340
-func loadOptionsGetCustomCABundle(_ context.Context, o config.LoadOptions) (io.Reader, bool, error) { //nolint:unparam
+func loadOptionsGetCustomCABundle(_ context.Context, o configv2.LoadOptions) (io.Reader, bool, error) { //nolint:unparam
 	if o.CustomCABundle == nil {
 		return nil, false, nil
 	}
@@ -41,7 +41,7 @@ func loadOptionsGetCustomCABundle(_ context.Context, o config.LoadOptions) (io.R
 }
 
 // Copied from https://github.com/aws/aws-sdk-go-v2/blob/889e1da2776ae5bd6d056cf44f6ce6d043237769/config/env_config.go#L463-L473
-func envConfigGetCustomCABundle(_ context.Context, c config.EnvConfig) (io.Reader, bool, error) {
+func envConfigGetCustomCABundle(_ context.Context, c configv2.EnvConfig) (io.Reader, bool, error) {
 	if len(c.CustomCABundle) == 0 {
 		return nil, false, nil
 	}
@@ -54,7 +54,7 @@ func envConfigGetCustomCABundle(_ context.Context, c config.EnvConfig) (io.Reade
 }
 
 // Copied from https://github.com/aws/aws-sdk-go-v2/blob/889e1da2776ae5bd6d056cf44f6ce6d043237769/config/shared_config.go#L350-L360
-func sharedConfigGetCustomCABundle(_ context.Context, c config.SharedConfig) (io.Reader, bool, error) {
+func sharedConfigGetCustomCABundle(_ context.Context, c configv2.SharedConfig) (io.Reader, bool, error) {
 	if len(c.CustomCABundle) == 0 {
 		return nil, false, nil
 	}
