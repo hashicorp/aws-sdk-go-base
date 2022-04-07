@@ -961,7 +961,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				file, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
 
 				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+					t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
 				}
 
 				defer os.Remove(file.Name())
@@ -969,7 +969,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				err = ioutil.WriteFile(file.Name(), []byte(servicemocks.MockWebIdentityToken), 0600)
 
 				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+					t.Fatalf("unexpected error writing web identity token file: %s", err)
 				}
 
 				os.Setenv("AWS_ROLE_ARN", servicemocks.MockStsAssumeRoleWithWebIdentityArn)
@@ -1794,6 +1794,172 @@ ca_bundle = no-such-file
 
 			if a, e := tr.TLSClientConfig.RootCAs != nil, testCase.ExpectTLSClientConfigRootCAsSet; a != e {
 				t.Errorf("expected(%t) CA Bundle, got: %t", e, a)
+			}
+		})
+	}
+}
+
+func TestAssumeRoleWithWebIdentity(t *testing.T) {
+	testCases := map[string]struct {
+		Config                     *awsbase.Config
+		SetConfig                  bool
+		EnvironmentVariables       map[string]string
+		SetEnvironmentVariable     bool
+		SharedConfigurationFile    string
+		SetSharedConfigurationFile bool
+		ExpectedCredentialsValue   credentials.Value
+		MockStsEndpoints           []*servicemocks.MockEndpoint
+	}{
+		// "config": {
+		// 	Config:                   &awsbase.Config{},
+		// 	SetConfig:                true,
+		// 	ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+		// 	MockStsEndpoints: []*servicemocks.MockEndpoint{
+		// 		servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+		// 	},
+		// },
+
+		"envvar": {
+			Config: &awsbase.Config{},
+			EnvironmentVariables: map[string]string{
+				"AWS_ROLE_ARN":          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+				"AWS_ROLE_SESSION_NAME": servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+			},
+			SetEnvironmentVariable:   true,
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"shared configuration file": {
+			Config: &awsbase.Config{},
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+role_arn = %[1]s
+role_session_name = %[2]s
+`, servicemocks.MockStsAssumeRoleWithWebIdentityArn, servicemocks.MockStsAssumeRoleWithWebIdentitySessionName),
+			SetSharedConfigurationFile: true,
+			ExpectedCredentialsValue:   mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		// "config overrides envvar": {
+		// 	Config:    &awsbase.Config{},
+		// 	SetConfig: true,
+		// 	EnvironmentVariables: map[string]string{
+		// 		"AWS_ROLE_ARN":                servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+		// 		"AWS_ROLE_SESSION_NAME":       servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+		// 		"AWS_WEB_IDENTITY_TOKEN_FILE": "no-such-file",
+		// 	},
+		// 	ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+		// 	MockStsEndpoints: []*servicemocks.MockEndpoint{
+		// 		servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+		// 	},
+		// },
+
+		"envvar overrides shared configuration": {
+			Config: &awsbase.Config{},
+			EnvironmentVariables: map[string]string{
+				"AWS_ROLE_ARN":          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+				"AWS_ROLE_SESSION_NAME": servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+			},
+			SetEnvironmentVariable: true,
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+role_arn = %[1]s
+role_session_name = %[2]s
+web_identity_token_file = no-such-file
+`, servicemocks.MockStsAssumeRoleWithWebIdentityArn, servicemocks.MockStsAssumeRoleWithWebIdentitySessionName),
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			closeSts, mockStsSession, err := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			defer closeSts()
+
+			if err != nil {
+				t.Fatalf("unexpected error creating mock STS server: %s", err)
+			}
+
+			if mockStsSession != nil && mockStsSession.Config != nil {
+				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
+			}
+
+			tokenFile, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
+			if err != nil {
+				t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
+			}
+
+			defer os.Remove(tokenFile.Name())
+
+			err = ioutil.WriteFile(tokenFile.Name(), []byte(servicemocks.MockWebIdentityToken), 0600)
+
+			if err != nil {
+				t.Fatalf("unexpected error writing web identity token file: %s", err)
+			}
+
+			if testCase.SetEnvironmentVariable {
+				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", tokenFile.Name())
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				if testCase.SetSharedConfigurationFile {
+					testCase.SharedConfigurationFile += fmt.Sprintf("web_identity_token_file = %s\n", tokenFile.Name())
+				}
+
+				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("GetAwsConfig() returned error: %s", err)
+			}
+			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
+			}
+
+			credentialsValue, err := actualSession.Config.Credentials.Get()
+
+			if err != nil {
+				t.Fatalf("unexpected credentials Get() error: %s", err)
+			}
+
+			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(credentials.Value{}, "ProviderName")); diff != "" {
+				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
 			}
 		})
 	}
