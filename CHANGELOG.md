@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.14 (2022-04-07)
+
 ENHANCEMENTS
 
 * Adds support for custom CA bundles in shared config files for AWS SDK for Go v1. ([#226](https://github.com/hashicorp/aws-sdk-go-base/pull/226))
