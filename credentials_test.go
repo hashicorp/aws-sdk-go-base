@@ -191,10 +191,10 @@ func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
 
 func TestAWSGetCredentials_webIdentityToken(t *testing.T) {
 	cfg := Config{
-		WebIdentityToken: servicemocks.MockWebIdentityToken,
-		AssumeRole: &AssumeRole{
-			RoleARN:     servicemocks.MockStsAssumeRoleWithWebIdentityArn,
-			SessionName: servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+		AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+			RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+			SessionName:      servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+			WebIdentityToken: servicemocks.MockWebIdentityToken,
 		},
 	}
 

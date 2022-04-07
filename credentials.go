@@ -133,7 +133,10 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		return nil, "", fmt.Errorf("loading configuration: %w", err)
 	}
 
-	if c.WebIdentityToken != "" && c.AssumeRole != nil {
+	if c.AssumeRoleWithWebIdentity != nil {
+		if c.AssumeRoleWithWebIdentity.WebIdentityToken == "" && c.AssumeRoleWithWebIdentity.WebIdentityTokenFile == "" {
+			return nil, "", c.NewCannotAssumeRoleWithWebIdentityError(fmt.Errorf("one of: WebIdentityToken, WebIdentityTokenFile must be set"))
+		}
 		provider, err := webIdentityCredentialsProvider(ctx, cfg, c)
 		return provider, "", err
 	}
@@ -159,7 +162,7 @@ Error: %w`, err)
 }
 
 func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
-	ar := c.AssumeRole
+	ar := c.AssumeRoleWithWebIdentity
 	client := stsClient(awsConfig, c)
 
 	appCreds := stscreds.NewWebIdentityRoleProvider(client, ar.RoleARN, c, func(opts *stscreds.WebIdentityRoleOptions) {

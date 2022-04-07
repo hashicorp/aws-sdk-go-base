@@ -41,7 +41,7 @@ type CannotAssumeRoleWithWebIdentityError struct {
 }
 
 func (e CannotAssumeRoleWithWebIdentityError) Error() string {
-	if e.Config == nil || e.Config.AssumeRole == nil {
+	if e.Config == nil || e.Config.AssumeRoleWithWebIdentity == nil {
 		return fmt.Sprintf("cannot assume role with web identity: %s", e.Err)
 	}
 
@@ -53,7 +53,7 @@ There are a number of possible causes of this - the most common are:
   * The role ARN is not valid
 
 Error: %s
-`, e.Config.AssumeRole.RoleARN, e.Err)
+`, e.Config.AssumeRoleWithWebIdentity.RoleARN, e.Err)
 }
 
 func (e CannotAssumeRoleWithWebIdentityError) Unwrap() error {
