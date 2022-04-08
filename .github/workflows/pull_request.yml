@@ -13,7 +13,7 @@ jobs:
         with:
           path: ./.go-version
 
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           # TODO: Replace with go-version-from-file when it is supported
           # https://github.com/actions/setup-go/pull/62
@@ -36,7 +36,7 @@ jobs:
         with:
           path: ./.go-version
 
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           # TODO: Replace with go-version-from-file when it is supported
           # https://github.com/actions/setup-go/pull/62
@@ -56,7 +56,7 @@ jobs:
         with:
           path: ./.go-version
 
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           # TODO: Replace with go-version-from-file when it is supported
           # https://github.com/actions/setup-go/pull/62
@@ -78,7 +78,7 @@ jobs:
         with:
           path: ./.go-version
 
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           # TODO: Replace with go-version-from-file when it is supported
           # https://github.com/actions/setup-go/pull/62
