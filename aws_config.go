@@ -173,8 +173,14 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		config.WithRegion(c.Region),
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
-		config.WithClientLogMode(aws.LogRequestWithBody | aws.LogResponseWithBody | aws.LogRetries),
-		config.WithLogger(debugLogger{}),
+	}
+
+	if !c.SuppressDebugLog {
+		loadOptions = append(
+			loadOptions,
+			config.WithClientLogMode(aws.LogRequestWithBody|aws.LogResponseWithBody|aws.LogRetries),
+			config.WithLogger(debugLogger{}),
+		)
 	}
 
 	sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
