@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+ENHANCEMENTS
+
+* Adds parameter `SuppressDebugLog` to suppress logging. ([#232](https://github.com/hashicorp/aws-sdk-go-base/pull/232))
+
 # v2.0.0-beta.14 (2022-04-07)
 
 ENHANCEMENTS
