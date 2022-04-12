@@ -40,13 +40,16 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 		Config: aws.Config{
 			Credentials:          newV2Credentials(awsC.Credentials),
 			HTTPClient:           httpClient,
-			LogLevel:             aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors),
-			Logger:               debugLogger{},
 			MaxRetries:           aws.Int(0),
 			Region:               aws.String(awsC.Region),
 			UseFIPSEndpoint:      convertFIPSEndpointState(useFIPSEndpoint),
 			UseDualStackEndpoint: convertDualStackEndpointState(useDualStackEndpoint),
 		},
+	}
+
+	if !c.SuppressDebugLog {
+		options.Config.LogLevel = aws.LogLevel(aws.LogDebugWithHTTPBody | aws.LogDebugWithRequestRetries | aws.LogDebugWithRequestErrors)
+		options.Config.Logger = debugLogger{}
 	}
 
 	// We can't reuse the io.Reader from the awsv2.Config, because it's already been read.

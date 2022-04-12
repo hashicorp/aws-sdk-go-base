@@ -32,6 +32,7 @@ type Config struct {
 	SkipRequestingAccountId        bool
 	StsEndpoint                    string
 	StsRegion                      string
+	SuppressDebugLog               bool
 	Token                          string
 	UseDualStackEndpoint           bool
 	UseFIPSEndpoint                bool
