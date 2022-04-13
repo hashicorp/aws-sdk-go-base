@@ -210,7 +210,7 @@ func TestAWSGetCredentials_webIdentityToken(t *testing.T) {
 		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
 	}
 
-	if a, e := source, ""; a != e {
+	if a, e := source, stscreds.WebIdentityProviderName; a != e {
 		t.Errorf("Expected initial source to be %q, %q given", e, a)
 	}
 

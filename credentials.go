@@ -138,7 +138,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 			return nil, "", c.NewCannotAssumeRoleWithWebIdentityError(fmt.Errorf("one of: WebIdentityToken, WebIdentityTokenFile must be set"))
 		}
 		provider, err := webIdentityCredentialsProvider(ctx, cfg, c)
-		return provider, "", err
+		return provider, stscreds.WebIdentityProviderName, err
 	}
 
 	creds, err := cfg.Credentials.Retrieve(ctx)
@@ -165,7 +165,7 @@ func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c
 	ar := c.AssumeRoleWithWebIdentity
 	client := stsClient(awsConfig, c)
 
-	appCreds := stscreds.NewWebIdentityRoleProvider(client, ar.RoleARN, c, func(opts *stscreds.WebIdentityRoleOptions) {
+	appCreds := stscreds.NewWebIdentityRoleProvider(client, ar.RoleARN, ar, func(opts *stscreds.WebIdentityRoleOptions) {
 		opts.RoleSessionName = ar.SessionName
 
 		if len(ar.PolicyARNs) > 0 {
