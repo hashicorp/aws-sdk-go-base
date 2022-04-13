@@ -90,17 +90,17 @@ func (c Config) ResolveSharedCredentialsFiles() ([]string, error) {
 	return v, nil
 }
 
-func (c Config) ResolveWebIdentityTokenFile() (string, error) {
-	v, err := expand.FilePath(c.AssumeRoleWithWebIdentity.WebIdentityTokenFile)
+func (c AssumeRoleWithWebIdentity) ResolveWebIdentityTokenFile() (string, error) {
+	v, err := expand.FilePath(c.WebIdentityTokenFile)
 	if err != nil {
 		return "", fmt.Errorf("expanding web identity token file: %w", err)
 	}
 	return v, nil
 }
 
-func (c Config) GetIdentityToken() ([]byte, error) {
-	if c.AssumeRoleWithWebIdentity.WebIdentityToken != "" {
-		return []byte(c.AssumeRoleWithWebIdentity.WebIdentityToken), nil
+func (c AssumeRoleWithWebIdentity) GetIdentityToken() ([]byte, error) {
+	if c.WebIdentityToken != "" {
+		return []byte(c.WebIdentityToken), nil
 	}
 	webIdentityTokenFile, err := c.ResolveWebIdentityTokenFile()
 	if err != nil {
