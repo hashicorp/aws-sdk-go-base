@@ -2287,23 +2287,14 @@ ca_bundle = no-such-file
 func TestAssumeRoleWithWebIdentity(t *testing.T) {
 	testCases := map[string]struct {
 		Config                     *Config
-		SetConfig                  bool
 		EnvironmentVariables       map[string]string
 		SetEnvironmentVariable     bool
 		SharedConfigurationFile    string
 		SetSharedConfigurationFile bool
+		SetConfigTokenFile         bool
 		ExpectedCredentialsValue   aws.Credentials
 		MockStsEndpoints           []*servicemocks.MockEndpoint
 	}{
-		// "config": {
-		// 	Config:                   &Config{},
-		// 	SetConfig:                true,
-		// 	ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-		// 	MockStsEndpoints: []*servicemocks.MockEndpoint{
-		// 		servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-		// 	},
-		// },
-
 		"envvar": {
 			Config: &Config{},
 			EnvironmentVariables: map[string]string{
@@ -2331,20 +2322,6 @@ role_session_name = %[2]s
 			},
 		},
 
-		// "config overrides envvar": {
-		// 	Config:    &Config{},
-		// 	SetConfig: true,
-		// 	EnvironmentVariables: map[string]string{
-		// 		"AWS_ROLE_ARN":                servicemocks.MockStsAssumeRoleWithWebIdentityArn,
-		// 		"AWS_ROLE_SESSION_NAME":       servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
-		// 		"AWS_WEB_IDENTITY_TOKEN_FILE": "no-such-file",
-		// 	},
-		// 	ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-		// 	MockStsEndpoints: []*servicemocks.MockEndpoint{
-		// 		servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-		// 	},
-		// },
-
 		"envvar overrides shared configuration": {
 			Config: &Config{},
 			EnvironmentVariables: map[string]string{
@@ -2358,6 +2335,68 @@ role_arn = %[1]s
 role_session_name = %[2]s
 web_identity_token_file = no-such-file
 `, servicemocks.MockStsAssumeRoleWithWebIdentityArn, servicemocks.MockStsAssumeRoleWithWebIdentitySessionName),
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"config with token": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName:      servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+					WebIdentityToken: servicemocks.MockWebIdentityToken,
+				},
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"config with token file": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN:     servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName: servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+				},
+			},
+			SetConfigTokenFile:       true,
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"config with token overrides config token file": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN:              servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName:          servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+					WebIdentityToken:     servicemocks.MockWebIdentityToken,
+					WebIdentityTokenFile: "no-such-file",
+				},
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"config overrides envvar": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName:      servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+					WebIdentityToken: servicemocks.MockWebIdentityToken,
+				},
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_ROLE_ARN":                servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+				"AWS_ROLE_SESSION_NAME":       servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+				"AWS_WEB_IDENTITY_TOKEN_FILE": "no-such-file",
+			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
@@ -2396,6 +2435,10 @@ web_identity_token_file = no-such-file
 
 			if testCase.SetEnvironmentVariable {
 				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", tokenFile.Name())
+			}
+
+			if testCase.SetConfigTokenFile {
+				testCase.Config.AssumeRoleWithWebIdentity.WebIdentityTokenFile = tokenFile.Name()
 			}
 
 			if testCase.SharedConfigurationFile != "" {
