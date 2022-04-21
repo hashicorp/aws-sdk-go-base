@@ -173,6 +173,7 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		config.WithRegion(c.Region),
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
+		config.WithEC2IMDSClientEnableState(c.EC2MetadataServiceEnableState),
 	}
 
 	if !c.SuppressDebugLog {
@@ -232,12 +233,10 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		)
 	}
 
-	if c.SkipEC2MetadataApiCheck {
-		loadOptions = append(loadOptions,
-			config.WithEC2IMDSClientEnableState(imds.ClientDisabled),
-		)
-
-		// This should not be needed, but https://github.com/aws/aws-sdk-go-v2/issues/1398
+	// This should not be needed, but https://github.com/aws/aws-sdk-go-v2/issues/1398
+	if c.EC2MetadataServiceEnableState == imds.ClientEnabled {
+		os.Setenv("AWS_EC2_METADATA_DISABLED", "false")
+	} else if c.EC2MetadataServiceEnableState == imds.ClientDisabled {
 		os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 	}
 
