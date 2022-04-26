@@ -133,6 +133,8 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		return nil, "", fmt.Errorf("loading configuration: %w", err)
 	}
 
+	// This can probably be configured directly in commonLoadOptions() once
+	// https://github.com/aws/aws-sdk-go-v2/pull/1682 is merged
 	if c.AssumeRoleWithWebIdentity != nil {
 		if c.AssumeRoleWithWebIdentity.WebIdentityToken == "" && c.AssumeRoleWithWebIdentity.WebIdentityTokenFile == "" {
 			return nil, "", c.NewCannotAssumeRoleWithWebIdentityError(fmt.Errorf("one of: WebIdentityToken, WebIdentityTokenFile must be set"))
