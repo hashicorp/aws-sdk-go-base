@@ -99,7 +99,7 @@ func TestGetAwsConfig(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AssumeRoleDurationSeconds",
+			Description:              "config AssumeRoleDuration",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -2401,6 +2401,36 @@ web_identity_token_file = no-such-file
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"with duration": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName:      servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+					WebIdentityToken: servicemocks.MockWebIdentityToken,
+					Duration:         1 * time.Hour,
+				},
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidWithOptions(map[string]string{"DurationSeconds": "3600"}),
+			},
+		},
+
+		"with policy": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName:      servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+					WebIdentityToken: servicemocks.MockWebIdentityToken,
+					Policy:           "{}",
+				},
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidWithOptions(map[string]string{"Policy": "{}"}),
 			},
 		},
 	}

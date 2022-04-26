@@ -52,8 +52,10 @@ type AssumeRole struct {
 }
 
 type AssumeRoleWithWebIdentity struct {
-	PolicyARNs           []string
 	RoleARN              string
+	Duration             time.Duration
+	Policy               string
+	PolicyARNs           []string
 	SessionName          string
 	WebIdentityToken     string
 	WebIdentityTokenFile string

@@ -169,6 +169,11 @@ func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c
 
 	appCreds := stscreds.NewWebIdentityRoleProvider(client, ar.RoleARN, ar, func(opts *stscreds.WebIdentityRoleOptions) {
 		opts.RoleSessionName = ar.SessionName
+		opts.Duration = ar.Duration
+
+		if ar.Policy != "" {
+			opts.Policy = aws.String(ar.Policy)
+		}
 
 		if len(ar.PolicyARNs) > 0 {
 			opts.PolicyARNs = getPolicyDescriptorTypes(ar.PolicyARNs)
