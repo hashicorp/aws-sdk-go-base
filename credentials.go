@@ -140,7 +140,10 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 			return nil, "", c.NewCannotAssumeRoleWithWebIdentityError(fmt.Errorf("one of: WebIdentityToken, WebIdentityTokenFile must be set"))
 		}
 		provider, err := webIdentityCredentialsProvider(ctx, cfg, c)
-		return provider, stscreds.WebIdentityProviderName, err
+		if err != nil {
+			return nil, "", err
+		}
+		cfg.Credentials = provider
 	}
 
 	creds, err := cfg.Credentials.Retrieve(ctx)

@@ -41,7 +41,8 @@ func TestGetAwsConfig(t *testing.T) {
 		Description                string
 		EnableEc2MetadataServer    bool
 		EnableEcsCredentialsServer bool
-		EnableWebIdentityToken     bool
+		EnableWebIdentityEnvVars   bool
+		EnableWebIdentityConfig    bool
 		EnvironmentVariables       map[string]string
 		ExpectedCredentialsValue   aws.Credentials
 		ExpectedRegion             string
@@ -494,7 +495,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region: "us-east-1",
 			},
 			Description:              "web identity token access key",
-			EnableWebIdentityToken:   true,
+			EnableWebIdentityEnvVars: true,
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -556,6 +557,42 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			ExpectedCredentialsValue:   mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:             "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpoint,
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AssumeRole: &AssumeRole{
+					RoleARN:     servicemocks.MockStsAssumeRoleArn,
+					SessionName: servicemocks.MockStsAssumeRoleSessionName,
+				},
+				Region: "us-east-1",
+			},
+			Description:              "AssumeWebIdentity envvar AssumeRoleARN access key",
+			EnableWebIdentityEnvVars: true,
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+				servicemocks.MockStsAssumeRoleValidEndpoint,
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AssumeRole: &AssumeRole{
+					RoleARN:     servicemocks.MockStsAssumeRoleArn,
+					SessionName: servicemocks.MockStsAssumeRoleSessionName,
+				},
+				Region: "us-east-1",
+			},
+			Description:              "AssumeWebIdentity config AssumeRoleARN access key",
+			EnableWebIdentityConfig:  true,
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
 				servicemocks.MockStsAssumeRoleValidEndpoint,
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
@@ -912,9 +949,8 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				defer closeEcsCredentials()
 			}
 
-			if testCase.EnableWebIdentityToken {
+			if testCase.EnableWebIdentityEnvVars || testCase.EnableWebIdentityConfig {
 				file, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
-
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
 				}
@@ -927,9 +963,17 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 					t.Fatalf("unexpected error writing web identity token file: %s", err)
 				}
 
-				os.Setenv("AWS_ROLE_ARN", servicemocks.MockStsAssumeRoleWithWebIdentityArn)
-				os.Setenv("AWS_ROLE_SESSION_NAME", servicemocks.MockStsAssumeRoleWithWebIdentitySessionName)
-				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
+				if testCase.EnableWebIdentityEnvVars {
+					os.Setenv("AWS_ROLE_ARN", servicemocks.MockStsAssumeRoleWithWebIdentityArn)
+					os.Setenv("AWS_ROLE_SESSION_NAME", servicemocks.MockStsAssumeRoleWithWebIdentitySessionName)
+					os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
+				} else if testCase.EnableWebIdentityConfig {
+					testCase.Config.AssumeRoleWithWebIdentity = &AssumeRoleWithWebIdentity{
+						RoleARN:              servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+						SessionName:          servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+						WebIdentityTokenFile: file.Name(),
+					}
+				}
 			}
 
 			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
