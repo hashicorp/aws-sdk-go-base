@@ -2287,14 +2287,58 @@ ca_bundle = no-such-file
 func TestAssumeRoleWithWebIdentity(t *testing.T) {
 	testCases := map[string]struct {
 		Config                     *Config
+		SetConfig                  bool
+		ExpandEnvVars              bool
 		EnvironmentVariables       map[string]string
 		SetEnvironmentVariable     bool
 		SharedConfigurationFile    string
 		SetSharedConfigurationFile bool
-		SetConfigTokenFile         bool
 		ExpectedCredentialsValue   aws.Credentials
 		MockStsEndpoints           []*servicemocks.MockEndpoint
 	}{
+		"config with inline token": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName:      servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+					WebIdentityToken: servicemocks.MockWebIdentityToken,
+				},
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"config with token file": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN:     servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName: servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+				},
+			},
+			SetConfig:                true,
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"config with expanded path": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN:     servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName: servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+				},
+			},
+			SetConfig:                true,
+			ExpandEnvVars:            true,
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
 		"envvar": {
 			Config: &Config{},
 			EnvironmentVariables: map[string]string{
@@ -2322,68 +2366,6 @@ role_session_name = %[2]s
 			},
 		},
 
-		"envvar overrides shared configuration": {
-			Config: &Config{},
-			EnvironmentVariables: map[string]string{
-				"AWS_ROLE_ARN":          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
-				"AWS_ROLE_SESSION_NAME": servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
-			},
-			SetEnvironmentVariable: true,
-			SharedConfigurationFile: fmt.Sprintf(`
-[default]
-role_arn = %[1]s
-role_session_name = %[2]s
-web_identity_token_file = no-such-file
-`, servicemocks.MockStsAssumeRoleWithWebIdentityArn, servicemocks.MockStsAssumeRoleWithWebIdentitySessionName),
-			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-			},
-		},
-
-		"config with token": {
-			Config: &Config{
-				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
-					RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
-					SessionName:      servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
-					WebIdentityToken: servicemocks.MockWebIdentityToken,
-				},
-			},
-			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-			},
-		},
-
-		"config with token file": {
-			Config: &Config{
-				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
-					RoleARN:     servicemocks.MockStsAssumeRoleWithWebIdentityArn,
-					SessionName: servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
-				},
-			},
-			SetConfigTokenFile:       true,
-			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-			},
-		},
-
-		"config with token overrides config token file": {
-			Config: &Config{
-				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
-					RoleARN:              servicemocks.MockStsAssumeRoleWithWebIdentityArn,
-					SessionName:          servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
-					WebIdentityToken:     servicemocks.MockWebIdentityToken,
-					WebIdentityTokenFile: "no-such-file",
-				},
-			},
-			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-			},
-		},
-
 		"config overrides envvar": {
 			Config: &Config{
 				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
@@ -2397,6 +2379,25 @@ web_identity_token_file = no-such-file
 				"AWS_ROLE_SESSION_NAME":       servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
 				"AWS_WEB_IDENTITY_TOKEN_FILE": "no-such-file",
 			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"envvar overrides shared configuration": {
+			Config: &Config{},
+			EnvironmentVariables: map[string]string{
+				"AWS_ROLE_ARN":          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+				"AWS_ROLE_SESSION_NAME": servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+			},
+			SetEnvironmentVariable: true,
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+role_arn = %[1]s
+role_session_name = %[2]s
+web_identity_token_file = no-such-file
+`, servicemocks.MockStsAssumeRoleWithWebIdentityArn, servicemocks.MockStsAssumeRoleWithWebIdentitySessionName),
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
@@ -2420,25 +2421,44 @@ web_identity_token_file = no-such-file
 
 			testCase.Config.StsEndpoint = stsEndpoint
 
+			tempdir, err := ioutil.TempDir("", "temp")
+			if err != nil {
+				t.Fatalf("error creating temp dir: %s", err)
+			}
+			defer os.Remove(tempdir)
+			os.Setenv("TMPDIR", tempdir)
+
 			tokenFile, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
 			if err != nil {
 				t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
 			}
+			tokenFileName := tokenFile.Name()
 
-			defer os.Remove(tokenFile.Name())
+			defer os.Remove(tokenFileName)
 
-			err = ioutil.WriteFile(tokenFile.Name(), []byte(servicemocks.MockWebIdentityToken), 0600)
+			err = ioutil.WriteFile(tokenFileName, []byte(servicemocks.MockWebIdentityToken), 0600)
 
 			if err != nil {
 				t.Fatalf("unexpected error writing web identity token file: %s", err)
 			}
 
-			if testCase.SetEnvironmentVariable {
-				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", tokenFile.Name())
+			if testCase.ExpandEnvVars {
+				tmpdir := os.Getenv("TMPDIR")
+				rel, err := filepath.Rel(tmpdir, tokenFileName)
+				if err != nil {
+					t.Fatalf("error making path relative: %s", err)
+				}
+				t.Logf("relative: %s", rel)
+				tokenFileName = filepath.Join("$TMPDIR", rel)
+				t.Logf("env tempfile: %s", tokenFileName)
 			}
 
-			if testCase.SetConfigTokenFile {
-				testCase.Config.AssumeRoleWithWebIdentity.WebIdentityTokenFile = tokenFile.Name()
+			if testCase.SetConfig {
+				testCase.Config.AssumeRoleWithWebIdentity.WebIdentityTokenFile = tokenFileName
+			}
+
+			if testCase.SetEnvironmentVariable {
+				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", tokenFileName)
 			}
 
 			if testCase.SharedConfigurationFile != "" {
@@ -2451,7 +2471,7 @@ web_identity_token_file = no-such-file
 				defer os.Remove(file.Name())
 
 				if testCase.SetSharedConfigurationFile {
-					testCase.SharedConfigurationFile += fmt.Sprintf("web_identity_token_file = %s\n", tokenFile.Name())
+					testCase.SharedConfigurationFile += fmt.Sprintf("web_identity_token_file = %s\n", tokenFileName)
 				}
 
 				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
