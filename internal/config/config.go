@@ -13,6 +13,7 @@ type Config struct {
 	AccessKey                      string
 	APNInfo                        *APNInfo
 	AssumeRole                     *AssumeRole
+	AssumeRoleWithWebIdentity      *AssumeRoleWithWebIdentity
 	CallerDocumentationURL         string
 	CallerName                     string
 	CustomCABundle                 string
@@ -50,6 +51,16 @@ type AssumeRole struct {
 	TransitiveTagKeys []string
 }
 
+type AssumeRoleWithWebIdentity struct {
+	RoleARN              string
+	Duration             time.Duration
+	Policy               string
+	PolicyARNs           []string
+	SessionName          string
+	WebIdentityToken     string
+	WebIdentityTokenFile string
+}
+
 func (c Config) CustomCABundleReader() (*bytes.Reader, error) {
 	if c.CustomCABundle == "" {
 		return nil, nil
@@ -79,4 +90,29 @@ func (c Config) ResolveSharedCredentialsFiles() ([]string, error) {
 		return []string{}, fmt.Errorf("expanding shared credentials files: %w", err)
 	}
 	return v, nil
+}
+
+func (c AssumeRoleWithWebIdentity) ResolveWebIdentityTokenFile() (string, error) {
+	v, err := expand.FilePath(c.WebIdentityTokenFile)
+	if err != nil {
+		return "", fmt.Errorf("expanding web identity token file: %w", err)
+	}
+	return v, nil
+}
+
+func (c AssumeRoleWithWebIdentity) GetIdentityToken() ([]byte, error) {
+	if c.WebIdentityToken != "" {
+		return []byte(c.WebIdentityToken), nil
+	}
+	webIdentityTokenFile, err := c.ResolveWebIdentityTokenFile()
+	if err != nil {
+		return nil, err
+	}
+
+	b, err := os.ReadFile(webIdentityTokenFile)
+	if err != nil {
+		return nil, fmt.Errorf("unable to read file at %s: %w", webIdentityTokenFile, err)
+	}
+
+	return b, nil
 }

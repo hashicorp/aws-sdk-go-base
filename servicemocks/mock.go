@@ -344,6 +344,34 @@ func MockStsAssumeRoleValidEndpointWithOptions(options map[string]string) *MockE
 	}
 }
 
+// MockStsAssumeRoleValidEndpointWithOptions returns a valid STS AssumeRole response with configurable request options.
+func MockStsAssumeRoleWithWebIdentityValidWithOptions(options map[string]string) *MockEndpoint {
+	urlValues := url.Values{
+		"Action":           []string{"AssumeRoleWithWebIdentity"},
+		"RoleArn":          []string{MockStsAssumeRoleWithWebIdentityArn},
+		"RoleSessionName":  []string{MockStsAssumeRoleWithWebIdentitySessionName},
+		"Version":          []string{"2011-06-15"},
+		"WebIdentityToken": []string{MockWebIdentityToken},
+	}
+
+	for k, v := range options {
+		urlValues.Set(k, v)
+	}
+
+	return &MockEndpoint{
+		Request: &MockRequest{
+			Body:   urlValues.Encode(),
+			Method: http.MethodPost,
+			Uri:    "/",
+		},
+		Response: &MockResponse{
+			Body:        MockStsAssumeRoleWithWebIdentityValidResponseBody,
+			ContentType: "text/xml",
+			StatusCode:  http.StatusOK,
+		},
+	}
+}
+
 // MockEndpoint represents a basic request and response that can be used for creating simple httptest server routes.
 type MockEndpoint struct {
 	Request  *MockRequest

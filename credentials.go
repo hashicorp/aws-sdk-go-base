@@ -133,6 +133,19 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		return nil, "", fmt.Errorf("loading configuration: %w", err)
 	}
 
+	// This can probably be configured directly in commonLoadOptions() once
+	// https://github.com/aws/aws-sdk-go-v2/pull/1682 is merged
+	if c.AssumeRoleWithWebIdentity != nil {
+		if c.AssumeRoleWithWebIdentity.WebIdentityToken == "" && c.AssumeRoleWithWebIdentity.WebIdentityTokenFile == "" {
+			return nil, "", c.NewCannotAssumeRoleWithWebIdentityError(fmt.Errorf("one of: WebIdentityToken, WebIdentityTokenFile must be set"))
+		}
+		provider, err := webIdentityCredentialsProvider(ctx, cfg, c)
+		if err != nil {
+			return nil, "", err
+		}
+		cfg.Credentials = provider
+	}
+
 	creds, err := cfg.Credentials.Retrieve(ctx)
 	if err != nil {
 		if c.Profile != "" && os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
@@ -151,6 +164,30 @@ Error: %w`, err)
 	provider, err := assumeRoleCredentialsProvider(ctx, cfg, c)
 
 	return provider, creds.Source, err
+}
+
+func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
+	ar := c.AssumeRoleWithWebIdentity
+	client := stsClient(awsConfig, c)
+
+	appCreds := stscreds.NewWebIdentityRoleProvider(client, ar.RoleARN, ar, func(opts *stscreds.WebIdentityRoleOptions) {
+		opts.RoleSessionName = ar.SessionName
+		opts.Duration = ar.Duration
+
+		if ar.Policy != "" {
+			opts.Policy = aws.String(ar.Policy)
+		}
+
+		if len(ar.PolicyARNs) > 0 {
+			opts.PolicyARNs = getPolicyDescriptorTypes(ar.PolicyARNs)
+		}
+	})
+
+	_, err := appCreds.Retrieve(ctx)
+	if err != nil {
+		return nil, c.NewCannotAssumeRoleWithWebIdentityError(err)
+	}
+	return aws.NewCredentialsCache(appCreds), nil
 }
 
 func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
@@ -173,16 +210,7 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 		}
 
 		if len(ar.PolicyARNs) > 0 {
-			var policyDescriptorTypes []types.PolicyDescriptorType
-
-			for _, policyARN := range ar.PolicyARNs {
-				policyDescriptorType := types.PolicyDescriptorType{
-					Arn: aws.String(policyARN),
-				}
-				policyDescriptorTypes = append(policyDescriptorTypes, policyDescriptorType)
-			}
-
-			opts.PolicyARNs = policyDescriptorTypes
+			opts.PolicyARNs = getPolicyDescriptorTypes(ar.PolicyARNs)
 		}
 
 		if len(ar.Tags) > 0 {
@@ -207,4 +235,16 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 		return nil, c.NewCannotAssumeRoleError(err)
 	}
 	return aws.NewCredentialsCache(appCreds), nil
+}
+
+func getPolicyDescriptorTypes(policyARNs []string) []types.PolicyDescriptorType {
+	var policyDescriptorTypes []types.PolicyDescriptorType
+
+	for _, policyARN := range policyARNs {
+		policyDescriptorType := types.PolicyDescriptorType{
+			Arn: aws.String(policyARN),
+		}
+		policyDescriptorTypes = append(policyDescriptorTypes, policyDescriptorType)
+	}
+	return policyDescriptorTypes
 }

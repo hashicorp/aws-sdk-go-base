@@ -189,6 +189,39 @@ func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
 	validateCredentialsProvider(credsParam, "accesskey2", "secretkey2", "", sharedConfigCredentialsSource(fileParamName), t)
 }
 
+func TestAWSGetCredentials_webIdentityToken(t *testing.T) {
+	cfg := Config{
+		AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+			RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+			SessionName:      servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+			WebIdentityToken: servicemocks.MockWebIdentityToken,
+		},
+	}
+
+	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
+		servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+		servicemocks.MockStsGetCallerIdentityValidAssumedRoleEndpoint,
+	})
+	defer ts.Close()
+	cfg.StsEndpoint = ts.URL
+
+	creds, source, err := getCredentialsProvider(context.Background(), &cfg)
+	if err != nil {
+		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
+	}
+
+	if a, e := source, stscreds.WebIdentityProviderName; a != e {
+		t.Errorf("Expected initial source to be %q, %q given", e, a)
+	}
+
+	validateCredentialsProvider(creds,
+		servicemocks.MockStsAssumeRoleWithWebIdentityAccessKey,
+		servicemocks.MockStsAssumeRoleWithWebIdentitySecretKey,
+		servicemocks.MockStsAssumeRoleWithWebIdentitySessionToken,
+		stscreds.WebIdentityProviderName, t)
+	testCredentialsProviderWrappedWithCache(creds, t)
+}
+
 func TestAWSGetCredentials_assumeRole(t *testing.T) {
 	key := "test"
 	secret := "secret"
