@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+* Adds support for assuming IAM role with web identity. ([#178](https://github.com/hashicorp/aws-sdk-go-base/pull/178))
+
 # v2.0.0-beta.15 (2022-04-12)
 
 ENHANCEMENTS
