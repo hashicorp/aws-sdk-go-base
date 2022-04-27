@@ -1,6 +1,12 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BREAKING CHANGES
+
+* Removes boolean `SkipEC2MetadataApiCheck` and adds `EC2MetadataServiceEnableState` of type `imds.ClientEnableState`. ([#240](https://github.com/hashicorp/aws-sdk-go-base/pull/240))
+
+ENHANCEMENTS
+
 * Adds support for assuming IAM role with web identity. ([#178](https://github.com/hashicorp/aws-sdk-go-base/pull/178))
 
 # v2.0.0-beta.15 (2022-04-12)
