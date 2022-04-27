@@ -15,6 +15,7 @@ import (
 
 	retryv2 "github.com/aws/aws-sdk-go-v2/aws/retry"
 	configv2 "github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -886,14 +887,19 @@ region = us-east-1
 		},
 		{
 			Config: &awsbase.Config{
-				Region:                  "us-east-1",
-				SkipEC2MetadataApiCheck: true,
+				Region:                        "us-east-1",
+				EC2MetadataServiceEnableState: imds.ClientDisabled,
 			},
-			Description: "skip EC2 metadata API check",
+			Description: "skip EC2 Metadata API check",
 			ExpectedError: func(err error) bool {
 				return awsbase.IsNoValidCredentialSourcesError(err)
 			},
 			ExpectedRegion: "us-east-1",
+			// The IMDS server must be enabled so that auth will succeed if the IMDS is called
+			EnableEc2MetadataServer: true,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
+			},
 		},
 		{
 			Config: &awsbase.Config{

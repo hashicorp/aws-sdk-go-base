@@ -841,14 +841,19 @@ source_profile = SourceSharedCredentials
 		},
 		{
 			Config: &Config{
-				Region:                  "us-east-1",
-				SkipEC2MetadataApiCheck: true,
+				Region:                        "us-east-1",
+				EC2MetadataServiceEnableState: imds.ClientDisabled,
 			},
 			Description: "skip EC2 Metadata API check",
 			ExpectedError: func(err error) bool {
 				return IsNoValidCredentialSourcesError(err)
 			},
 			ExpectedRegion: "us-east-1",
+			// The IMDS server must be enabled so that auth will succeed if the IMDS is called
+			EnableEc2MetadataServer: true,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
+			},
 		},
 		{
 			Config: &Config{
@@ -1842,6 +1847,130 @@ use_fips_endpoint = true
 			}
 			if a, e := useDualStackState, testCase.ExpectedUseDualStackEndpointState; a != e {
 				t.Errorf("expected UseDualStackEndpoint %q, got: %q", awsconfig.DualStackEndpointStateString(e), awsconfig.DualStackEndpointStateString(a))
+			}
+		})
+	}
+}
+
+func TestEC2MetadataServiceClientEnableState(t *testing.T) {
+	testCases := map[string]struct {
+		Config                                      *Config
+		EnvironmentVariables                        map[string]string
+		SharedConfigurationFile                     string
+		ExpectedEC2MetadataServiceClientEnableState imds.ClientEnableState
+	}{
+		"no configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedEC2MetadataServiceClientEnableState: imds.ClientDefaultEnableState,
+		},
+
+		"config enabled": {
+			Config: &Config{
+				AccessKey:                     servicemocks.MockStaticAccessKey,
+				SecretKey:                     servicemocks.MockStaticSecretKey,
+				EC2MetadataServiceEnableState: imds.ClientEnabled,
+			},
+			ExpectedEC2MetadataServiceClientEnableState: imds.ClientEnabled,
+		},
+		"config disabled": {
+			Config: &Config{
+				AccessKey:                     servicemocks.MockStaticAccessKey,
+				SecretKey:                     servicemocks.MockStaticSecretKey,
+				EC2MetadataServiceEnableState: imds.ClientDisabled,
+			},
+			ExpectedEC2MetadataServiceClientEnableState: imds.ClientDisabled,
+		},
+
+		"envvar true": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_DISABLED": "true",
+			},
+			ExpectedEC2MetadataServiceClientEnableState: imds.ClientDisabled,
+		},
+		"envvar false": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_DISABLED": "false",
+			},
+			ExpectedEC2MetadataServiceClientEnableState: imds.ClientEnabled,
+		},
+
+		"config enabled envvar true": {
+			Config: &Config{
+				AccessKey:                     servicemocks.MockStaticAccessKey,
+				SecretKey:                     servicemocks.MockStaticSecretKey,
+				EC2MetadataServiceEnableState: imds.ClientEnabled,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_DISABLED": "true",
+			},
+			ExpectedEC2MetadataServiceClientEnableState: imds.ClientEnabled,
+		},
+		"config disabled envvar false": {
+			Config: &Config{
+				AccessKey:                     servicemocks.MockStaticAccessKey,
+				SecretKey:                     servicemocks.MockStaticSecretKey,
+				EC2MetadataServiceEnableState: imds.ClientDisabled,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_EC2_METADATA_DISABLED": "false",
+			},
+			ExpectedEC2MetadataServiceClientEnableState: imds.ClientDisabled,
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			ec2MetadataServiceClientEnableState, _, err := awsconfig.ResolveEC2IMDSClientEnableState(awsConfig.ConfigSources)
+			if err != nil {
+				t.Fatalf("error in ResolveEC2IMDSClientEnableState: %s", err)
+			}
+			if a, e := ec2MetadataServiceClientEnableState, testCase.ExpectedEC2MetadataServiceClientEnableState; a != e {
+				t.Errorf("expected EC2MetadataServiceClientEnableState %q, got: %q", awsconfig.EC2IMDSClientEnableStateString(e), awsconfig.EC2IMDSClientEnableStateString(a))
 			}
 		})
 	}

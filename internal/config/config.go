@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 )
 
@@ -17,6 +18,7 @@ type Config struct {
 	CallerDocumentationURL         string
 	CallerName                     string
 	CustomCABundle                 string
+	EC2MetadataServiceEnableState  imds.ClientEnableState
 	EC2MetadataServiceEndpoint     string
 	EC2MetadataServiceEndpointMode string
 	HTTPProxy                      string
@@ -29,7 +31,6 @@ type Config struct {
 	SharedCredentialsFiles         []string
 	SharedConfigFiles              []string
 	SkipCredsValidation            bool
-	SkipEC2MetadataApiCheck        bool
 	SkipRequestingAccountId        bool
 	StsEndpoint                    string
 	StsRegion                      string

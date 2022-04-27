@@ -69,6 +69,36 @@ func DualStackEndpointStateString(state aws.DualStackEndpointState) string {
 }
 
 // Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/feature/ec2/imds/internal/config/resolvers.go
+type EC2IMDSClientEnableStateResolver interface {
+	GetEC2IMDSClientEnableState() (imds.ClientEnableState, bool, error)
+}
+
+// Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/feature/ec2/imds/internal/config/resolvers.go
+func ResolveEC2IMDSClientEnableState(sources []interface{}) (value imds.ClientEnableState, found bool, err error) {
+	for _, source := range sources {
+		if resolver, ok := source.(EC2IMDSClientEnableStateResolver); ok {
+			value, found, err = resolver.GetEC2IMDSClientEnableState()
+			if err != nil || found {
+				return value, found, err
+			}
+		}
+	}
+	return value, found, err
+}
+
+func EC2IMDSClientEnableStateString(state imds.ClientEnableState) string {
+	switch state {
+	case imds.ClientDefaultEnableState:
+		return "ClientDefaultEnableState"
+	case imds.ClientDisabled:
+		return "ClientDisabled"
+	case imds.ClientEnabled:
+		return "ClientEnabled"
+	}
+	return fmt.Sprintf("unknown imds.ClientEnableState (%d)", state)
+}
+
+// Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/feature/ec2/imds/internal/config/resolvers.go
 type EC2IMDSEndpointResolver interface {
 	GetEC2IMDSEndpoint() (value string, found bool, err error)
 }
