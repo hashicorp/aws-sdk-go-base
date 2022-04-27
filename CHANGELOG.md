@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.16 (2022-04-27)
+
 BREAKING CHANGES
 
 * Removes boolean `SkipEC2MetadataApiCheck` and adds `EC2MetadataServiceEnableState` of type `imds.ClientEnableState`. ([#240](https://github.com/hashicorp/aws-sdk-go-base/pull/240))
