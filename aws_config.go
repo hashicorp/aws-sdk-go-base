@@ -86,14 +86,14 @@ func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
 
 	awsConfig.Retryer = func() aws.Retryer {
 		return &networkErrorShortcutter{
-			Retryer: retry.NewStandard(standardOptions...),
+			RetryerV2: retry.NewStandard(standardOptions...),
 		}
 	}
 }
 
 // networkErrorShortcutter is used to enable networking error shortcutting
 type networkErrorShortcutter struct {
-	aws.Retryer
+	aws.RetryerV2
 }
 
 // We're misusing RetryDelay here, since this is the only function that takes the attempt count
@@ -112,7 +112,7 @@ func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Durat
 		}
 	}
 
-	return r.Retryer.RetryDelay(attempt, err)
+	return r.RetryerV2.RetryDelay(attempt, err)
 }
 
 func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, error) {
