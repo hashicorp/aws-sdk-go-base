@@ -2467,6 +2467,7 @@ func TestAssumeRoleWithWebIdentity(t *testing.T) {
 		SharedConfigurationFile    string
 		SetSharedConfigurationFile bool
 		ExpectedCredentialsValue   aws.Credentials
+		ExpectedError              func(err error) bool
 		MockStsEndpoints           []*servicemocks.MockEndpoint
 	}{
 		"config with inline token": {
@@ -2606,6 +2607,28 @@ web_identity_token_file = no-such-file
 				servicemocks.MockStsAssumeRoleWithWebIdentityValidWithOptions(map[string]string{"Policy": "{}"}),
 			},
 		},
+
+		"invalid empty config": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{},
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "role ARN not set")
+			},
+		},
+
+		"invalid no token": {
+			Config: &Config{
+				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
+					RoleARN: servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+				},
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "one of WebIdentityToken, WebIdentityTokenFile must be set")
+			},
+		},
 	}
 
 	for testName, testCase := range testCases {
@@ -2689,8 +2712,18 @@ web_identity_token_file = no-such-file
 			testCase.Config.SkipCredsValidation = true
 
 			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+
 			if err != nil {
-				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+				if testCase.ExpectedError == nil {
+					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
+				}
+
+				if !testCase.ExpectedError(err) {
+					t.Fatalf("unexpected GetAwsConfig() '%[1]T' error: %[1]s", err)
+				}
+
+				t.Logf("received expected '%[1]T' error: %[1]s", err)
+				return
 			}
 
 			credentialsValue, err := awsConfig.Credentials.Retrieve(context.Background())

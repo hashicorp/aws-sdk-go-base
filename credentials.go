@@ -2,6 +2,7 @@ package awsbase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -136,8 +137,11 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	// This can probably be configured directly in commonLoadOptions() once
 	// https://github.com/aws/aws-sdk-go-v2/pull/1682 is merged
 	if c.AssumeRoleWithWebIdentity != nil {
+		if c.AssumeRoleWithWebIdentity.RoleARN == "" {
+			return nil, "", errors.New("Assume Role With Web Identity: role ARN not set")
+		}
 		if c.AssumeRoleWithWebIdentity.WebIdentityToken == "" && c.AssumeRoleWithWebIdentity.WebIdentityTokenFile == "" {
-			return nil, "", c.NewCannotAssumeRoleWithWebIdentityError(fmt.Errorf("one of: WebIdentityToken, WebIdentityTokenFile must be set"))
+			return nil, "", errors.New("Assume Role With Web Identity: one of WebIdentityToken, WebIdentityTokenFile must be set")
 		}
 		provider, err := webIdentityCredentialsProvider(ctx, cfg, c)
 		if err != nil {
