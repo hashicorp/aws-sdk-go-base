@@ -1363,17 +1363,17 @@ func TestMaxAttempts(t *testing.T) {
 			ExpectedMaxAttempts: 5,
 		},
 
-		// 		"shared configuration file": {
-		// 			Config: &awsbase.Config{
-		// 				AccessKey: servicemocks.MockStaticAccessKey,
-		// 				SecretKey: servicemocks.MockStaticSecretKey,
-		// 			},
-		// 			SharedConfigurationFile: `
-		// [default]
-		// max_attempts = 5
-		// `,
-		// 			ExpectedMaxAttempts: 5,
-		// 		},
+		"shared configuration file": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+[default]
+max_attempts = 5
+`,
+			ExpectedMaxAttempts: 5,
+		},
 
 		"config overrides AWS_MAX_ATTEMPTS": {
 			Config: &awsbase.Config{
@@ -1387,20 +1387,20 @@ func TestMaxAttempts(t *testing.T) {
 			ExpectedMaxAttempts: 10,
 		},
 
-		// 		"AWS_MAX_ATTEMPTS overrides shared configuration": {
-		// 			Config: &awsbase.Config{
-		// 				AccessKey: servicemocks.MockStaticAccessKey,
-		// 				SecretKey: servicemocks.MockStaticSecretKey,
-		// 			},
-		// 			EnvironmentVariables: map[string]string{
-		// 				"AWS_MAX_ATTEMPTS": "5",
-		// 			},
-		// 			SharedConfigurationFile: `
-		// [default]
-		// max_attempts = 10
-		// `,
-		// 			ExpectedMaxAttempts: 5,
-		// 		},
+		"AWS_MAX_ATTEMPTS overrides shared configuration": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_MAX_ATTEMPTS": "5",
+			},
+			SharedConfigurationFile: `
+[default]
+max_attempts = 10
+`,
+			ExpectedMaxAttempts: 5,
+		},
 	}
 
 	for testName, testCase := range testCases {
