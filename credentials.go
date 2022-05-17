@@ -160,7 +160,7 @@ Error: %w`, err)
 		return nil, "", c.NewNoValidCredentialSourcesError(err)
 	}
 
-	if c.AssumeRole == nil || c.AssumeRole.RoleARN == "" {
+	if c.AssumeRole == nil {
 		return cfg.Credentials, creds.Source, nil
 	}
 
@@ -196,6 +196,11 @@ func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c
 
 func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
 	ar := c.AssumeRole
+
+	if ar.RoleARN == "" {
+		return nil, errors.New("Assume Role: role ARN not set")
+	}
+
 	// When assuming a role, we need to first authenticate the base credentials above, then assume the desired role
 	log.Printf("[INFO] Assuming IAM Role %q (SessionName: %q, ExternalId: %q)", ar.RoleARN, ar.SessionName, ar.ExternalID)
 

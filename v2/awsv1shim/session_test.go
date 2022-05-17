@@ -1850,6 +1850,202 @@ ca_bundle = no-such-file
 	}
 }
 
+func TestAssumeRole(t *testing.T) {
+	testCases := map[string]struct {
+		Config                   *awsbase.Config
+		SharedConfigurationFile  string
+		ExpectedCredentialsValue credentials.Value
+		ExpectedError            func(err error) bool
+		MockStsEndpoints         []*servicemocks.MockEndpoint
+	}{
+		"config": {
+			Config: &awsbase.Config{
+				AssumeRole: &awsbase.AssumeRole{
+					RoleARN:     servicemocks.MockStsAssumeRoleArn,
+					SessionName: servicemocks.MockStsAssumeRoleSessionName,
+				},
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpoint,
+			},
+		},
+
+		"shared configuration file": {
+			Config: &awsbase.Config{},
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+role_arn = %[1]s
+role_session_name = %[2]s
+source_profile = SharedConfigurationSourceProfile
+
+[profile SharedConfigurationSourceProfile]
+aws_access_key_id = SharedConfigurationSourceAccessKey
+aws_secret_access_key = SharedConfigurationSourceSecretKey
+`, servicemocks.MockStsAssumeRoleArn, servicemocks.MockStsAssumeRoleSessionName),
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpoint,
+			},
+		},
+
+		"config overrides shared configuration": {
+			Config: &awsbase.Config{
+				AssumeRole: &awsbase.AssumeRole{
+					RoleARN:     servicemocks.MockStsAssumeRoleArn,
+					SessionName: servicemocks.MockStsAssumeRoleSessionName,
+				},
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+role_arn = %[1]s
+role_session_name = %[2]s
+source_profile = SharedConfigurationSourceProfile
+
+[profile SharedConfigurationSourceProfile]
+aws_access_key_id = SharedConfigurationSourceAccessKey
+aws_secret_access_key = SharedConfigurationSourceSecretKey
+`, servicemocks.MockStsAssumeRoleArn, servicemocks.MockStsAssumeRoleSessionName),
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpoint,
+			},
+		},
+
+		"with duration": {
+			Config: &awsbase.Config{
+				AssumeRole: &awsbase.AssumeRole{
+					RoleARN:     servicemocks.MockStsAssumeRoleArn,
+					SessionName: servicemocks.MockStsAssumeRoleSessionName,
+					Duration:    1 * time.Hour,
+				},
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"DurationSeconds": "3600"}),
+			},
+		},
+
+		"with policy": {
+			Config: &awsbase.Config{
+				AssumeRole: &awsbase.AssumeRole{
+					RoleARN:     servicemocks.MockStsAssumeRoleArn,
+					SessionName: servicemocks.MockStsAssumeRoleSessionName,
+					Policy:      "{}",
+				},
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"Policy": "{}"}),
+			},
+		},
+
+		"invalid empty config": {
+			Config: &awsbase.Config{
+				AssumeRole: &awsbase.AssumeRole{},
+				AccessKey:  servicemocks.MockStaticAccessKey,
+				SecretKey:  servicemocks.MockStaticSecretKey,
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "role ARN not set")
+			},
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			closeSts, mockStsSession, err := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			defer closeSts()
+
+			if err != nil {
+				t.Fatalf("unexpected error creating mock STS server: %s", err)
+			}
+
+			if mockStsSession != nil && mockStsSession.Config != nil {
+				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
+			}
+
+			tempdir, err := ioutil.TempDir("", "temp")
+			if err != nil {
+				t.Fatalf("error creating temp dir: %s", err)
+			}
+			defer os.Remove(tempdir)
+			os.Setenv("TMPDIR", tempdir)
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				if testCase.ExpectedError == nil {
+					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
+				}
+
+				if !testCase.ExpectedError(err) {
+					t.Fatalf("unexpected GetAwsConfig() '%[1]T' error: %[1]s", err)
+				}
+
+				t.Logf("received expected '%[1]T' error: %[1]s", err)
+				return
+			}
+			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			if err != nil {
+				if testCase.ExpectedError == nil {
+					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
+				}
+
+				if !testCase.ExpectedError(err) {
+					t.Fatalf("unexpected GetSession() '%[1]T' error: %[1]s", err)
+				}
+
+				t.Logf("received expected '%[1]T' error: %[1]s", err)
+				return
+			}
+
+			credentialsValue, err := actualSession.Config.Credentials.Get()
+
+			if err != nil {
+				t.Fatalf("unexpected credentials Get() error: %s", err)
+			}
+
+			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(credentials.Value{}, "ProviderName")); diff != "" {
+				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestAssumeRoleWithWebIdentity(t *testing.T) {
 	testCases := map[string]struct {
 		Config                     *awsbase.Config
