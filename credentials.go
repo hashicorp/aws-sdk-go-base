@@ -193,7 +193,7 @@ func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c
 func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
 	ar := c.AssumeRole
 	// When assuming a role, we need to first authenticate the base credentials above, then assume the desired role
-	log.Printf("[INFO] Assuming IAM Role %q (SessionName: %q, ExternalId: %q)", ar.RoleARN, ar.SessionName, ar.ExternalID)
+	log.Printf("[INFO] Assuming IAM Role %q (SessionName: %q, ExternalId: %q, SourceIdentity: %q)", ar.RoleARN, ar.SessionName, ar.ExternalID, ar.SourceIdentity)
 
 	client := stsClient(awsConfig, c)
 
@@ -228,6 +228,10 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 
 		if len(ar.TransitiveTagKeys) > 0 {
 			opts.TransitiveTagKeys = ar.TransitiveTagKeys
+		}
+
+		if ar.SourceIdentity != "" {
+			opts.SourceIdentity = aws.String(ar.SourceIdentity)
 		}
 	})
 	_, err := appCreds.Retrieve(ctx)

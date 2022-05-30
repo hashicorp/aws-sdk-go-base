@@ -48,6 +48,7 @@ type AssumeRole struct {
 	Policy            string
 	PolicyARNs        []string
 	SessionName       string
+	SourceIdentity    string
 	Tags              map[string]string
 	TransitiveTagKeys []string
 }
