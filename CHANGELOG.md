@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+ENHANCEMENTS
+
+* Adds support for `max_attempts` in shared config files. ([#278](https://github.com/hashicorp/aws-sdk-go-base/pull/278))
+
 # v2.0.0-beta.16 (2022-04-27)
 
 BREAKING CHANGES
