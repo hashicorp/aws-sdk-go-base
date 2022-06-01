@@ -19,9 +19,7 @@ type Partition struct {
 
 func (p Partition) Regions() []string {
 	rs := make([]string, len(p.p.regions))
-	for i, v := range p.p.regions {
-		rs[i] = v
-	}
+	copy(rs, p.p.regions)
 	return rs
 }
 

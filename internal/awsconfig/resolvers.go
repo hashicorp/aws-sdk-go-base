@@ -145,3 +145,21 @@ func EC2IMDSEndpointModeString(state imds.EndpointModeState) string {
 	}
 	return fmt.Sprintf("unknown imds.EndpointModeState (%d)", state)
 }
+
+// Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/config/provider.go
+type RetryMaxAttemptsProvider interface {
+	GetRetryMaxAttempts(context.Context) (int, bool, error)
+}
+
+// Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/config/provider.go
+func GetRetryMaxAttempts(ctx context.Context, sources []interface{}) (v int, found bool, err error) {
+	for _, c := range sources {
+		if p, ok := c.(RetryMaxAttemptsProvider); ok {
+			v, found, err = p.GetRetryMaxAttempts(ctx)
+			if err != nil || found {
+				break
+			}
+		}
+	}
+	return v, found, err
+}
