@@ -8,6 +8,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/"
     ignore:
+      - dependency-name: "github.com/aws/*"
       - dependency-name: "golang.org/x/tools"
       - dependency-name: "google.golang.org/grpc"
     schedule:
@@ -16,6 +17,7 @@ updates:
   - package-ecosystem: "gomod"
     directory: "/v2/awsv1shim"
     ignore:
+      - dependency-name: "github.com/aws/*"
       - dependency-name: "golang.org/x/tools"
       - dependency-name: "google.golang.org/grpc"
     schedule:
