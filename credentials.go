@@ -2,6 +2,7 @@ package awsbase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"os"
@@ -136,8 +137,11 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	// This can probably be configured directly in commonLoadOptions() once
 	// https://github.com/aws/aws-sdk-go-v2/pull/1682 is merged
 	if c.AssumeRoleWithWebIdentity != nil {
+		if c.AssumeRoleWithWebIdentity.RoleARN == "" {
+			return nil, "", errors.New("Assume Role With Web Identity: role ARN not set")
+		}
 		if c.AssumeRoleWithWebIdentity.WebIdentityToken == "" && c.AssumeRoleWithWebIdentity.WebIdentityTokenFile == "" {
-			return nil, "", c.NewCannotAssumeRoleWithWebIdentityError(fmt.Errorf("one of: WebIdentityToken, WebIdentityTokenFile must be set"))
+			return nil, "", errors.New("Assume Role With Web Identity: one of WebIdentityToken, WebIdentityTokenFile must be set")
 		}
 		provider, err := webIdentityCredentialsProvider(ctx, cfg, c)
 		if err != nil {
@@ -156,7 +160,7 @@ Error: %w`, err)
 		return nil, "", c.NewNoValidCredentialSourcesError(err)
 	}
 
-	if c.AssumeRole == nil || c.AssumeRole.RoleARN == "" {
+	if c.AssumeRole == nil {
 		return cfg.Credentials, creds.Source, nil
 	}
 
@@ -192,6 +196,11 @@ func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c
 
 func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
 	ar := c.AssumeRole
+
+	if ar.RoleARN == "" {
+		return nil, errors.New("Assume Role: role ARN not set")
+	}
+
 	// When assuming a role, we need to first authenticate the base credentials above, then assume the desired role
 	log.Printf("[INFO] Assuming IAM Role %q (SessionName: %q, ExternalId: %q)", ar.RoleARN, ar.SessionName, ar.ExternalID)
 
