@@ -1021,28 +1021,23 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			}
 
 			if testCase.EnableWebIdentityEnvVars || testCase.EnableWebIdentityConfig {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
-				if err != nil {
-					t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
+				file, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-web-identity-token-file", servicemocks.MockWebIdentityToken)
+				if remover != nil {
+					defer remover()
 				}
-
-				defer os.Remove(file.Name())
-
-				err = ioutil.WriteFile(file.Name(), []byte(servicemocks.MockWebIdentityToken), 0600)
-
 				if err != nil {
-					t.Fatalf("unexpected error writing web identity token file: %s", err)
+					t.Fatalf("error creating web identity token file: %s", err)
 				}
 
 				if testCase.EnableWebIdentityEnvVars {
 					os.Setenv("AWS_ROLE_ARN", servicemocks.MockStsAssumeRoleWithWebIdentityArn)
 					os.Setenv("AWS_ROLE_SESSION_NAME", servicemocks.MockStsAssumeRoleWithWebIdentitySessionName)
-					os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
+					os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file)
 				} else if testCase.EnableWebIdentityConfig {
 					testCase.Config.AssumeRoleWithWebIdentity = &awsbase.AssumeRoleWithWebIdentity{
 						RoleARN:              servicemocks.MockStsAssumeRoleWithWebIdentityArn,
 						SessionName:          servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
-						WebIdentityTokenFile: file.Name(),
+						WebIdentityTokenFile: file,
 					}
 				}
 			}
@@ -1059,39 +1054,27 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
-
+				file, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-shared-configuration-file", testCase.SharedConfigurationFile)
+				if remover != nil {
+					defer remover()
+				}
 				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+					t.Fatalf("error creating shared configuration file: %s", err)
 				}
 
-				defer os.Remove(file.Name())
-
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
-
-				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
-				}
-
-				testCase.Config.SharedConfigFiles = []string{file.Name()}
+				testCase.Config.SharedConfigFiles = []string{file}
 			}
 
 			if testCase.SharedCredentialsFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-credentials-file")
-
+				file, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-shared-credentials-file", testCase.SharedCredentialsFile)
+				if remover != nil {
+					defer remover()
+				}
 				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared credentials file: %s", err)
+					t.Fatalf("error creating shared credentials file: %s", err)
 				}
 
-				defer os.Remove(file.Name())
-
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedCredentialsFile), 0600)
-
-				if err != nil {
-					t.Fatalf("unexpected error writing shared credentials file: %s", err)
-				}
-
-				testCase.Config.SharedCredentialsFiles = []string{file.Name()}
+				testCase.Config.SharedCredentialsFiles = []string{file}
 			}
 
 			for k, v := range testCase.EnvironmentVariables {
@@ -1435,21 +1418,15 @@ max_attempts = 10
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
-
+				file, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-shared-configuration-file", testCase.SharedConfigurationFile)
+				if remover != nil {
+					defer remover()
+				}
 				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+					t.Fatalf("error creating shared configuration file: %s", err)
 				}
 
-				defer os.Remove(file.Name())
-
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
-
-				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
-				}
-
-				testCase.Config.SharedConfigFiles = []string{file.Name()}
+				testCase.Config.SharedConfigFiles = []string{file}
 			}
 
 			testCase.Config.SkipCredsValidation = true
@@ -1612,21 +1589,15 @@ use_fips_endpoint = true
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
-
+				file, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-shared-configuration-file", testCase.SharedConfigurationFile)
+				if remover != nil {
+					defer remover()
+				}
 				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+					t.Fatalf("error creating shared configuration file: %s", err)
 				}
 
-				defer os.Remove(file.Name())
-
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
-
-				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
-				}
-
-				testCase.Config.SharedConfigFiles = []string{file.Name()}
+				testCase.Config.SharedConfigFiles = []string{file}
 			}
 
 			testCase.Config.SkipCredsValidation = true
@@ -1798,51 +1769,33 @@ func TestCustomCABundle(t *testing.T) {
 			}
 
 			if testCase.SetSharedConfigurationFile {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
-
-				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
-				}
-
-				defer os.Remove(file.Name())
-
-				err = ioutil.WriteFile(
-					file.Name(),
-					[]byte(fmt.Sprintf(`
+				file, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-shared-configuration-file", fmt.Sprintf(`
 [default]
 ca_bundle = %s
-`, pemFile)),
-					0600)
-
+`, pemFile))
+				if remover != nil {
+					defer remover()
+				}
 				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+					t.Fatalf("error creating shared configuration file: %s", err)
 				}
 
-				testCase.Config.SharedConfigFiles = []string{file.Name()}
+				testCase.Config.SharedConfigFiles = []string{file}
 			}
 
 			if testCase.SetSharedConfigurationFileToInvalid {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
-
-				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
-				}
-
-				defer os.Remove(file.Name())
-
-				err = ioutil.WriteFile(
-					file.Name(),
-					[]byte(`
+				file, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-shared-configuration-file", `
 [default]
 ca_bundle = no-such-file
-`),
-					0600)
-
+`)
+				if remover != nil {
+					defer remover()
+				}
 				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+					t.Fatalf("error creating shared configuration file: %s", err)
 				}
 
-				testCase.Config.SharedConfigFiles = []string{file.Name()}
+				testCase.Config.SharedConfigFiles = []string{file}
 			}
 
 			testCase.Config.SkipCredsValidation = true
@@ -2006,21 +1959,15 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			os.Setenv("TMPDIR", tempdir)
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
-
+				file, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-shared-configuration-file", testCase.SharedConfigurationFile)
+				if remover != nil {
+					defer remover()
+				}
 				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+					t.Fatalf("error creating shared configuration file: %s", err)
 				}
 
-				defer os.Remove(file.Name())
-
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
-
-				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
-				}
-
-				testCase.Config.SharedConfigFiles = []string{file.Name()}
+				testCase.Config.SharedConfigFiles = []string{file}
 			}
 
 			testCase.Config.SkipCredsValidation = true
@@ -2268,18 +2215,12 @@ web_identity_token_file = no-such-file
 			defer os.Remove(tempdir)
 			os.Setenv("TMPDIR", tempdir)
 
-			tokenFile, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
-			if err != nil {
-				t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
+			tokenFileName, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-web-identity-token-file", servicemocks.MockWebIdentityToken)
+			if remover != nil {
+				defer remover()
 			}
-			tokenFileName := tokenFile.Name()
-
-			defer os.Remove(tokenFileName)
-
-			err = ioutil.WriteFile(tokenFileName, []byte(servicemocks.MockWebIdentityToken), 0600)
-
 			if err != nil {
-				t.Fatalf("unexpected error writing web identity token file: %s", err)
+				t.Fatalf("error creating web identity token file: %s", err)
 			}
 
 			if testCase.ExpandEnvVars {
@@ -2302,25 +2243,19 @@ web_identity_token_file = no-such-file
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
-
-				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
-				}
-
-				defer os.Remove(file.Name())
-
 				if testCase.SetSharedConfigurationFile {
 					testCase.SharedConfigurationFile += fmt.Sprintf("web_identity_token_file = %s\n", tokenFileName)
 				}
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
-
+				file, remover, err := servicemocks.WriteTempFile("aws-sdk-go-base-shared-configuration-file", testCase.SharedConfigurationFile)
+				if remover != nil {
+					defer remover()
+				}
 				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+					t.Fatalf("error creating shared configuration file: %s", err)
 				}
 
-				testCase.Config.SharedConfigFiles = []string{file.Name()}
+				testCase.Config.SharedConfigFiles = []string{file}
 			}
 
 			testCase.Config.SkipCredsValidation = true
