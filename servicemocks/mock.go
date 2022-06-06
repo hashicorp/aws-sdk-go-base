@@ -51,6 +51,7 @@ const (
 	MockStsAssumeRoleSecretKey         = `AssumeRoleSecretKey`
 	MockStsAssumeRoleSessionName       = `AssumeRoleSessionName`
 	MockStsAssumeRoleSessionToken      = `AssumeRoleSessionToken`
+	MockStsAssumeRoleSourceIdentity    = `AssumeRoleSourceIdentity`
 	MockStsAssumeRoleTagKey            = `AssumeRoleTagKey`
 	MockStsAssumeRoleTagValue          = `AssumeRoleTagValue`
 	MockStsAssumeRoleTransitiveTagKey  = `AssumeRoleTagKey`

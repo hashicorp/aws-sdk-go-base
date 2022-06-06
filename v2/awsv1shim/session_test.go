@@ -255,6 +255,25 @@ func TestGetSession(t *testing.T) {
 		},
 		{
 			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				AssumeRole: &awsbase.AssumeRole{
+					RoleARN:        servicemocks.MockStsAssumeRoleArn,
+					SessionName:    servicemocks.MockStsAssumeRoleSessionName,
+					SourceIdentity: servicemocks.MockStsAssumeRoleSourceIdentity,
+				},
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleSourceIdentity",
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"SourceIdentity": servicemocks.MockStsAssumeRoleSourceIdentity}),
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &awsbase.Config{
 				Profile: "SharedCredentialsProfile",
 				Region:  "us-east-1",
 			},
