@@ -210,6 +210,25 @@ func TestGetAwsConfig(t *testing.T) {
 		},
 		{
 			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				AssumeRole: &AssumeRole{
+					RoleARN:        servicemocks.MockStsAssumeRoleArn,
+					SessionName:    servicemocks.MockStsAssumeRoleSessionName,
+					SourceIdentity: servicemocks.MockStsAssumeRoleSourceIdentity,
+				},
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description:              "config AssumeRoleSourceIdentity",
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			ExpectedRegion:           "us-east-1",
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{"SourceIdentity": servicemocks.MockStsAssumeRoleSourceIdentity}),
+				servicemocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
 				Profile: "SharedCredentialsProfile",
 				Region:  "us-east-1",
 			},
