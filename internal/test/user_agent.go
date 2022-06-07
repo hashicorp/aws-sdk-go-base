@@ -11,35 +11,32 @@ import (
 
 type UserAgentTestCase struct {
 	Config               *config.Config
-	Description          string
 	EnvironmentVariables map[string]string
 	ExpectedUserAgent    string
 }
 
 func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUserAgentProducts func(t *testing.T, testCase UserAgentTestCase)) {
-	testCases := []UserAgentTestCase{
-		{
+	testCases := map[string]UserAgentTestCase{
+		"standard User-Agent": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:       "standard User-Agent",
 			ExpectedUserAgent: awsSdkGoUserAgent(),
 		},
-		{
+		"customized User-Agent TF_APPEND_USER_AGENT": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "customized User-Agent TF_APPEND_USER_AGENT",
 			EnvironmentVariables: map[string]string{
 				constants.AppendUserAgentEnvVar: "Last",
 			},
 			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
 		},
-		{
+		"APN User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
@@ -59,10 +56,9 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 					},
 				},
 			},
-			Description:       "APN User-Agent Products",
 			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent(),
 		},
-		{
+		"APN User-Agent Products and TF_APPEND_USER_AGENT": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
@@ -81,13 +77,12 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 					},
 				},
 			},
-			Description: "APN User-Agent Products and TF_APPEND_USER_AGENT",
 			EnvironmentVariables: map[string]string{
 				constants.AppendUserAgentEnvVar: "Last",
 			},
 			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last",
 		},
-		{
+		"User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
@@ -104,10 +99,9 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 					},
 				},
 			},
-			Description:       "User-Agent Products",
 			ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment)",
 		},
-		{
+		"APN and User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
@@ -137,15 +131,14 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 					},
 				},
 			},
-			Description:       "APN and User-Agent Products",
 			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent() + " third/4.5.6 fourth/2.1",
 		},
 	}
 
-	for _, testCase := range testCases {
+	for name, testCase := range testCases {
 		testCase := testCase
 
-		t.Run(testCase.Description, func(t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
