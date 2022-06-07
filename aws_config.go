@@ -168,6 +168,10 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(c.UserAgent.BuildUserAgentString()))
 	}
 
+	apiOptions = append(apiOptions, func(stack *middleware.Stack) error {
+		return stack.Build.Add(userAgentFromContextMiddleware(), middleware.After)
+	})
+
 	if v := os.Getenv(constants.AppendUserAgentEnvVar); v != "" {
 		log.Printf("[DEBUG] Using additional User-Agent Info: %s", v)
 		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(v))

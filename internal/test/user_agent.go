@@ -11,6 +11,7 @@ import (
 
 type UserAgentTestCase struct {
 	Config               *config.Config
+	Context              config.UserAgentProducts
 	EnvironmentVariables map[string]string
 	ExpectedUserAgent    string
 }
@@ -132,6 +133,54 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 				},
 			},
 			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent() + " third/4.5.6 fourth/2.1",
+		},
+		"context": {
+			Config: &config.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Context: []config.UserAgentProduct{
+				{
+					Name:    "first",
+					Version: "1.2.3",
+				},
+				{
+					Name:    "second",
+					Version: "1.0.2",
+					Comment: "a comment",
+				},
+			},
+			ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment)",
+		},
+		"User-Agent Products and context": {
+			Config: &config.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+				UserAgent: []config.UserAgentProduct{
+					{
+						Name:    "first",
+						Version: "1.2.3",
+					},
+					{
+						Name:    "second",
+						Version: "1.0.2",
+						Comment: "a comment",
+					},
+				},
+			},
+			Context: []config.UserAgentProduct{
+				{
+					Name:    "third",
+					Version: "4.5.6",
+				},
+				{
+					Name:    "fourth",
+					Version: "2.1",
+				},
+			},
+			ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment) third/4.5.6 fourth/2.1",
 		},
 	}
 

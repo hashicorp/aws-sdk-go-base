@@ -31,6 +31,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/useragent"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
@@ -1170,6 +1171,14 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 	conn := client.New(*actualSession.Config, clientInfo, actualSession.Handlers)
 
 	req := conn.NewRequest(&request.Operation{Name: "Operation"}, nil, nil)
+
+	if testCase.Context != nil {
+		ctx := context.WithValue(
+			context.Background(),
+			useragent.ContextScopedUserAgent, testCase.Context,
+		)
+		req.SetContext(ctx)
+	}
 
 	if err := req.Build(); err != nil {
 		t.Fatalf("expect no Request.Build() error, got %s", err)
