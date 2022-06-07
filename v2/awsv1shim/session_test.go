@@ -1154,7 +1154,6 @@ func TestUserAgentProducts(t *testing.T) {
 		Description          string
 		EnvironmentVariables map[string]string
 		ExpectedUserAgent    string
-		MockStsEndpoints     []*servicemocks.MockEndpoint
 	}{
 		{
 			Config: &awsbase.Config{
@@ -1164,9 +1163,6 @@ func TestUserAgentProducts(t *testing.T) {
 			},
 			Description:       "standard User-Agent",
 			ExpectedUserAgent: awsSdkGoUserAgent(),
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsGetCallerIdentityValidEndpoint,
-			},
 		},
 		{
 			Config: &awsbase.Config{
@@ -1179,9 +1175,6 @@ func TestUserAgentProducts(t *testing.T) {
 				constants.AppendUserAgentEnvVar: "Last",
 			},
 			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsGetCallerIdentityValidEndpoint,
-			},
 		},
 		{
 			Config: &awsbase.Config{
@@ -1205,9 +1198,6 @@ func TestUserAgentProducts(t *testing.T) {
 			},
 			Description:       "APN User-Agent Products",
 			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent(),
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsGetCallerIdentityValidEndpoint,
-			},
 		},
 		{
 			Config: &awsbase.Config{
@@ -1233,9 +1223,6 @@ func TestUserAgentProducts(t *testing.T) {
 				constants.AppendUserAgentEnvVar: "Last",
 			},
 			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last",
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsGetCallerIdentityValidEndpoint,
-			},
 		},
 		// {
 		// 	Config: &awsbase.Config{
@@ -1301,17 +1288,6 @@ func TestUserAgentProducts(t *testing.T) {
 
 			for k, v := range testCase.EnvironmentVariables {
 				os.Setenv(k, v)
-			}
-
-			closeSts, mockStsSession, err := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
-			defer closeSts()
-
-			if err != nil {
-				t.Fatalf("unexpected error creating mock STS server: %s", err)
-			}
-
-			if mockStsSession != nil && mockStsSession.Config != nil {
-				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
 			}
 
 			testCase.Config.SkipCredsValidation = true
