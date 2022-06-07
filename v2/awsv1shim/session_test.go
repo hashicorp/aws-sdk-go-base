@@ -1224,26 +1224,26 @@ func TestUserAgentProducts(t *testing.T) {
 			},
 			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last",
 		},
-		// {
-		// 	Config: &awsbase.Config{
-		// 		AccessKey: servicemocks.MockStaticAccessKey,
-		// 		Region:    "us-east-1",
-		// 		SecretKey: servicemocks.MockStaticSecretKey,
-		// 		UserAgent: []awsbase.UserAgentProduct{
-		// 			{
-		// 				Name:    "first",
-		// 				Version: "1.2.3",
-		// 			},
-		// 			{
-		// 				Name:    "second",
-		// 				Version: "1.0.2",
-		// 				Comment: "a comment",
-		// 			},
-		// 		},
-		// 	},
-		// 	Description:       "User-Agent Products",
-		// 	ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment)",
-		// },
+		{
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+				UserAgent: []awsbase.UserAgentProduct{
+					{
+						Name:    "first",
+						Version: "1.2.3",
+					},
+					{
+						Name:    "second",
+						Version: "1.0.2",
+						Comment: "a comment",
+					},
+				},
+			},
+			Description:       "User-Agent Products",
+			ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment)",
+		},
 		{
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
