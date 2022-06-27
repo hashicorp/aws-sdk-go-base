@@ -2,7 +2,6 @@ package awsbase
 
 import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/config"
-	"github.com/hashicorp/aws-sdk-go-base/v2/internal/useragent"
 )
 
 // Config, APNInfo, APNProduct, and AssumeRole are aliased to an internal package to break a dependency cycle
@@ -31,5 +30,3 @@ func EC2MetadataEndpointMode_Values() []string {
 		EC2MetadataEndpointModeIPv6,
 	}
 }
-
-const ScopedUserAgent = useragent.ContextScopedUserAgent

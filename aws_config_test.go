@@ -26,9 +26,9 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
-	"github.com/hashicorp/aws-sdk-go-base/v2/internal/useragent"
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
+	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
 )
 
 const (
@@ -1111,7 +1111,7 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 	ctx := context.Background()
 
 	if testCase.Context != nil {
-		ctx = context.WithValue(ctx, useragent.ContextScopedUserAgent, testCase.Context)
+		ctx = useragent.Context(ctx, testCase.Context)
 	}
 
 	_, err = client.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{},
