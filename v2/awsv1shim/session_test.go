@@ -30,6 +30,7 @@ import (
 	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
 	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
@@ -1149,198 +1150,33 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 }
 
 func TestUserAgentProducts(t *testing.T) {
-	testCases := []struct {
-		Config               *awsbase.Config
-		Description          string
-		EnvironmentVariables map[string]string
-		ExpectedUserAgent    string
-		MockStsEndpoints     []*servicemocks.MockEndpoint
-	}{
-		{
-			Config: &awsbase.Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-			},
-			Description:       "standard User-Agent",
-			ExpectedUserAgent: awsSdkGoUserAgent(),
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsGetCallerIdentityValidEndpoint,
-			},
-		},
-		{
-			Config: &awsbase.Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-			},
-			Description: "customized User-Agent TF_APPEND_USER_AGENT",
-			EnvironmentVariables: map[string]string{
-				constants.AppendUserAgentEnvVar: "Last",
-			},
-			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsGetCallerIdentityValidEndpoint,
-			},
-		},
-		{
-			Config: &awsbase.Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-				APNInfo: &awsbase.APNInfo{
-					PartnerName: "partner",
-					Products: []awsbase.UserAgentProduct{
-						{
-							Name:    "first",
-							Version: "1.2.3",
-						},
-						{
-							Name:    "second",
-							Version: "1.0.2",
-							Comment: "a comment",
-						},
-					},
-				},
-			},
-			Description:       "APN User-Agent Products",
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent(),
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsGetCallerIdentityValidEndpoint,
-			},
-		},
-		{
-			Config: &awsbase.Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-				APNInfo: &awsbase.APNInfo{
-					PartnerName: "partner",
-					Products: []awsbase.UserAgentProduct{
-						{
-							Name:    "first",
-							Version: "1.2.3",
-						},
-						{
-							Name:    "second",
-							Version: "1.0.2",
-						},
-					},
-				},
-			},
-			Description: "APN User-Agent Products and TF_APPEND_USER_AGENT",
-			EnvironmentVariables: map[string]string{
-				constants.AppendUserAgentEnvVar: "Last",
-			},
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last",
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsGetCallerIdentityValidEndpoint,
-			},
-		},
-		// {
-		// 	Config: &awsbase.Config{
-		// 		AccessKey: servicemocks.MockStaticAccessKey,
-		// 		Region:    "us-east-1",
-		// 		SecretKey: servicemocks.MockStaticSecretKey,
-		// 		UserAgent: []awsbase.UserAgentProduct{
-		// 			{
-		// 				Name:    "first",
-		// 				Version: "1.2.3",
-		// 			},
-		// 			{
-		// 				Name:    "second",
-		// 				Version: "1.0.2",
-		// 				Comment: "a comment",
-		// 			},
-		// 		},
-		// 	},
-		// 	Description:       "User-Agent Products",
-		// 	ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment)",
-		// },
-		{
-			Config: &awsbase.Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-				APNInfo: &awsbase.APNInfo{
-					PartnerName: "partner",
-					Products: []awsbase.UserAgentProduct{
-						{
-							Name:    "first",
-							Version: "1.2.3",
-						},
-						{
-							Name:    "second",
-							Version: "1.0.2",
-							Comment: "a comment",
-						},
-					},
-				},
-				UserAgent: []awsbase.UserAgentProduct{
-					{
-						Name:    "third",
-						Version: "4.5.6",
-					},
-					{
-						Name:    "fourth",
-						Version: "2.1",
-					},
-				},
-			},
-			Description:       "APN and User-Agent Products",
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent() + " third/4.5.6 fourth/2.1",
-		},
+	test.TestUserAgentProducts(t, awsSdkGoUserAgent, testUserAgentProducts)
+}
+
+func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
+	awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+	if err != nil {
+		t.Fatalf("GetAwsConfig() returned error: %s", err)
+	}
+	actualSession, err := GetSession(&awsConfig, testCase.Config)
+	if err != nil {
+		t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
 	}
 
-	for _, testCase := range testCases {
-		testCase := testCase
+	clientInfo := metadata.ClientInfo{
+		Endpoint:    "http://endpoint",
+		SigningName: "",
+	}
+	conn := client.New(*actualSession.Config, clientInfo, actualSession.Handlers)
 
-		t.Run(testCase.Description, func(t *testing.T) {
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+	req := conn.NewRequest(&request.Operation{Name: "Operation"}, nil, nil)
 
-			for k, v := range testCase.EnvironmentVariables {
-				os.Setenv(k, v)
-			}
+	if err := req.Build(); err != nil {
+		t.Fatalf("expect no Request.Build() error, got %s", err)
+	}
 
-			closeSts, mockStsSession, err := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
-			defer closeSts()
-
-			if err != nil {
-				t.Fatalf("unexpected error creating mock STS server: %s", err)
-			}
-
-			if mockStsSession != nil && mockStsSession.Config != nil {
-				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
-			}
-
-			testCase.Config.SkipCredsValidation = true
-
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
-			if err != nil {
-				t.Fatalf("GetAwsConfig() returned error: %s", err)
-			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
-			}
-
-			clientInfo := metadata.ClientInfo{
-				Endpoint:    "http://endpoint",
-				SigningName: "",
-			}
-			conn := client.New(*actualSession.Config, clientInfo, actualSession.Handlers)
-
-			req := conn.NewRequest(&request.Operation{Name: "Operation"}, nil, nil)
-
-			if err := req.Build(); err != nil {
-				t.Fatalf("expect no Request.Build() error, got %s", err)
-			}
-
-			if e, a := testCase.ExpectedUserAgent, req.HTTPRequest.Header.Get("User-Agent"); e != a {
-				t.Errorf("expected User-Agent %q, got: %q", e, a)
-			}
-		})
+	if e, a := testCase.ExpectedUserAgent, req.HTTPRequest.Header.Get("User-Agent"); e != a {
+		t.Errorf("expected User-Agent %q, got: %q", e, a)
 	}
 }
 

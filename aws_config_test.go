@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +25,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
@@ -1086,229 +1086,68 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 }
 
 func TestUserAgentProducts(t *testing.T) {
-	testCases := []struct {
-		Config               *Config
-		Description          string
-		EnvironmentVariables map[string]string
-		ExpectedUserAgent    string
-	}{
-		{
-			Config: &Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-			},
-			Description:       "standard User-Agent",
-			ExpectedUserAgent: awsSdkGoUserAgent(),
-		},
-		{
-			Config: &Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-			},
-			Description: "customized User-Agent TF_APPEND_USER_AGENT",
-			EnvironmentVariables: map[string]string{
-				constants.AppendUserAgentEnvVar: "Last",
-			},
-			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
-		},
-		{
-			Config: &Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-				APNInfo: &APNInfo{
-					PartnerName: "partner",
-					Products: []UserAgentProduct{
-						{
-							Name:    "first",
-							Version: "1.2.3",
-						},
-						{
-							Name:    "second",
-							Version: "1.0.2",
-							Comment: "a comment",
-						},
-					},
-				},
-			},
-			Description:       "APN User-Agent Products",
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent(),
-		},
-		{
-			Config: &Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-				APNInfo: &APNInfo{
-					PartnerName: "partner",
-					Products: []UserAgentProduct{
-						{
-							Name:    "first",
-							Version: "1.2.3",
-						},
-						{
-							Name:    "second",
-							Version: "1.0.2",
-						},
-					},
-				},
-			},
-			Description: "APN User-Agent Products and TF_APPEND_USER_AGENT",
-			EnvironmentVariables: map[string]string{
-				constants.AppendUserAgentEnvVar: "Last",
-			},
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last",
-		},
-		{
-			Config: &Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-				UserAgent: []UserAgentProduct{
-					{
-						Name:    "first",
-						Version: "1.2.3",
-					},
-					{
-						Name:    "second",
-						Version: "1.0.2",
-						Comment: "a comment",
-					},
-				},
-			},
-			Description:       "User-Agent Products",
-			ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment)",
-		},
-		{
-			Config: &Config{
-				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
-				SecretKey: servicemocks.MockStaticSecretKey,
-				APNInfo: &APNInfo{
-					PartnerName: "partner",
-					Products: []UserAgentProduct{
-						{
-							Name:    "first",
-							Version: "1.2.3",
-						},
-						{
-							Name:    "second",
-							Version: "1.0.2",
-							Comment: "a comment",
-						},
-					},
-				},
-				UserAgent: []UserAgentProduct{
-					{
-						Name:    "third",
-						Version: "4.5.6",
-					},
-					{
-						Name:    "fourth",
-						Version: "2.1",
-					},
-				},
-			},
-			Description:       "APN and User-Agent Products",
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent() + " third/4.5.6 fourth/2.1",
-		},
-	}
+	test.TestUserAgentProducts(t, awsSdkGoUserAgent, testUserAgentProducts)
+}
 
+func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 	var (
 		httpUserAgent string
 		httpSdkAgent  string
 	)
 
-	errCancelOperation := fmt.Errorf("Cancelling request")
-
-	readUserAgent := middleware.FinalizeMiddlewareFunc("ReadUserAgent", func(_ context.Context, in middleware.FinalizeInput, next middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
-		request, ok := in.Request.(*smithyhttp.Request)
-		if !ok {
-			t.Fatalf("Expected *github.com/aws/smithy-go/transport/http.Request, got %s", fullTypeName(in.Request))
-		}
+	readUserAgent := cancelRequestMiddleware(t, "ReadUserAgent", func(_ *testing.T, request *smithyhttp.Request) {
 		httpUserAgent = request.UserAgent()
 		httpSdkAgent = request.Header.Get("X-Amz-User-Agent")
-
-		return middleware.FinalizeOutput{}, middleware.Metadata{}, errCancelOperation
 	})
 
-	for _, testCase := range testCases {
-		testCase := testCase
+	awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+	if err != nil {
+		t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+	}
 
-		t.Run(testCase.Description, func(t *testing.T) {
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+	client := stsClient(awsConfig, testCase.Config)
 
-			for k, v := range testCase.EnvironmentVariables {
-				os.Setenv(k, v)
+	_, err = client.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{},
+		func(opts *sts.Options) {
+			opts.APIOptions = append(opts.APIOptions, func(stack *middleware.Stack) error {
+				return stack.Finalize.Add(readUserAgent, middleware.Before)
+			})
+		},
+	)
+	if err == nil {
+		t.Fatal("Expected an error, got none")
+	} else if !errors.Is(err, errCancelOperation) {
+		t.Fatalf("Unexpected error: %s", err)
+	}
+
+	cleanedUserAgent := cleanUserAgent(httpUserAgent)
+
+	if testCase.ExpectedUserAgent != cleanedUserAgent {
+		t.Errorf("expected User-Agent %q, got %q", testCase.ExpectedUserAgent, cleanedUserAgent)
+	}
+
+	// The header X-Amz-User-Agent was disabled but not removed in v1.3.0 (2021-03-18)
+	if httpSdkAgent != "" {
+		t.Errorf("expected header X-Amz-User-Agent to not be set, got %q", httpSdkAgent)
+	}
+}
+
+var errCancelOperation = fmt.Errorf("Test: Cancelling request")
+
+// cancelRequestMiddleware creates a Smithy middleware that intercepts the request before sending and cancels it
+func cancelRequestMiddleware(t *testing.T, id string, f func(t *testing.T, request *smithyhttp.Request)) middleware.FinalizeMiddleware {
+	return middleware.FinalizeMiddlewareFunc(
+		fmt.Sprintf("Test: Cancel Request: %s", id),
+		func(_ context.Context, in middleware.FinalizeInput, next middleware.FinalizeHandler) (middleware.FinalizeOutput, middleware.Metadata, error) {
+			request, ok := in.Request.(*smithyhttp.Request)
+			if !ok {
+				t.Fatalf("Expected *github.com/aws/smithy-go/transport/http.Request, got %s", fullTypeName(in.Request))
 			}
 
-			testCase.Config.SkipCredsValidation = true
+			f(t, request)
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
-			}
-
-			client := stsClient(awsConfig, testCase.Config)
-
-			_, err = client.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{},
-				func(opts *sts.Options) {
-					opts.APIOptions = append(opts.APIOptions, func(stack *middleware.Stack) error {
-						return stack.Finalize.Add(readUserAgent, middleware.Before)
-					})
-				},
-			)
-			if err == nil {
-				t.Fatal("Expected an error, got none")
-			} else if !errors.Is(err, errCancelOperation) {
-				t.Fatalf("Unexpected error: %s", err)
-			}
-
-			var userAgentParts []string
-			for _, v := range strings.Split(httpUserAgent, " ") {
-				if !strings.HasPrefix(v, "api/") {
-					userAgentParts = append(userAgentParts, v)
-				}
-			}
-			cleanedUserAgent := strings.Join(userAgentParts, " ")
-
-			if testCase.ExpectedUserAgent != cleanedUserAgent {
-				t.Errorf("expected User-Agent %q, got %q", testCase.ExpectedUserAgent, cleanedUserAgent)
-			}
-
-			// The header X-Amz-User-Agent was disabled but not removed in v1.3.0 (2021-03-18)
-			if httpSdkAgent != "" {
-				t.Errorf("expected header X-Amz-User-Agent to not be set, got %q", httpSdkAgent)
-			}
+			return middleware.FinalizeOutput{}, middleware.Metadata{}, errCancelOperation
 		})
-	}
-}
-
-func awsSdkGoUserAgent() string {
-	// See https://github.com/aws/aws-sdk-go-v2/blob/994cb2c7c1c822dc628949e7ae2941b9c856ccb3/aws/middleware/user_agent_test.go#L18
-	return fmt.Sprintf("%s/%s os/%s lang/go/%s md/GOOS/%s md/GOARCH/%s", aws.SDKName, aws.SDKVersion, getNormalizedOSName(), strings.TrimPrefix(runtime.Version(), "go"), runtime.GOOS, runtime.GOARCH)
-}
-
-// Copied from https://github.com/aws/aws-sdk-go-v2/blob/main/aws/middleware/osname.go
-func getNormalizedOSName() (os string) {
-	switch runtime.GOOS {
-	case "android":
-		os = "android"
-	case "linux":
-		os = "linux"
-	case "windows":
-		os = "windows"
-	case "darwin":
-		os = "macos"
-	case "ios":
-		os = "ios"
-	default:
-		os = "other"
-	}
-	return os
 }
 
 func fullTypeName(i interface{}) string {
