@@ -6,6 +6,7 @@ ENHANCEMENTS
 * Adds support for `max_attempts` in shared config files. ([#278](https://github.com/hashicorp/aws-sdk-go-base/pull/278))
 * Prevents silent failures when `RoleARN` missing from `AssumeRole` or `AssumeRoleWithWebIdentity`. ([#277](https://github.com/hashicorp/aws-sdk-go-base/pull/277))
 * Adds support for `SourceIdentity` with `AssumeRole`. ([#311](https://github.com/hashicorp/aws-sdk-go-base/pull/311))
+* Adds support for AWS region `me-central-1`. ([#328](https://github.com/hashicorp/aws-sdk-go-base/pull/328))
 
 # v2.0.0-beta.16 (2022-04-27)
 
