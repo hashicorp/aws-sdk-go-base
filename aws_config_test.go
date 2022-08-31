@@ -28,6 +28,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
+	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
 )
 
 const (
@@ -1107,7 +1108,13 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 
 	client := stsClient(awsConfig, testCase.Config)
 
-	_, err = client.GetCallerIdentity(context.Background(), &sts.GetCallerIdentityInput{},
+	ctx := context.Background()
+
+	if testCase.Context != nil {
+		ctx = useragent.Context(ctx, testCase.Context)
+	}
+
+	_, err = client.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{},
 		func(opts *sts.Options) {
 			opts.APIOptions = append(opts.APIOptions, func(stack *middleware.Stack) error {
 				return stack.Finalize.Add(readUserAgent, middleware.Before)
