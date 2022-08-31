@@ -69,6 +69,7 @@ var partitions = []partition{
 			"eu-west-1",      // Europe (Ireland).
 			"eu-west-2",      // Europe (London).
 			"eu-west-3",      // Europe (Paris).
+			"me-central-1",   // Middle East (UAE).
 			"me-south-1",     // Middle East (Bahrain).
 			"sa-east-1",      // South America (Sao Paulo).
 			"us-east-1",      // US East (N. Virginia).
