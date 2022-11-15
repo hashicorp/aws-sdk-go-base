@@ -1,6 +1,12 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.18 (Unreleased)
+
+ENHANCEMENTS
+
+* Adds support for AWS region `eu-central-2`. ([#335](https://github.com/hashicorp/aws-sdk-go-base/pull/335))
+
 # v2.0.0-beta.17 (2022-08-31)
 
 ENHANCEMENTS
