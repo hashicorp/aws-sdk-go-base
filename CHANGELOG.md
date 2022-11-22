@@ -1,6 +1,12 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.20 (Unreleased)
+
+ENHANCEMENTS
+
+* Adds support for AWS region `ap-south-2`. ([#339](https://github.com/hashicorp/aws-sdk-go-base/pull/339))
+
 # v2.0.0-beta.19 (2022-11-16)
 
 ENHANCEMENTS
