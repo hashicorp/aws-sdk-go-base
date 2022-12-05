@@ -2,11 +2,14 @@ package config
 
 import (
 	"bytes"
+	"crypto/tls"
 	"fmt"
 	"net/http"
+	"net/url"
 	"os"
 	"time"
 
+	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 )
@@ -78,6 +81,41 @@ func (c Config) CustomCABundleReader() (*bytes.Reader, error) {
 		return nil, fmt.Errorf("reading custom CA bundle: %w", err)
 	}
 	return bytes.NewReader(bundle), nil
+}
+
+// HTTPTransportOptions returns functional options that configures an http.Transport.
+// The returned options function is called on both AWS SDKv1 and v2 default HTTP clients.
+func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
+	var err error
+	var proxyUrl *url.URL
+	if c.HTTPProxy != "" {
+		proxyUrl, err = url.Parse(c.HTTPProxy)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing HTTP proxy URL: %w", err)
+		}
+	}
+
+	opts := func(tr *http.Transport) {
+		tr.MaxIdleConnsPerHost = awshttp.DefaultHTTPTransportMaxIdleConnsPerHost
+
+		tlsConfig := tr.TLSClientConfig
+		if tlsConfig == nil {
+			tlsConfig = &tls.Config{
+				MinVersion: tls.VersionTLS12,
+			}
+			tr.TLSClientConfig = tlsConfig
+		}
+
+		if c.Insecure {
+			tr.TLSClientConfig.InsecureSkipVerify = true
+		}
+
+		if proxyUrl != nil {
+			tr.Proxy = http.ProxyURL(proxyUrl)
+		}
+	}
+
+	return opts, nil
 }
 
 func (c Config) ResolveSharedConfigFiles() ([]string, error) {
