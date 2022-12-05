@@ -150,9 +150,16 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 }
 
 func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
-	httpClient, err := defaultHttpClient(c)
-	if err != nil {
-		return nil, err
+	var err error
+	var httpClient config.HTTPClient
+
+	if v := c.HTTPClient; v == nil {
+		httpClient, err = defaultHttpClient(c)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		httpClient = v
 	}
 
 	apiOptions := make([]func(*middleware.Stack) error, 0)

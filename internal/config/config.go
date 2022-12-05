@@ -3,6 +3,7 @@ package config
 import (
 	"bytes"
 	"fmt"
+	"net/http"
 	"os"
 	"time"
 
@@ -21,6 +22,7 @@ type Config struct {
 	EC2MetadataServiceEnableState  imds.ClientEnableState
 	EC2MetadataServiceEndpoint     string
 	EC2MetadataServiceEndpointMode string
+	HTTPClient                     *http.Client
 	HTTPProxy                      string
 	IamEndpoint                    string
 	Insecure                       bool
