@@ -31,9 +31,12 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 		return nil, fmt.Errorf("error resolving dual-stack endpoint configuration: %w", err)
 	}
 
-	httpClient, err := defaultHttpClient(c)
-	if err != nil {
-		return nil, err
+	httpClient := c.HTTPClient
+	if httpClient == nil {
+		httpClient, err = defaultHttpClient(c)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	options := &session.Options{
