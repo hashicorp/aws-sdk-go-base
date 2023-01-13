@@ -1,6 +1,13 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.21 (Unreleased)
+
+ENHANCEMENTS
+
+* Adds support for a congfigurable HTTP client. ([#340](https://github.com/hashicorp/aws-sdk-go-base/pull/340))
+
+
 # v2.0.0-beta.20 (2022-11-22)
 
 ENHANCEMENTS
