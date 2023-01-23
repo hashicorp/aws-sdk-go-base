@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"log"
+	"os"
 
 	configv2 "github.com/aws/aws-sdk-go-v2/config"
 )
@@ -46,7 +46,7 @@ func envConfigGetCustomCABundle(_ context.Context, c configv2.EnvConfig) (io.Rea
 		return nil, false, nil
 	}
 
-	b, err := ioutil.ReadFile(c.CustomCABundle)
+	b, err := os.ReadFile(c.CustomCABundle)
 	if err != nil {
 		return nil, false, err
 	}
@@ -59,7 +59,7 @@ func sharedConfigGetCustomCABundle(_ context.Context, c configv2.SharedConfig) (
 		return nil, false, nil
 	}
 
-	b, err := ioutil.ReadFile(c.CustomCABundle)
+	b, err := os.ReadFile(c.CustomCABundle)
 	if err != nil {
 		return nil, false, err
 	}

@@ -26,6 +26,6 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
 )
 
-go 1.17
+go 1.18
 
 replace github.com/hashicorp/aws-sdk-go-base/v2 => ../..

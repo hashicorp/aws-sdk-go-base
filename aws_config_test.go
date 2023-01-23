@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -975,14 +974,14 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			}
 
 			if testCase.EnableWebIdentityEnvVars || testCase.EnableWebIdentityConfig {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-web-identity-token-file")
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
 				}
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(servicemocks.MockWebIdentityToken), 0600)
+				err = os.WriteFile(file.Name(), []byte(servicemocks.MockWebIdentityToken), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing web identity token file: %s", err)
@@ -1007,7 +1006,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			testCase.Config.StsEndpoint = stsEndpoint
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1015,7 +1014,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -1025,7 +1024,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			}
 
 			if testCase.SharedCredentialsFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-credentials-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-credentials-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared credentials file: %s", err)
@@ -1033,7 +1032,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedCredentialsFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedCredentialsFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared credentials file: %s", err)
@@ -1342,7 +1341,7 @@ region = us-west-2
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1350,7 +1349,7 @@ region = us-west-2
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -1460,7 +1459,7 @@ max_attempts = 10
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1468,7 +1467,7 @@ max_attempts = 10
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -1674,7 +1673,7 @@ use_fips_endpoint = true
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1682,7 +1681,7 @@ use_fips_endpoint = true
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -1806,7 +1805,7 @@ func TestEC2MetadataServiceClientEnableState(t *testing.T) {
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1814,7 +1813,7 @@ func TestEC2MetadataServiceClientEnableState(t *testing.T) {
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -1974,7 +1973,7 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1982,7 +1981,7 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -2096,7 +2095,7 @@ ec2_metadata_service_endpoint_mode = IPv4
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -2104,7 +2103,7 @@ ec2_metadata_service_endpoint_mode = IPv4
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -2221,7 +2220,7 @@ func TestCustomCABundle(t *testing.T) {
 				os.Setenv(k, v)
 			}
 
-			tempdir, err := ioutil.TempDir("", "temp")
+			tempdir, err := os.MkdirTemp("", "temp")
 			if err != nil {
 				t.Fatalf("error creating temp dir: %s", err)
 			}
@@ -2254,7 +2253,7 @@ func TestCustomCABundle(t *testing.T) {
 			}
 
 			if testCase.SetSharedConfigurationFile {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -2262,7 +2261,7 @@ func TestCustomCABundle(t *testing.T) {
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(
+				err = os.WriteFile(
 					file.Name(),
 					[]byte(fmt.Sprintf(`
 [default]
@@ -2278,7 +2277,7 @@ ca_bundle = %s
 			}
 
 			if testCase.SetSharedConfigurationFileToInvalid {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -2286,7 +2285,7 @@ ca_bundle = %s
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(
+				err = os.WriteFile(
 					file.Name(),
 					[]byte(`
 [default]
@@ -2445,7 +2444,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			testCase.Config.StsEndpoint = stsEndpoint
 
-			tempdir, err := ioutil.TempDir("", "temp")
+			tempdir, err := os.MkdirTemp("", "temp")
 			if err != nil {
 				t.Fatalf("error creating temp dir: %s", err)
 			}
@@ -2453,7 +2452,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			os.Setenv("TMPDIR", tempdir)
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -2461,7 +2460,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -2690,14 +2689,14 @@ web_identity_token_file = no-such-file
 
 			testCase.Config.StsEndpoint = stsEndpoint
 
-			tempdir, err := ioutil.TempDir("", "temp")
+			tempdir, err := os.MkdirTemp("", "temp")
 			if err != nil {
 				t.Fatalf("error creating temp dir: %s", err)
 			}
 			defer os.Remove(tempdir)
 			os.Setenv("TMPDIR", tempdir)
 
-			tokenFile, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
+			tokenFile, err := os.CreateTemp("", "aws-sdk-go-base-web-identity-token-file")
 			if err != nil {
 				t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
 			}
@@ -2705,7 +2704,7 @@ web_identity_token_file = no-such-file
 
 			defer os.Remove(tokenFileName)
 
-			err = ioutil.WriteFile(tokenFileName, []byte(servicemocks.MockWebIdentityToken), 0600)
+			err = os.WriteFile(tokenFileName, []byte(servicemocks.MockWebIdentityToken), 0600)
 
 			if err != nil {
 				t.Fatalf("unexpected error writing web identity token file: %s", err)
@@ -2731,7 +2730,7 @@ web_identity_token_file = no-such-file
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -2743,7 +2742,7 @@ web_identity_token_file = no-such-file
 					testCase.SharedConfigurationFile += fmt.Sprintf("web_identity_token_file = %s\n", tokenFileName)
 				}
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)

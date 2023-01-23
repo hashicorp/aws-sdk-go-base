@@ -3,7 +3,6 @@ package awsbase
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -270,7 +269,7 @@ aws_secret_access_key = secretkey2
 `
 
 func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
-	file, err := ioutil.TempFile(os.TempDir(), "terraform_aws_cred")
+	file, err := os.CreateTemp(os.TempDir(), "terraform_aws_cred")
 	if err != nil {
 		t.Fatalf("Error writing temporary credentials file: %s", err)
 	}

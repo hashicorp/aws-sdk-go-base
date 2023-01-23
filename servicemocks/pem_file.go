@@ -1,11 +1,11 @@
 package servicemocks
 
 import (
-	"io/ioutil"
+	"os"
 )
 
 func TempPEMFile() (string, error) {
-	file, err := ioutil.TempFile("", "bundle-*.pem")
+	file, err := os.CreateTemp("", "bundle-*.pem")
 	if err != nil {
 		return "", err
 	}
