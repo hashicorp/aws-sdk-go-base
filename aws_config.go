@@ -20,31 +20,101 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
+const loggerName string = "aws-base"
+
+type tfLoggerFactory struct{}
+
+func (f tfLoggerFactory) NewNamedLogger(ctx context.Context, name string) (context.Context, tfLogger) {
+	ctx = tflog.NewSubsystem(ctx, name)
+	logger := tfLogger(name)
+
+	return ctx, logger
+}
+
+type tfLogger string
+
+func (l tfLogger) Warn(ctx context.Context, msg string, fields ...map[string]any) {
+	if l == "" {
+		tflog.Warn(ctx, msg, fields...)
+	} else {
+		tflog.SubsystemWarn(ctx, string(l), msg, fields...)
+	}
+}
+
+func (l tfLogger) Info(ctx context.Context, msg string, fields ...map[string]any) {
+	if l == "" {
+		tflog.Info(ctx, msg, fields...)
+	} else {
+		tflog.SubsystemInfo(ctx, string(l), msg, fields...)
+	}
+}
+
+// func (l tfLogger) Infof(ctx context.Context, format string, v ...any) {
+// 	msg := fmt.Sprintf(format, v...)
+// 	if l == "" {
+// 		tflog.Info(ctx, msg)
+// 	} else {
+// 		tflog.SubsystemInfo(ctx, string(l), msg)
+// 	}
+// }
+
+func (l tfLogger) Debug(ctx context.Context, msg string, fields ...map[string]any) {
+	if l == "" {
+		tflog.Debug(ctx, msg, fields...)
+	} else {
+		tflog.SubsystemDebug(ctx, string(l), msg, fields...)
+	}
+}
+
+type loggerKeyT string
+
+const loggerKey loggerKeyT = "logger-key"
+
+func registerLogger(ctx context.Context, logger tfLogger) context.Context {
+	return context.WithValue(ctx, loggerKey, logger)
+}
+
+func retrieveLogger(ctx context.Context) tfLogger {
+	return ctx.Value(loggerKey).(tfLogger)
+}
+
+func setupLogger(ctx context.Context, factory tfLoggerFactory) context.Context {
+	ctx, logger := factory.NewNamedLogger(ctx, loggerName)
+	return registerLogger(ctx, logger)
+}
+
+func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, error) {
+	var loggerFactory tfLoggerFactory
+	ctx = setupLogger(ctx, loggerFactory)
+	logger := retrieveLogger(ctx)
+
 	if metadataUrl := os.Getenv("AWS_METADATA_URL"); metadataUrl != "" {
-		log.Println(`[WARN] The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
+		logger.Warn(ctx, `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
 		if ec2MetadataServiceEndpoint := os.Getenv("AWS_EC2_METADATA_SERVICE_ENDPOINT"); ec2MetadataServiceEndpoint != "" {
 			if ec2MetadataServiceEndpoint != metadataUrl {
-				log.Printf(`[WARN] The environment variable "AWS_EC2_METADATA_SERVICE_ENDPOINT" is already set to %q. Ignoring "AWS_METADATA_URL".`, ec2MetadataServiceEndpoint)
+				logger.Warn(ctx, fmt.Sprintf(`[WARN] The environment variable "AWS_EC2_METADATA_SERVICE_ENDPOINT" is already set to %q. Ignoring "AWS_METADATA_URL".`, ec2MetadataServiceEndpoint))
 			}
 		} else {
-			log.Printf(`[WARN] Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl)
+			logger.Warn(ctx, fmt.Sprintf(`[WARN] Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl))
 			os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", metadataUrl)
 		}
 	}
 
 	credentialsProvider, initialSource, err := getCredentialsProvider(ctx, c)
 	if err != nil {
-		return aws.Config{}, err
+		return ctx, aws.Config{}, err
 	}
 	creds, _ := credentialsProvider.Retrieve(ctx)
-	log.Printf("[INFO] Retrieved credentials from %q", creds.Source)
+	logger.Info(ctx, "Retrieved credentials", map[string]any{
+		"tf_aws.credentials_source": creds.Source,
+	})
 
-	loadOptions, err := commonLoadOptions(c)
+	loadOptions, err := commonLoadOptions(ctx, c)
 	if err != nil {
-		return aws.Config{}, err
+		return ctx, aws.Config{}, err
 	}
 	loadOptions = append(
 		loadOptions,
@@ -58,18 +128,18 @@ func GetAwsConfig(ctx context.Context, c *Config) (aws.Config, error) {
 	}
 	awsConfig, err := config.LoadDefaultConfig(ctx, loadOptions...)
 	if err != nil {
-		return awsConfig, fmt.Errorf("loading configuration: %w", err)
+		return ctx, awsConfig, fmt.Errorf("loading configuration: %w", err)
 	}
 
 	resolveRetryer(ctx, &awsConfig)
 
 	if !c.SkipCredsValidation {
 		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient(awsConfig, c)); err != nil {
-			return awsConfig, fmt.Errorf("error validating provider credentials: %w", err)
+			return ctx, awsConfig, fmt.Errorf("error validating provider credentials: %w", err)
 		}
 	}
 
-	return awsConfig, nil
+	return ctx, awsConfig, nil
 }
 
 // Adapted from the per-service-client `resolveRetryer()` functions in the AWS SDK for Go v2
@@ -103,6 +173,7 @@ func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Durat
 		if errors.As(err, &netOpErr) {
 			// It's disappointing that we have to do string matching here, rather than being able to using `errors.Is()` or even strings exported by the Go `net` package
 			if strings.Contains(netOpErr.Error(), "no such host") || strings.Contains(netOpErr.Error(), "connection refused") {
+				// TODO: figure out how to get correct logger here
 				log.Printf("[WARN] Disabling retries after next request due to networking issue: %s", err)
 				return 0, &retry.MaxAttemptsError{
 					Attempt: attempt,
@@ -149,7 +220,7 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 	return "", endpoints.PartitionForRegion(awsConfig.Region), nil
 }
 
-func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
+func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptions) error, error) {
 	var err error
 	var httpClient config.HTTPClient
 
@@ -180,8 +251,15 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 	})
 
 	if v := os.Getenv(constants.AppendUserAgentEnvVar); v != "" {
-		log.Printf("[DEBUG] Using additional User-Agent Info: %s", v)
+		logger := retrieveLogger(ctx)
+		logger.Debug(ctx, fmt.Sprintf("Adding User-Agent Info: %s", v))
 		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(v))
+	}
+
+	if !c.SuppressDebugLog {
+		apiOptions = append(apiOptions, func(stack *middleware.Stack) error {
+			return stack.Deserialize.Add(&requestResponseLogger{}, middleware.After)
+		})
 	}
 
 	loadOptions := []func(*config.LoadOptions) error{
@@ -202,7 +280,7 @@ func commonLoadOptions(c *Config) ([]func(*config.LoadOptions) error, error) {
 		loadOptions = append(
 			loadOptions,
 			config.WithClientLogMode(aws.LogRequestWithBody|aws.LogResponseWithBody|aws.LogRetries),
-			config.WithLogger(debugLogger{}),
+			// config.WithLogger(debugLogger{}),
 		)
 	}
 

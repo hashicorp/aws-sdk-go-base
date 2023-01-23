@@ -16,7 +16,7 @@ import (
 )
 
 func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, string, error) {
-	loadOptions, err := commonLoadOptions(c)
+	loadOptions, err := commonLoadOptions(ctx, c)
 	if err != nil {
 		return nil, "", err
 	}

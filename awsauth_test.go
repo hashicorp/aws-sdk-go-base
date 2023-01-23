@@ -127,7 +127,11 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			iamConn := iam.NewFromConfig(iamConfig)
 			stsConn := sts.NewFromConfig(stsConfig)
 
-			accountID, partition, err := getAccountIDAndPartition(context.Background(), iamConn, stsConn, testCase.AuthProviderName)
+			var loggerFactory tfLoggerFactory
+			ctx := context.Background()
+			ctx = setupLogger(ctx, loggerFactory)
+
+			accountID, partition, err := getAccountIDAndPartition(ctx, iamConn, stsConn, testCase.AuthProviderName)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -323,12 +327,14 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
+			ctx := registerLogger(context.Background(), tfLogger(t.Name()))
+
 			closeSts, config, _ := mockdata.GetMockedAwsApiSession("STS", testCase.MockEndpoints)
 			defer closeSts()
 
 			stsClient := sts.NewFromConfig(config)
 
-			accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(context.Background(), stsClient)
+			accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}

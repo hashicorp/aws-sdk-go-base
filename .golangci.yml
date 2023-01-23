@@ -31,3 +31,4 @@ linters-settings:
       mnd:
         ignored-functions:
           - strings.SplitN
+          - strings.SplitAfterN

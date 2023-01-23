@@ -124,17 +124,16 @@ func getAccountIDAndPartitionFromIAMListRoles(ctx context.Context, iamClient iam
 // getAccountIDAndPartitionFromSTSGetCallerIdentity gets the account ID and associated
 // partition from STS caller identity.
 func getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx context.Context, stsClient *sts.Client) (string, string, error) {
-	log.Println("[DEBUG] Trying to get account information via sts:GetCallerIdentity")
+	logger := retrieveLogger(ctx)
 
+	logger.Info(ctx, "Retrieving caller identity")
 	output, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})
 	if err != nil {
-		return "", "", fmt.Errorf("error calling sts:GetCallerIdentity: %[1]w", err)
+		return "", "", fmt.Errorf("retrieving caller identity: %[1]w", err)
 	}
 
 	if output == nil || output.Arn == nil {
-		err = errors.New("empty sts:GetCallerIdentity response")
-		log.Printf("[DEBUG] %s", err)
-		return "", "", err
+		return "", "", errors.New("retrieving caller identity: empty response")
 	}
 
 	return parseAccountIDAndPartitionFromARN(aws.ToString(output.Arn))
@@ -143,7 +142,7 @@ func getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx context.Context, stsCl
 func parseAccountIDAndPartitionFromARN(inputARN string) (string, string, error) {
 	arn, err := arn.Parse(inputARN)
 	if err != nil {
-		return "", "", fmt.Errorf("error parsing ARN (%s): %s", inputARN, err)
+		return "", "", fmt.Errorf("parsing ARN (%s): %s", inputARN, err)
 	}
 	return arn.AccountID, arn.Partition, nil
 }

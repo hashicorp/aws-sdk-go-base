@@ -59,7 +59,7 @@ func TestGetSessionOptions(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			tc.config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
+			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() resulted in an error %s", err)
 			}
@@ -1099,7 +1099,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				os.Setenv(k, v)
 			}
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error from GetAwsConfig(), got '%[1]T' error: %[1]s", err)
@@ -1154,7 +1154,7 @@ func TestUserAgentProducts(t *testing.T) {
 }
 
 func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
-	awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+	ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 	if err != nil {
 		t.Fatalf("GetAwsConfig() returned error: %s", err)
 	}
@@ -1172,7 +1172,7 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 	req := conn.NewRequest(&request.Operation{Name: "Operation"}, nil, nil)
 
 	if testCase.Context != nil {
-		ctx := useragent.Context(context.Background(), testCase.Context)
+		ctx := useragent.Context(ctx, testCase.Context)
 		req.SetContext(ctx)
 	}
 
@@ -1295,7 +1295,7 @@ max_attempts = 10
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
@@ -1472,7 +1472,7 @@ use_fips_endpoint = true
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
@@ -1688,7 +1688,7 @@ ca_bundle = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
@@ -1866,7 +1866,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -2166,7 +2166,7 @@ web_identity_token_file = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -2286,7 +2286,7 @@ func TestSessionRetryHandlers(t *testing.T) {
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
 			}
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), config)
+			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), config)
 			if err != nil {
 				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
 			}

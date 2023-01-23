@@ -1048,7 +1048,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				os.Setenv(k, v)
 			}
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 
 			if err != nil {
 				if testCase.ExpectedError == nil {
@@ -1067,7 +1067,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				t.Fatalf("expected error, got no error")
 			}
 
-			credentialsValue, err := awsConfig.Credentials.Retrieve(context.Background())
+			credentialsValue, err := awsConfig.Credentials.Retrieve(ctx)
 
 			if err != nil {
 				t.Fatalf("unexpected credentials Retrieve() error: %s", err)
@@ -1100,14 +1100,12 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 		httpSdkAgent = request.Header.Get("X-Amz-User-Agent")
 	})
 
-	awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+	ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 	if err != nil {
 		t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 	}
 
 	client := stsClient(awsConfig, testCase.Config)
-
-	ctx := context.Background()
 
 	if testCase.Context != nil {
 		ctx = useragent.Context(ctx, testCase.Context)
@@ -1360,7 +1358,7 @@ region = us-west-2
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
@@ -1478,7 +1476,7 @@ max_attempts = 10
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
@@ -1692,12 +1690,12 @@ use_fips_endpoint = true
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
 
-			useFIPSState, _, err := awsconfig.ResolveUseFIPSEndpoint(context.Background(), awsConfig.ConfigSources)
+			useFIPSState, _, err := awsconfig.ResolveUseFIPSEndpoint(ctx, awsConfig.ConfigSources)
 			if err != nil {
 				t.Fatalf("error in ResolveUseFIPSEndpoint: %s", err)
 			}
@@ -1705,7 +1703,7 @@ use_fips_endpoint = true
 				t.Errorf("expected UseFIPSEndpoint %q, got: %q", awsconfig.FIPSEndpointStateString(e), awsconfig.FIPSEndpointStateString(a))
 			}
 
-			useDualStackState, _, err := awsconfig.ResolveUseDualStackEndpoint(context.Background(), awsConfig.ConfigSources)
+			useDualStackState, _, err := awsconfig.ResolveUseDualStackEndpoint(ctx, awsConfig.ConfigSources)
 			if err != nil {
 				t.Fatalf("error in ResolveUseDualStackEndpoint: %s", err)
 			}
@@ -1824,7 +1822,7 @@ func TestEC2MetadataServiceClientEnableState(t *testing.T) {
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
@@ -1992,7 +1990,7 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
@@ -2114,7 +2112,7 @@ ec2_metadata_service_endpoint_mode = IPv4
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
@@ -2302,7 +2300,7 @@ ca_bundle = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
@@ -2471,7 +2469,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 
 			if err != nil {
 				if testCase.ExpectedError == nil {
@@ -2486,7 +2484,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				return
 			}
 
-			credentialsValue, err := awsConfig.Credentials.Retrieve(context.Background())
+			credentialsValue, err := awsConfig.Credentials.Retrieve(ctx)
 
 			if err != nil {
 				t.Fatalf("unexpected credentials Retrieve() error: %s", err)
@@ -2753,7 +2751,7 @@ web_identity_token_file = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
 
 			if err != nil {
 				if testCase.ExpectedError == nil {
@@ -2768,7 +2766,7 @@ web_identity_token_file = no-such-file
 				return
 			}
 
-			credentialsValue, err := awsConfig.Credentials.Retrieve(context.Background())
+			credentialsValue, err := awsConfig.Credentials.Retrieve(ctx)
 
 			if err != nil {
 				t.Fatalf("unexpected credentials Retrieve() error: %s", err)
@@ -2854,11 +2852,11 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 			defer ts.Close()
 			tc.config.StsEndpoint = ts.URL
 
-			awsConfig, err := GetAwsConfig(context.Background(), tc.config)
+			ctx, awsConfig, err := GetAwsConfig(context.Background(), tc.config)
 			if err != nil {
 				t.Fatalf("expected no error from GetAwsConfig(), got: %s", err)
 			}
-			acctID, part, err := GetAwsAccountIDAndPartition(context.Background(), awsConfig, tc.config)
+			acctID, part, err := GetAwsAccountIDAndPartition(ctx, awsConfig, tc.config)
 			if err != nil {
 				if !tc.expectError {
 					t.Fatalf("expected no error, got: %s", err)
@@ -3058,7 +3056,7 @@ func TestRetryHandlers(t *testing.T) {
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
 			}
-			awsConfig, err := GetAwsConfig(context.Background(), config)
+			ctx, awsConfig, err := GetAwsConfig(context.Background(), config)
 			if err != nil {
 				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
 			}
@@ -3071,7 +3069,7 @@ func TestRetryHandlers(t *testing.T) {
 			}, func(i interface{}) interface{} {
 				return i
 			})
-			_, metadata, err := am.HandleFinalize(context.Background(), middleware.FinalizeInput{Request: nil}, testcase.NextHandler())
+			_, metadata, err := am.HandleFinalize(ctx, middleware.FinalizeInput{Request: nil}, testcase.NextHandler())
 			if err != nil && testcase.Err == nil {
 				t.Errorf("expect no error, got %v", err)
 			} else if err == nil && testcase.Err != nil {
