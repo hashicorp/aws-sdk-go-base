@@ -82,6 +82,9 @@ func retrieveLogger(ctx context.Context) tfLogger {
 }
 
 func setupLogger(ctx context.Context, factory tfLoggerFactory) context.Context {
+	// Catch as last resort, but we prefer the custom masking in the request-response logging
+	ctx = tflog.MaskAllFieldValuesRegexes(ctx, uniqueIDRegex)
+
 	ctx, logger := factory.NewNamedLogger(ctx, loggerName)
 	return registerLogger(ctx, logger)
 }
@@ -279,7 +282,7 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	if !c.SuppressDebugLog {
 		loadOptions = append(
 			loadOptions,
-			config.WithClientLogMode(aws.LogRequestWithBody|aws.LogResponseWithBody|aws.LogRetries),
+			config.WithClientLogMode(aws.LogRetries),
 			// config.WithLogger(debugLogger{}),
 		)
 	}

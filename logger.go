@@ -49,6 +49,10 @@ var uniqueIDRegex = regexp.MustCompile(`(A3T[A-Z0-9]` +
 	`|ASIA` + // STS temporary access key
 	`)[A-Z0-9]{16,}`)
 
+// Replaces the built-in logging middleware from https://github.com/aws/smithy-go/blob/main/transport/http/middleware_http_logging.go
+// We want access to the request and response structs, and cannot get it from the built-in.
+// The typical route of adding logging to the http.RoundTripper doesn't work for the AWS SDK for Go v2 without forcing us to manually implement
+// configuration that the SDK handles for us.
 type requestResponseLogger struct {
 }
 
@@ -62,9 +66,6 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 	out middleware.DeserializeOutput, metadata middleware.Metadata, err error,
 ) {
 	// logger := middleware.GetLogger(ctx)
-
-	// TODO: this should be a core setting to catch as last resort. Prefer the custom masking
-	ctx = tflog.MaskAllFieldValuesRegexes(ctx, uniqueIDRegex)
 
 	ctx = tflog.SetField(ctx, "aws.sdk", "aws-sdk-go-v2")
 	ctx = tflog.SetField(ctx, "aws.service", awsmiddleware.GetServiceID(ctx))
