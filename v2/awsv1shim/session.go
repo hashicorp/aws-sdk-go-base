@@ -20,13 +20,13 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 // getSessionOptions attempts to return valid AWS Go SDK session authentication
 // options based on pre-existing credential provider, configured profile, or
 // fallback to automatically a determined session via the AWS Go SDK.
-func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options, error) {
-	useFIPSEndpoint, _, err := awsconfig.ResolveUseFIPSEndpoint(context.Background(), awsC.ConfigSources)
+func getSessionOptions(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*session.Options, error) {
+	useFIPSEndpoint, _, err := awsconfig.ResolveUseFIPSEndpoint(ctx, awsC.ConfigSources)
 	if err != nil {
 		return nil, fmt.Errorf("error resolving FIPS endpoint configuration: %w", err)
 	}
 
-	useDualStackEndpoint, _, err := awsconfig.ResolveUseDualStackEndpoint(context.Background(), awsC.ConfigSources)
+	useDualStackEndpoint, _, err := awsconfig.ResolveUseDualStackEndpoint(ctx, awsC.ConfigSources)
 	if err != nil {
 		return nil, fmt.Errorf("error resolving dual-stack endpoint configuration: %w", err)
 	}
@@ -63,7 +63,7 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 			return nil, err
 		}
 		options.CustomCABundle = reader
-	} else if reader, found, err := resolveCustomCABundle(context.Background(), awsC.ConfigSources); err != nil {
+	} else if reader, found, err := resolveCustomCABundle(ctx, awsC.ConfigSources); err != nil {
 		return nil, fmt.Errorf("error resolving custom CA bundle configuration: %w", err)
 	} else if found {
 		options.CustomCABundle = reader
@@ -73,8 +73,8 @@ func getSessionOptions(awsC *awsv2.Config, c *awsbase.Config) (*session.Options,
 }
 
 // GetSession attempts to return valid AWS Go SDK session.
-func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error) {
-	options, err := getSessionOptions(awsC, c)
+func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error) {
+	options, err := getSessionOptions(ctx, awsC, c)
 	if err != nil {
 		return nil, err
 	}
@@ -95,6 +95,11 @@ func GetSession(awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error)
 	SetSessionUserAgent(sess, c.APNInfo, c.UserAgent)
 
 	sess.Handlers.Build.PushBack(userAgentFromContextHandler)
+
+	if !c.SuppressDebugLog {
+		sess.Handlers.Send.PushFrontNamed(requestLogger)
+		// sess.Handlers.Send.PushBackNamed(responseLogger)
+	}
 
 	// Add custom input from ENV to the User-Agent request header
 	// Reference: https://github.com/terraform-providers/terraform-provider-aws/issues/9149

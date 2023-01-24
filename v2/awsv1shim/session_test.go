@@ -59,12 +59,12 @@ func TestGetSessionOptions(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			tc.config.SkipCredsValidation = true
 
-			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() resulted in an error %s", err)
 			}
 
-			opts, err := getSessionOptions(&awsConfig, tc.config)
+			opts, err := getSessionOptions(ctx, &awsConfig, tc.config)
 			if err != nil && tc.expectError == false {
 				t.Fatalf("getSessionOptions() resulted in an error %s", err)
 			}
@@ -1099,7 +1099,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				os.Setenv(k, v)
 			}
 
-			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error from GetAwsConfig(), got '%[1]T' error: %[1]s", err)
@@ -1112,7 +1112,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				t.Logf("received expected error: %s", err)
 				return
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error from GetSession(), got '%[1]T' error: %[1]s", err)
@@ -1158,7 +1158,7 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 	if err != nil {
 		t.Fatalf("GetAwsConfig() returned error: %s", err)
 	}
-	actualSession, err := GetSession(&awsConfig, testCase.Config)
+	actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 	if err != nil {
 		t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
 	}
@@ -1295,11 +1295,11 @@ max_attempts = 10
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
 			}
@@ -1472,11 +1472,11 @@ use_fips_endpoint = true
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
 			}
@@ -1688,11 +1688,11 @@ ca_bundle = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
 			}
@@ -1866,7 +1866,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -1879,7 +1879,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				t.Logf("received expected '%[1]T' error: %[1]s", err)
 				return
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -2166,7 +2166,7 @@ web_identity_token_file = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -2179,7 +2179,7 @@ web_identity_token_file = no-such-file
 				t.Logf("received expected '%[1]T' error: %[1]s", err)
 				return
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -2286,11 +2286,11 @@ func TestSessionRetryHandlers(t *testing.T) {
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
 			}
-			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), config)
 			if err != nil {
 				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
 			}
-			session, err := GetSession(&awsConfig, config)
+			session, err := GetSession(ctx, &awsConfig, config)
 			if err != nil {
 				t.Fatalf("unexpected error from GetSession(): %s", err)
 			}
