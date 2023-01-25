@@ -28,7 +28,7 @@ const loggerName string = "aws-base"
 
 func configCommonLogging(ctx context.Context) context.Context {
 	// Catch as last resort, but prefer the custom masking in the request-response logging
-	return tflog.MaskAllFieldValuesRegexes(ctx, uniqueIDRegex)
+	return tflog.MaskAllFieldValuesRegexes(ctx, logging.UniqueIDRegex)
 }
 
 func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, error) {
