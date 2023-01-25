@@ -25,9 +25,11 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
+	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
+	"github.com/hashicorp/terraform-plugin-log/tflogtest"
 )
 
 const (
@@ -3109,4 +3111,33 @@ func (r *withNoDelay) RetryDelay(attempt int, err error) (time.Duration, error) 
 	}
 
 	return 0 * time.Second, nil
+}
+
+func TestLogger(t *testing.T) {
+	var buf strings.Builder
+	ctx := tflogtest.RootLogger(context.Background(), &buf)
+
+	oldEnv := servicemocks.InitSessionTestEnv()
+	defer servicemocks.PopEnv(oldEnv)
+
+	config := &Config{
+		AccessKey: servicemocks.MockStaticAccessKey,
+		Region:    "us-east-1",
+		SecretKey: servicemocks.MockStaticSecretKey,
+	}
+
+	config.SkipCredsValidation = true
+
+	ctx, _, err := GetAwsConfig(ctx, config)
+	if err != nil {
+		t.Fatalf("unexpected '%[1]T': %[1]s", err)
+	}
+
+	logger := logging.RetrieveLogger(ctx)
+
+	logger.Debug(ctx, "foo")
+
+	if s := string(logger); s != "" {
+		t.Fatalf("expected root logger, got subsystem %q", s)
+	}
 }

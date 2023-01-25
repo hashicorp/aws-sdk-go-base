@@ -34,31 +34,31 @@ func configCommonLogging(ctx context.Context) context.Context {
 func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, error) {
 	ctx = configCommonLogging(ctx)
 
-	ctx, logger := logging.New(ctx, loggerName)
-	ctx = logging.RegisterLogger(ctx, logger)
+	baseCtx, logger := logging.New(ctx, loggerName)
+	baseCtx = logging.RegisterLogger(baseCtx, logger)
 
 	if metadataUrl := os.Getenv("AWS_METADATA_URL"); metadataUrl != "" {
-		logger.Warn(ctx, `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
+		logger.Warn(baseCtx, `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
 		if ec2MetadataServiceEndpoint := os.Getenv("AWS_EC2_METADATA_SERVICE_ENDPOINT"); ec2MetadataServiceEndpoint != "" {
 			if ec2MetadataServiceEndpoint != metadataUrl {
-				logger.Warn(ctx, fmt.Sprintf(`[WARN] The environment variable "AWS_EC2_METADATA_SERVICE_ENDPOINT" is already set to %q. Ignoring "AWS_METADATA_URL".`, ec2MetadataServiceEndpoint))
+				logger.Warn(baseCtx, fmt.Sprintf(`[WARN] The environment variable "AWS_EC2_METADATA_SERVICE_ENDPOINT" is already set to %q. Ignoring "AWS_METADATA_URL".`, ec2MetadataServiceEndpoint))
 			}
 		} else {
-			logger.Warn(ctx, fmt.Sprintf(`[WARN] Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl))
+			logger.Warn(baseCtx, fmt.Sprintf(`[WARN] Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl))
 			os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", metadataUrl)
 		}
 	}
 
-	credentialsProvider, initialSource, err := getCredentialsProvider(ctx, c)
+	credentialsProvider, initialSource, err := getCredentialsProvider(baseCtx, c)
 	if err != nil {
 		return ctx, aws.Config{}, err
 	}
-	creds, _ := credentialsProvider.Retrieve(ctx)
-	logger.Info(ctx, "Retrieved credentials", map[string]any{
+	creds, _ := credentialsProvider.Retrieve(baseCtx)
+	logger.Info(baseCtx, "Retrieved credentials", map[string]any{
 		"tf_aws.credentials_source": creds.Source,
 	})
 
-	loadOptions, err := commonLoadOptions(ctx, c)
+	loadOptions, err := commonLoadOptions(baseCtx, c)
 	if err != nil {
 		return ctx, aws.Config{}, err
 	}
@@ -72,15 +72,15 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 			config.WithEC2IMDSRegion(),
 		)
 	}
-	awsConfig, err := config.LoadDefaultConfig(ctx, loadOptions...)
+	awsConfig, err := config.LoadDefaultConfig(baseCtx, loadOptions...)
 	if err != nil {
 		return ctx, awsConfig, fmt.Errorf("loading configuration: %w", err)
 	}
 
-	resolveRetryer(ctx, &awsConfig)
+	resolveRetryer(baseCtx, &awsConfig)
 
 	if !c.SkipCredsValidation {
-		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient(awsConfig, c)); err != nil {
+		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(awsConfig, c)); err != nil {
 			return ctx, awsConfig, fmt.Errorf("error validating provider credentials: %w", err)
 		}
 	}

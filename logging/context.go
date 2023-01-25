@@ -13,5 +13,9 @@ func RegisterLogger(ctx context.Context, logger TfLogger) context.Context {
 }
 
 func RetrieveLogger(ctx context.Context) TfLogger {
-	return ctx.Value(loggerKey).(TfLogger)
+	logger, ok := ctx.Value(loggerKey).(TfLogger)
+	if !ok {
+		return TfLogger("")
+	}
+	return logger
 }
