@@ -8,6 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
@@ -327,7 +328,7 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
-			ctx := registerLogger(context.Background(), tfLogger(t.Name()))
+			ctx := test.Context(t)
 
 			closeSts, config, _ := mockdata.GetMockedAwsApiSession("STS", testCase.MockEndpoints)
 			defer closeSts()

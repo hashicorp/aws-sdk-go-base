@@ -19,7 +19,7 @@ import (
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
-	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 )
@@ -65,21 +65,21 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 ) (
 	out middleware.DeserializeOutput, metadata middleware.Metadata, err error,
 ) {
-	// logger := middleware.GetLogger(ctx)
+	logger := logging.RetrieveLogger(ctx)
 
-	ctx = tflog.SetField(ctx, "aws.sdk", "aws-sdk-go-v2")
-	ctx = tflog.SetField(ctx, "aws.service", awsmiddleware.GetServiceID(ctx))
-	ctx = tflog.SetField(ctx, "aws.operation", awsmiddleware.GetOperationName(ctx))
+	ctx = logger.SetField(ctx, "aws.sdk", "aws-sdk-go-v2")
+	ctx = logger.SetField(ctx, "aws.service", awsmiddleware.GetServiceID(ctx))
+	ctx = logger.SetField(ctx, "aws.operation", awsmiddleware.GetOperationName(ctx))
 
 	region := awsmiddleware.GetRegion(ctx)
-	ctx = tflog.SetField(ctx, "aws.region", region)
+	ctx = logger.SetField(ctx, "aws.region", region)
 
 	if signingRegion := awsmiddleware.GetSigningRegion(ctx); signingRegion != region {
-		ctx = tflog.SetField(ctx, "aws.signing_region", signingRegion)
+		ctx = logger.SetField(ctx, "aws.signing_region", signingRegion)
 	}
 
 	if awsmiddleware.GetEndpointSource(ctx) == aws.EndpointSourceCustom {
-		ctx = tflog.SetField(ctx, "aws.custom_endpoint_source", true)
+		ctx = logger.SetField(ctx, "aws.custom_endpoint_source", true)
 	}
 
 	smithyRequest, ok := in.Request.(*smithyhttp.Request)
@@ -93,7 +93,7 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 	if err != nil {
 		return out, metadata, fmt.Errorf("decomposing request: %w", err)
 	}
-	tflog.Debug(ctx, "HTTP Request Sent", requestFields)
+	logger.Debug(ctx, "HTTP Request Sent", requestFields)
 
 	smithyRequest, err = smithyRequest.SetStream(rc.Body)
 	if err != nil {
@@ -117,7 +117,7 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 		if err != nil {
 			return out, metadata, fmt.Errorf("decomposing response: %w", err)
 		}
-		tflog.Debug(ctx, "HTTP Response Received", responseFields)
+		logger.Debug(ctx, "HTTP Response Received", responseFields)
 	}
 
 	return out, metadata, err

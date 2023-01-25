@@ -13,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/aws/smithy-go"
+	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	multierror "github.com/hashicorp/go-multierror"
 )
 
@@ -124,7 +125,7 @@ func getAccountIDAndPartitionFromIAMListRoles(ctx context.Context, iamClient iam
 // getAccountIDAndPartitionFromSTSGetCallerIdentity gets the account ID and associated
 // partition from STS caller identity.
 func getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx context.Context, stsClient *sts.Client) (string, string, error) {
-	logger := retrieveLogger(ctx)
+	logger := logging.RetrieveLogger(ctx)
 
 	logger.Info(ctx, "Retrieving caller identity")
 	output, err := stsClient.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{})

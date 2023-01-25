@@ -10,6 +10,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
@@ -28,6 +29,8 @@ func TestAWSGetCredentials_static(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		ctx := test.Context(t)
+
 		c := testCase
 
 		cfg := Config{
@@ -36,7 +39,7 @@ func TestAWSGetCredentials_static(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds, source, err := getCredentialsProvider(context.Background(), &cfg)
+		creds, source, err := getCredentialsProvider(ctx, &cfg)
 		if err != nil {
 			t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
 		}
@@ -45,7 +48,7 @@ func TestAWSGetCredentials_static(t *testing.T) {
 			t.Errorf("Expected initial source to be %q, %q given", e, a)
 		}
 
-		validateCredentialsProvider(creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
+		validateCredentialsProvider(ctx, creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
 		testCredentialsProviderWrappedWithCache(creds, t)
 	}
 }
@@ -58,6 +61,8 @@ func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 
+	ctx := test.Context(t)
+
 	// capture the test server's close method, to call after the test returns
 	ts := servicemocks.AwsMetadataApiMock(append(
 		servicemocks.Ec2metadata_securityCredentialsEndpoints,
@@ -69,7 +74,7 @@ func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 	// An empty config, no key supplied
 	cfg := Config{}
 
-	creds, source, err := getCredentialsProvider(context.Background(), &cfg)
+	creds, source, err := getCredentialsProvider(ctx, &cfg)
 	if err != nil {
 		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
 	}
@@ -78,7 +83,7 @@ func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 		t.Errorf("Expected initial source to be %q, %q given", e, a)
 	}
 
-	validateCredentialsProvider(creds, "Ec2MetadataAccessKey", "Ec2MetadataSecretKey", "Ec2MetadataSessionToken", ec2rolecreds.ProviderName, t)
+	validateCredentialsProvider(ctx, creds, "Ec2MetadataAccessKey", "Ec2MetadataSecretKey", "Ec2MetadataSessionToken", ec2rolecreds.ProviderName, t)
 	testCredentialsProviderWrappedWithCache(creds, t)
 
 }
@@ -107,6 +112,8 @@ func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
+		ctx := test.Context(t)
+
 		c := testCase
 
 		cfg := Config{
@@ -115,17 +122,19 @@ func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
 			Token:     c.Token,
 		}
 
-		creds, _, err := getCredentialsProvider(context.Background(), &cfg)
+		creds, _, err := getCredentialsProvider(ctx, &cfg)
 		if err != nil {
 			t.Fatalf("unexpected '%[1]T' error: %[1]s", err)
 		}
 
-		validateCredentialsProvider(creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
+		validateCredentialsProvider(ctx, creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
 		testCredentialsProviderWrappedWithCache(creds, t)
 	}
 }
 
 func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
+	ctx := test.Context(t)
+
 	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
@@ -135,7 +144,7 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
 	// An empty config, no key supplied
 	cfg := Config{}
 
-	_, _, err := getCredentialsProvider(context.Background(), &cfg)
+	_, _, err := getCredentialsProvider(ctx, &cfg)
 	if err == nil {
 		t.Fatal("expected error returned when getting creds w/ invalid EC2 IMDS endpoint")
 	}
@@ -145,6 +154,8 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
 }
 
 func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
+	ctx := test.Context(t)
+
 	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 
@@ -163,7 +174,7 @@ func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
 	}
 
 	// Confirm AWS_SHARED_CREDENTIALS_FILE is working
-	credsEnv, source, err := getCredentialsProvider(context.Background(), &Config{
+	credsEnv, source, err := getCredentialsProvider(ctx, &Config{
 		Profile: "myprofile",
 	})
 	if err != nil {
@@ -172,10 +183,10 @@ func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
 	if a, e := source, sharedConfigCredentialsSource(fileEnvName); a != e {
 		t.Errorf("Expected initial source to be %q, %q given", e, a)
 	}
-	validateCredentialsProvider(credsEnv, "accesskey1", "secretkey1", "", sharedConfigCredentialsSource(fileEnvName), t)
+	validateCredentialsProvider(ctx, credsEnv, "accesskey1", "secretkey1", "", sharedConfigCredentialsSource(fileEnvName), t)
 
 	// Confirm CredsFilename overrides AWS_SHARED_CREDENTIALS_FILE
-	credsParam, source, err := getCredentialsProvider(context.Background(), &Config{
+	credsParam, source, err := getCredentialsProvider(ctx, &Config{
 		Profile:                "myprofile",
 		SharedCredentialsFiles: []string{fileParamName},
 	})
@@ -185,10 +196,12 @@ func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
 	if a, e := source, sharedConfigCredentialsSource(fileParamName); a != e {
 		t.Errorf("Expected initial source to be %q, %q given", e, a)
 	}
-	validateCredentialsProvider(credsParam, "accesskey2", "secretkey2", "", sharedConfigCredentialsSource(fileParamName), t)
+	validateCredentialsProvider(ctx, credsParam, "accesskey2", "secretkey2", "", sharedConfigCredentialsSource(fileParamName), t)
 }
 
 func TestAWSGetCredentials_webIdentityToken(t *testing.T) {
+	ctx := test.Context(t)
+
 	cfg := Config{
 		AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{
 			RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
@@ -204,7 +217,7 @@ func TestAWSGetCredentials_webIdentityToken(t *testing.T) {
 	defer ts.Close()
 	cfg.StsEndpoint = ts.URL
 
-	creds, source, err := getCredentialsProvider(context.Background(), &cfg)
+	creds, source, err := getCredentialsProvider(ctx, &cfg)
 	if err != nil {
 		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
 	}
@@ -213,7 +226,7 @@ func TestAWSGetCredentials_webIdentityToken(t *testing.T) {
 		t.Errorf("Expected initial source to be %q, %q given", e, a)
 	}
 
-	validateCredentialsProvider(creds,
+	validateCredentialsProvider(ctx, creds,
 		servicemocks.MockStsAssumeRoleWithWebIdentityAccessKey,
 		servicemocks.MockStsAssumeRoleWithWebIdentitySecretKey,
 		servicemocks.MockStsAssumeRoleWithWebIdentitySessionToken,
@@ -222,6 +235,8 @@ func TestAWSGetCredentials_webIdentityToken(t *testing.T) {
 }
 
 func TestAWSGetCredentials_assumeRole(t *testing.T) {
+	ctx := test.Context(t)
+
 	key := "test"
 	secret := "secret"
 
@@ -241,7 +256,7 @@ func TestAWSGetCredentials_assumeRole(t *testing.T) {
 	defer ts.Close()
 	cfg.StsEndpoint = ts.URL
 
-	creds, source, err := getCredentialsProvider(context.Background(), &cfg)
+	creds, source, err := getCredentialsProvider(ctx, &cfg)
 	if err != nil {
 		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
 	}
@@ -250,7 +265,7 @@ func TestAWSGetCredentials_assumeRole(t *testing.T) {
 		t.Errorf("Expected initial source to be %q, %q given", e, a)
 	}
 
-	validateCredentialsProvider(creds,
+	validateCredentialsProvider(ctx, creds,
 		servicemocks.MockStsAssumeRoleAccessKey,
 		servicemocks.MockStsAssumeRoleSecretKey,
 		servicemocks.MockStsAssumeRoleSessionToken,
@@ -284,8 +299,8 @@ func writeCredentialsFile(credentialsFileContents string, t *testing.T) string {
 	return file.Name()
 }
 
-func validateCredentialsProvider(creds aws.CredentialsProvider, accesskey, secretkey, token, source string, t *testing.T) {
-	v, err := creds.Retrieve(context.Background())
+func validateCredentialsProvider(ctx context.Context, creds aws.CredentialsProvider, accesskey, secretkey, token, source string, t *testing.T) {
+	v, err := creds.Retrieve(ctx)
 	if err != nil {
 		t.Fatalf("Error retrieving credentials: %s", err)
 	}

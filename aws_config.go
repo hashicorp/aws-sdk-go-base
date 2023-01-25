@@ -20,6 +20,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
+	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
@@ -27,58 +28,11 @@ const loggerName string = "aws-base"
 
 type tfLoggerFactory struct{}
 
-func (f tfLoggerFactory) NewNamedLogger(ctx context.Context, name string) (context.Context, tfLogger) {
+func (f tfLoggerFactory) NewNamedLogger(ctx context.Context, name string) (context.Context, logging.TfLogger) {
 	ctx = tflog.NewSubsystem(ctx, name)
-	logger := tfLogger(name)
+	logger := logging.TfLogger(name)
 
 	return ctx, logger
-}
-
-type tfLogger string
-
-func (l tfLogger) Warn(ctx context.Context, msg string, fields ...map[string]any) {
-	if l == "" {
-		tflog.Warn(ctx, msg, fields...)
-	} else {
-		tflog.SubsystemWarn(ctx, string(l), msg, fields...)
-	}
-}
-
-func (l tfLogger) Info(ctx context.Context, msg string, fields ...map[string]any) {
-	if l == "" {
-		tflog.Info(ctx, msg, fields...)
-	} else {
-		tflog.SubsystemInfo(ctx, string(l), msg, fields...)
-	}
-}
-
-// func (l tfLogger) Infof(ctx context.Context, format string, v ...any) {
-// 	msg := fmt.Sprintf(format, v...)
-// 	if l == "" {
-// 		tflog.Info(ctx, msg)
-// 	} else {
-// 		tflog.SubsystemInfo(ctx, string(l), msg)
-// 	}
-// }
-
-func (l tfLogger) Debug(ctx context.Context, msg string, fields ...map[string]any) {
-	if l == "" {
-		tflog.Debug(ctx, msg, fields...)
-	} else {
-		tflog.SubsystemDebug(ctx, string(l), msg, fields...)
-	}
-}
-
-type loggerKeyT string
-
-const loggerKey loggerKeyT = "logger-key"
-
-func registerLogger(ctx context.Context, logger tfLogger) context.Context {
-	return context.WithValue(ctx, loggerKey, logger)
-}
-
-func retrieveLogger(ctx context.Context) tfLogger {
-	return ctx.Value(loggerKey).(tfLogger)
 }
 
 func setupLogger(ctx context.Context, factory tfLoggerFactory) context.Context {
@@ -86,13 +40,13 @@ func setupLogger(ctx context.Context, factory tfLoggerFactory) context.Context {
 	ctx = tflog.MaskAllFieldValuesRegexes(ctx, uniqueIDRegex)
 
 	ctx, logger := factory.NewNamedLogger(ctx, loggerName)
-	return registerLogger(ctx, logger)
+	return logging.RegisterLogger(ctx, logger)
 }
 
 func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, error) {
 	var loggerFactory tfLoggerFactory
 	ctx = setupLogger(ctx, loggerFactory)
-	logger := retrieveLogger(ctx)
+	logger := logging.RetrieveLogger(ctx)
 
 	if metadataUrl := os.Getenv("AWS_METADATA_URL"); metadataUrl != "" {
 		logger.Warn(ctx, `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
@@ -254,7 +208,7 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	})
 
 	if v := os.Getenv(constants.AppendUserAgentEnvVar); v != "" {
-		logger := retrieveLogger(ctx)
+		logger := logging.RetrieveLogger(ctx)
 		logger.Debug(ctx, fmt.Sprintf("Adding User-Agent Info: %s", v))
 		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(v))
 	}

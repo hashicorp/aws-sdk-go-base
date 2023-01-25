@@ -1,7 +1,6 @@
 package awsv1shim
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -57,9 +56,11 @@ func TestGetSessionOptions(t *testing.T) {
 		tc := testCase
 
 		t.Run(tc.desc, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			tc.config.SkipCredsValidation = true
 
-			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, tc.config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() resulted in an error %s", err)
 			}
@@ -1004,6 +1005,8 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1099,7 +1102,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				os.Setenv(k, v)
 			}
 
-			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error from GetAwsConfig(), got '%[1]T' error: %[1]s", err)
@@ -1130,7 +1133,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				t.Fatalf("expected error, got no error")
 			}
 
-			credentialsValue, err := actualSession.Config.Credentials.Get()
+			credentialsValue, err := actualSession.Config.Credentials.GetWithContext(ctx)
 
 			if err != nil {
 				t.Fatalf("unexpected credentials Get() error: %s", err)
@@ -1154,7 +1157,9 @@ func TestUserAgentProducts(t *testing.T) {
 }
 
 func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
-	ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+	ctx := test.Context(t)
+
+	ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 	if err != nil {
 		t.Fatalf("GetAwsConfig() returned error: %s", err)
 	}
@@ -1268,6 +1273,8 @@ max_attempts = 10
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1295,7 +1302,7 @@ max_attempts = 10
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
@@ -1432,6 +1439,8 @@ use_fips_endpoint = true
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1472,7 +1481,7 @@ use_fips_endpoint = true
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
@@ -1599,6 +1608,8 @@ func TestCustomCABundle(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1688,7 +1699,7 @@ ca_bundle = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
@@ -1825,6 +1836,8 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1866,7 +1879,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -1893,7 +1906,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				return
 			}
 
-			credentialsValue, err := actualSession.Config.Credentials.Get()
+			credentialsValue, err := actualSession.Config.Credentials.GetWithContext(ctx)
 
 			if err != nil {
 				t.Fatalf("unexpected credentials Get() error: %s", err)
@@ -2084,6 +2097,8 @@ web_identity_token_file = no-such-file
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -2166,7 +2181,7 @@ web_identity_token_file = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -2193,7 +2208,7 @@ web_identity_token_file = no-such-file
 				return
 			}
 
-			credentialsValue, err := actualSession.Config.Credentials.Get()
+			credentialsValue, err := actualSession.Config.Credentials.GetWithContext(ctx)
 
 			if err != nil {
 				t.Fatalf("unexpected credentials Get() error: %s", err)
@@ -2277,6 +2292,8 @@ func TestSessionRetryHandlers(t *testing.T) {
 		testcase := testcase
 
 		t.Run(testcase.Description, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -2286,7 +2303,7 @@ func TestSessionRetryHandlers(t *testing.T) {
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
 			}
-			ctx, awsConfig, err := awsbase.GetAwsConfig(context.Background(), config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, config)
 			if err != nil {
 				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
 			}
