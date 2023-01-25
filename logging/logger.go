@@ -6,6 +6,13 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
+func New(ctx context.Context, name string) (context.Context, TfLogger) {
+	ctx = tflog.NewSubsystem(ctx, name)
+	logger := TfLogger(name)
+
+	return ctx, logger
+}
+
 type TfLogger string
 
 func (l TfLogger) Warn(ctx context.Context, msg string, fields ...map[string]any) {

@@ -15,6 +15,7 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/tfawserr"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
+	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 )
 
 // getSessionOptions attempts to return valid AWS Go SDK session authentication
@@ -72,8 +73,14 @@ func getSessionOptions(ctx context.Context, awsC *awsv2.Config, c *awsbase.Confi
 	return options, nil
 }
 
-// GetSession attempts to return valid AWS Go SDK session.
+const loggerName string = "aws-base-v1"
+
+// GetSession returns an AWS Go SDK session.
 func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*session.Session, error) {
+	// var loggerFactory tfLoggerFactory
+	ctx, logger := logging.New(ctx, loggerName)
+	ctx = logging.RegisterLogger(ctx, logger)
+
 	options, err := getSessionOptions(ctx, awsC, c)
 	if err != nil {
 		return nil, err
@@ -84,7 +91,7 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 		if tfawserr.ErrCodeEquals(err, "NoCredentialProviders") {
 			return nil, c.NewNoValidCredentialSourcesError(err)
 		}
-		return nil, fmt.Errorf("Error creating AWS session: %w", err)
+		return nil, fmt.Errorf("creating AWS session: %w", err)
 	}
 
 	// Set retries after resolving credentials to prevent retries during resolution

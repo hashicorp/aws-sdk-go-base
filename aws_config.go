@@ -26,27 +26,16 @@ import (
 
 const loggerName string = "aws-base"
 
-type tfLoggerFactory struct{}
-
-func (f tfLoggerFactory) NewNamedLogger(ctx context.Context, name string) (context.Context, logging.TfLogger) {
-	ctx = tflog.NewSubsystem(ctx, name)
-	logger := logging.TfLogger(name)
-
-	return ctx, logger
-}
-
-func setupLogger(ctx context.Context, factory tfLoggerFactory) context.Context {
-	// Catch as last resort, but we prefer the custom masking in the request-response logging
-	ctx = tflog.MaskAllFieldValuesRegexes(ctx, uniqueIDRegex)
-
-	ctx, logger := factory.NewNamedLogger(ctx, loggerName)
-	return logging.RegisterLogger(ctx, logger)
+func configCommonLogging(ctx context.Context) context.Context {
+	// Catch as last resort, but prefer the custom masking in the request-response logging
+	return tflog.MaskAllFieldValuesRegexes(ctx, uniqueIDRegex)
 }
 
 func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, error) {
-	var loggerFactory tfLoggerFactory
-	ctx = setupLogger(ctx, loggerFactory)
-	logger := logging.RetrieveLogger(ctx)
+	ctx = configCommonLogging(ctx)
+
+	ctx, logger := logging.New(ctx, loggerName)
+	ctx = logging.RegisterLogger(ctx, logger)
 
 	if metadataUrl := os.Getenv("AWS_METADATA_URL"); metadataUrl != "" {
 		logger.Warn(ctx, `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
