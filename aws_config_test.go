@@ -1107,7 +1107,7 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 		t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 	}
 
-	client := stsClient(awsConfig, testCase.Config)
+	client := stsClient(ctx, awsConfig, testCase.Config)
 
 	if testCase.Context != nil {
 		ctx = useragent.Context(ctx, testCase.Context)
@@ -3134,8 +3134,6 @@ func TestLogger(t *testing.T) {
 	}
 
 	logger := logging.RetrieveLogger(ctx)
-
-	logger.Debug(ctx, "foo")
 
 	if s := string(logger); s != "" {
 		t.Fatalf("expected root logger, got subsystem %q", s)

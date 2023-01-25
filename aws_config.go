@@ -80,7 +80,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	resolveRetryer(baseCtx, &awsConfig)
 
 	if !c.SkipCredsValidation {
-		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(awsConfig, c)); err != nil {
+		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(ctx, awsConfig, c)); err != nil {
 			return ctx, awsConfig, fmt.Errorf("error validating provider credentials: %w", err)
 		}
 	}
@@ -120,7 +120,7 @@ func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Durat
 			// It's disappointing that we have to do string matching here, rather than being able to using `errors.Is()` or even strings exported by the Go `net` package
 			if strings.Contains(netOpErr.Error(), "no such host") || strings.Contains(netOpErr.Error(), "connection refused") {
 				// TODO: figure out how to get correct logger here
-				log.Printf("[WARN] Disabling retries after next request due to networking issue: %s", err)
+				log.Printf("[WARN] Disabling retries after next request due to networking error: %s", err)
 				return 0, &retry.MaxAttemptsError{
 					Attempt: attempt,
 					Err:     err,
@@ -134,7 +134,7 @@ func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Durat
 
 func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, error) {
 	if !c.SkipCredsValidation {
-		stsClient := stsClient(awsConfig, c)
+		stsClient := stsClient(ctx, awsConfig, c)
 		accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient)
 		if err != nil {
 			return "", "", fmt.Errorf("error validating provider credentials: %w", err)
@@ -149,8 +149,8 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 			credentialsProviderName = credentialsValue.Source
 		}
 
-		iamClient := iamClient(awsConfig, c)
-		stsClient := stsClient(awsConfig, c)
+		iamClient := iamClient(ctx, awsConfig, c)
+		stsClient := stsClient(ctx, awsConfig, c)
 		accountID, partition, err := getAccountIDAndPartition(ctx, iamClient, stsClient, credentialsProviderName)
 
 		if err == nil {
@@ -167,6 +167,8 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 }
 
 func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptions) error, error) {
+	logger := logging.RetrieveLogger(ctx)
+
 	var err error
 	var httpClient config.HTTPClient
 
@@ -197,8 +199,10 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	})
 
 	if v := os.Getenv(constants.AppendUserAgentEnvVar); v != "" {
-		logger := logging.RetrieveLogger(ctx)
-		logger.Debug(ctx, fmt.Sprintf("Adding User-Agent Info: %s", v))
+		logger.Debug(ctx, "Adding User-Agent info", map[string]any{
+			"source": fmt.Sprintf("envvar(%q)", constants.AppendUserAgentEnvVar),
+			"value":  v,
+		})
 		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(v))
 	}
 

@@ -31,15 +31,6 @@ func (l TfLogger) Info(ctx context.Context, msg string, fields ...map[string]any
 	}
 }
 
-// func (l tfLogger) Infof(ctx context.Context, format string, v ...any) {
-// 	msg := fmt.Sprintf(format, v...)
-// 	if l == "" {
-// 		tflog.Info(ctx, msg)
-// 	} else {
-// 		tflog.SubsystemInfo(ctx, string(l), msg)
-// 	}
-// }
-
 func (l TfLogger) Debug(ctx context.Context, msg string, fields ...map[string]any) {
 	if l == "" {
 		tflog.Debug(ctx, msg, fields...)

@@ -3,7 +3,6 @@ package awsv1shim
 import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"context"
 	"fmt"
-	"log"
 	"os"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
@@ -111,7 +110,10 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 	// Add custom input from ENV to the User-Agent request header
 	// Reference: https://github.com/terraform-providers/terraform-provider-aws/issues/9149
 	if v := os.Getenv(constants.AppendUserAgentEnvVar); v != "" {
-		log.Printf("[DEBUG] Using additional User-Agent Info: %s", v)
+		logger.Debug(ctx, "Adding User-Agent info", map[string]any{
+			"source": fmt.Sprintf("envvar(%q)", constants.AppendUserAgentEnvVar),
+			"value":  v,
+		})
 		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(v))
 	}
 
@@ -122,19 +124,25 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 	// NOTE: This logic can be fooled by other request errors raising the retry count
 	//       before any networking error occurs
 	sess.Handlers.Retry.PushBack(func(r *request.Request) {
+		logger := logging.RetrieveLogger(r.Context())
+
 		if r.RetryCount < constants.MaxNetworkRetryCount {
 			return
 		}
 		// RequestError: send request failed
 		// caused by: Post https://FQDN/: dial tcp: lookup FQDN: no such host
 		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "no such host") {
-			log.Printf("[WARN] Disabling retries after next request due to networking issue")
+			logger.Warn(ctx, "Disabling retries after next request due to networking error", map[string]any{
+				"error": r.Error,
+			})
 			r.Retryable = aws.Bool(false)
 		}
 		// RequestError: send request failed
 		// caused by: Post https://FQDN/: dial tcp IPADDRESS:443: connect: connection refused
 		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "connection refused") {
-			log.Printf("[WARN] Disabling retries after next request due to networking issue")
+			logger.Warn(ctx, "Disabling retries after next request due to networking error", map[string]any{
+				"error": r.Error,
+			})
 			r.Retryable = aws.Bool(false)
 		}
 	})

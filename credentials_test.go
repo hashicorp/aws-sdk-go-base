@@ -138,7 +138,7 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
 	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 	// capture the test server's close method, to call after the test returns
-	ts := servicemocks.InvalidEC2MetadataEndpoint()
+	ts := servicemocks.InvalidEC2MetadataEndpoint(t)
 	defer ts()
 
 	// An empty config, no key supplied
