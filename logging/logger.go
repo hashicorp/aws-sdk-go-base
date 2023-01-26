@@ -7,7 +7,7 @@ import (
 )
 
 func New(ctx context.Context, name string) (context.Context, TfLogger) {
-	ctx = tflog.NewSubsystem(ctx, name)
+	ctx = tflog.NewSubsystem(ctx, name, tflog.WithRootFields())
 	logger := TfLogger(name)
 
 	return ctx, logger
