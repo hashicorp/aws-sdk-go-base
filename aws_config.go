@@ -80,7 +80,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	resolveRetryer(baseCtx, &awsConfig)
 
 	if !c.SkipCredsValidation {
-		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(ctx, awsConfig, c)); err != nil {
+		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(baseCtx, awsConfig, c)); err != nil {
 			return ctx, awsConfig, fmt.Errorf("error validating provider credentials: %w", err)
 		}
 	}
@@ -133,11 +133,14 @@ func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Durat
 }
 
 func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, error) {
+	ctx, logger := logging.New(ctx, loggerName)
+	ctx = logging.RegisterLogger(ctx, logger)
+
 	if !c.SkipCredsValidation {
 		stsClient := stsClient(ctx, awsConfig, c)
 		accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient)
 		if err != nil {
-			return "", "", fmt.Errorf("error validating provider credentials: %w", err)
+			return "", "", fmt.Errorf("validating provider credentials: %w", err)
 		}
 
 		return accountID, partition, nil

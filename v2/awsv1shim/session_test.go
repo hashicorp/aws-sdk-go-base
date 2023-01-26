@@ -1,6 +1,8 @@
 package awsv1shim
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -31,6 +33,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
+	"github.com/hashicorp/terraform-plugin-log/tflogtest"
 )
 
 func TestGetSessionOptions(t *testing.T) {
@@ -2342,5 +2345,56 @@ func TestSessionRetryHandlers(t *testing.T) {
 				t.Errorf("expected RetryCount to be %d, got %d", expected, actual)
 			}
 		})
+	}
+}
+
+func TestLogger(t *testing.T) {
+	var buf bytes.Buffer
+	ctx := tflogtest.RootLogger(context.Background(), &buf)
+
+	oldEnv := servicemocks.InitSessionTestEnv()
+	defer servicemocks.PopEnv(oldEnv)
+
+	config := &awsbase.Config{
+		AccessKey: servicemocks.MockStaticAccessKey,
+		Region:    "us-east-1",
+		SecretKey: servicemocks.MockStaticSecretKey,
+	}
+
+	// config.SkipCredsValidation = true
+	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
+		servicemocks.MockStsGetCallerIdentityValidEndpoint,
+	})
+	defer ts.Close()
+	config.StsEndpoint = ts.URL
+
+	expectedName := fmt.Sprintf("provider.%s", loggerName)
+
+	ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, config)
+	if err != nil {
+		t.Fatalf("GetAwsConfig: unexpected '%[1]T': %[1]s", err)
+	}
+
+	_, err = tflogtest.MultilineJSONDecode(&buf)
+	if err != nil {
+		t.Fatalf("GetAwsConfig: decoding log lines: %s", err)
+	}
+
+	// Ignore log lines from GetAwsConfig()
+
+	_, err = GetSession(ctx, &awsConfig, config)
+	if err != nil {
+		t.Fatalf("GetSession: unexpected '%[1]T': %[1]s", err)
+	}
+
+	lines, err := tflogtest.MultilineJSONDecode(&buf)
+	if err != nil {
+		t.Fatalf("GetSession: decoding log lines: %s", err)
+	}
+
+	for i, line := range lines {
+		if a, e := line["@module"], expectedName; a != e {
+			t.Errorf("GetSession: line %d: expected module %q, got %q", i+1, e, a)
+		}
 	}
 }

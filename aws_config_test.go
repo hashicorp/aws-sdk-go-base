@@ -1,6 +1,7 @@
 package awsbase
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -25,7 +26,6 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
-	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
@@ -3114,7 +3114,7 @@ func (r *withNoDelay) RetryDelay(attempt int, err error) (time.Duration, error) 
 }
 
 func TestLogger(t *testing.T) {
-	var buf strings.Builder
+	var buf bytes.Buffer
 	ctx := tflogtest.RootLogger(context.Background(), &buf)
 
 	oldEnv := servicemocks.InitSessionTestEnv()
@@ -3126,16 +3126,43 @@ func TestLogger(t *testing.T) {
 		SecretKey: servicemocks.MockStaticSecretKey,
 	}
 
-	config.SkipCredsValidation = true
+	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
+		servicemocks.MockStsGetCallerIdentityValidEndpoint,
+	})
+	defer ts.Close()
+	config.StsEndpoint = ts.URL
 
-	ctx, _, err := GetAwsConfig(ctx, config)
+	expectedName := fmt.Sprintf("provider.%s", loggerName)
+
+	ctx, awsConfig, err := GetAwsConfig(ctx, config)
 	if err != nil {
-		t.Fatalf("unexpected '%[1]T': %[1]s", err)
+		t.Fatalf("GetAwsConfig: unexpected '%[1]T': %[1]s", err)
 	}
 
-	logger := logging.RetrieveLogger(ctx)
+	lines, err := tflogtest.MultilineJSONDecode(&buf)
+	if err != nil {
+		t.Fatalf("GetAwsConfig: decoding log lines: %s", err)
+	}
 
-	if s := string(logger); s != "" {
-		t.Fatalf("expected root logger, got subsystem %q", s)
+	for i, line := range lines {
+		if a, e := line["@module"], expectedName; a != e {
+			t.Errorf("GetAwsConfig: line %d: expected module %q, got %q", i+1, e, a)
+		}
+	}
+
+	_, _, err = GetAwsAccountIDAndPartition(ctx, awsConfig, config)
+	if err != nil {
+		t.Fatalf("GetAwsAccountIDAndPartition: unexpected '%[1]T': %[1]s", err)
+	}
+
+	lines, err = tflogtest.MultilineJSONDecode(&buf)
+	if err != nil {
+		t.Fatalf("GetAwsAccountIDAndPartition: decoding log lines: %s", err)
+	}
+
+	for i, line := range lines {
+		if a, e := line["@module"], expectedName; a != e {
+			t.Errorf("GetAwsAccountIDAndPartition: line %d: expected module %q, got %q", i+1, e, a)
+		}
 	}
 }
