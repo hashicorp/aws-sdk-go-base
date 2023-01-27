@@ -5,7 +5,9 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -16,19 +18,19 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 )
 
-// type debugLogger struct{}
+type debugLogger struct{}
 
-// func (l debugLogger) Log(args ...interface{}) {
-// 	tokens := make([]string, 0, len(args))
-// 	for _, arg := range args {
-// 		if token, ok := arg.(string); ok {
-// 			tokens = append(tokens, token)
-// 		}
-// 	}
-// 	s := strings.Join(tokens, " ")
-// 	s = strings.ReplaceAll(s, "\r", "") // Works around https://github.com/jen20/teamcity-go-test/pull/2
-// 	log.Printf("[DEBUG] [aws-sdk-go] %s", s)
-// }
+func (l debugLogger) Log(args ...interface{}) {
+	tokens := make([]string, 0, len(args))
+	for _, arg := range args {
+		if token, ok := arg.(string); ok {
+			tokens = append(tokens, token)
+		}
+	}
+	s := strings.Join(tokens, " ")
+	s = strings.ReplaceAll(s, "\r", "") // Works around https://github.com/jen20/teamcity-go-test/pull/2
+	log.Printf("missing_context: %s aws.sdk=aws-sdk-go", s)
+}
 
 func setAWSFields(ctx context.Context, r *request.Request) context.Context {
 	ctx = tflog.SetField(ctx, "aws.sdk", "aws-sdk-go")

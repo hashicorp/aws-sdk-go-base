@@ -5,11 +5,14 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"log"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	smithylogging "github.com/aws/smithy-go/logging"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
@@ -17,13 +20,31 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
 )
 
-// type debugLogger struct{}
+type debugLogger struct {
+	ctx context.Context
+}
 
-// func (l debugLogger) Logf(classification logging.Classification, format string, v ...interface{}) {
-// 	s := fmt.Sprintf(format, v...)
-// 	s = strings.ReplaceAll(s, "\r", "") // Works around https://github.com/jen20/teamcity-go-test/pull/2
-// 	log.Printf("[%s] [aws-sdk-go-v2] %s", classification, s)
-// }
+func (l debugLogger) Logf(classification smithylogging.Classification, format string, v ...interface{}) {
+	s := fmt.Sprintf(format, v...)
+	if l.ctx != nil {
+		logger := logging.RetrieveLogger(l.ctx)
+		switch classification {
+		case smithylogging.Debug:
+			logger.Debug(l.ctx, s)
+		case smithylogging.Warn:
+			logger.Warn(l.ctx, s)
+		}
+	} else {
+		s = strings.ReplaceAll(s, "\r", "") // Works around https://github.com/jen20/teamcity-go-test/pull/2
+		log.Printf("[%s] missing_context: %s aws.sdk=aws-sdk-go-v2", classification, s)
+	}
+}
+
+func (l debugLogger) WithContext(ctx context.Context) smithylogging.Logger {
+	return &debugLogger{
+		ctx: ctx,
+	}
+}
 
 // Replaces the built-in logging middleware from https://github.com/aws/smithy-go/blob/main/transport/http/middleware_http_logging.go
 // We want access to the request and response structs, and cannot get it from the built-in.

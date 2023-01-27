@@ -232,8 +232,8 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	if !c.SuppressDebugLog {
 		loadOptions = append(
 			loadOptions,
-			config.WithClientLogMode(aws.LogRetries),
-			// config.WithLogger(debugLogger{}),
+			config.WithClientLogMode(aws.LogDeprecatedUsage|aws.LogRetries),
+			config.WithLogger(debugLogger{}),
 		)
 	}
 

@@ -50,10 +50,10 @@ func getSessionOptions(ctx context.Context, awsC *awsv2.Config, c *awsbase.Confi
 		},
 	}
 
-	// if !c.SuppressDebugLog {
-	// 	options.Config.LogLevel = aws.LogLevel(aws.LogDebugWithRequestRetries)
-	// 	// options.Config.Logger = debugLogger{}
-	// }
+	if !c.SuppressDebugLog {
+		options.Config.LogLevel = aws.LogLevel(aws.LogOff)
+		options.Config.Logger = debugLogger{}
+	}
 
 	// We can't reuse the io.Reader from the awsv2.Config, because it's already been read.
 	// Re-create it here from the filename.
