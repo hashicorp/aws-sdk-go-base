@@ -1,10 +1,10 @@
 package awsv1shim
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"os"
@@ -33,6 +33,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
+	"github.com/hashicorp/terraform-plugin-log/tflogtest"
 )
 
 func TestGetSessionOptions(t *testing.T) {
@@ -58,14 +59,16 @@ func TestGetSessionOptions(t *testing.T) {
 		tc := testCase
 
 		t.Run(tc.desc, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			tc.config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), tc.config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, tc.config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() resulted in an error %s", err)
 			}
 
-			opts, err := getSessionOptions(&awsConfig, tc.config)
+			opts, err := getSessionOptions(ctx, &awsConfig, tc.config)
 			if err != nil && tc.expectError == false {
 				t.Fatalf("getSessionOptions() resulted in an error %s", err)
 			}
@@ -1005,6 +1008,8 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1023,14 +1028,14 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			}
 
 			if testCase.EnableWebIdentityEnvVars || testCase.EnableWebIdentityConfig {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-web-identity-token-file")
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
 				}
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(servicemocks.MockWebIdentityToken), 0600)
+				err = os.WriteFile(file.Name(), []byte(servicemocks.MockWebIdentityToken), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing web identity token file: %s", err)
@@ -1061,7 +1066,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1069,7 +1074,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -1079,7 +1084,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			}
 
 			if testCase.SharedCredentialsFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-credentials-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-credentials-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared credentials file: %s", err)
@@ -1087,7 +1092,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedCredentialsFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedCredentialsFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared credentials file: %s", err)
@@ -1100,7 +1105,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				os.Setenv(k, v)
 			}
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error from GetAwsConfig(), got '%[1]T' error: %[1]s", err)
@@ -1113,7 +1118,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				t.Logf("received expected error: %s", err)
 				return
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error from GetSession(), got '%[1]T' error: %[1]s", err)
@@ -1131,7 +1136,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				t.Fatalf("expected error, got no error")
 			}
 
-			credentialsValue, err := actualSession.Config.Credentials.Get()
+			credentialsValue, err := actualSession.Config.Credentials.GetWithContext(ctx)
 
 			if err != nil {
 				t.Fatalf("unexpected credentials Get() error: %s", err)
@@ -1155,11 +1160,13 @@ func TestUserAgentProducts(t *testing.T) {
 }
 
 func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
-	awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+	ctx := test.Context(t)
+
+	ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 	if err != nil {
 		t.Fatalf("GetAwsConfig() returned error: %s", err)
 	}
-	actualSession, err := GetSession(&awsConfig, testCase.Config)
+	actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 	if err != nil {
 		t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
 	}
@@ -1173,7 +1180,7 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 	req := conn.NewRequest(&request.Operation{Name: "Operation"}, nil, nil)
 
 	if testCase.Context != nil {
-		ctx := useragent.Context(context.Background(), testCase.Context)
+		ctx := useragent.Context(ctx, testCase.Context)
 		req.SetContext(ctx)
 	}
 
@@ -1269,6 +1276,8 @@ max_attempts = 10
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1277,7 +1286,7 @@ max_attempts = 10
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1285,7 +1294,7 @@ max_attempts = 10
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -1296,11 +1305,11 @@ max_attempts = 10
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
 			}
@@ -1433,6 +1442,8 @@ use_fips_endpoint = true
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1454,7 +1465,7 @@ use_fips_endpoint = true
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1462,7 +1473,7 @@ use_fips_endpoint = true
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -1473,11 +1484,11 @@ use_fips_endpoint = true
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
 			}
@@ -1600,6 +1611,8 @@ func TestCustomCABundle(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1607,7 +1620,7 @@ func TestCustomCABundle(t *testing.T) {
 				os.Setenv(k, v)
 			}
 
-			tempdir, err := ioutil.TempDir("", "temp")
+			tempdir, err := os.MkdirTemp("", "temp")
 			if err != nil {
 				t.Fatalf("error creating temp dir: %s", err)
 			}
@@ -1640,7 +1653,7 @@ func TestCustomCABundle(t *testing.T) {
 			}
 
 			if testCase.SetSharedConfigurationFile {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1648,7 +1661,7 @@ func TestCustomCABundle(t *testing.T) {
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(
+				err = os.WriteFile(
 					file.Name(),
 					[]byte(fmt.Sprintf(`
 [default]
@@ -1664,7 +1677,7 @@ ca_bundle = %s
 			}
 
 			if testCase.SetSharedConfigurationFileToInvalid {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1672,7 +1685,7 @@ ca_bundle = %s
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(
+				err = os.WriteFile(
 					file.Name(),
 					[]byte(`
 [default]
@@ -1689,11 +1702,11 @@ ca_bundle = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				t.Fatalf("GetAwsConfig() returned error: %s", err)
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
 			}
@@ -1826,6 +1839,8 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -1840,7 +1855,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
 			}
 
-			tempdir, err := ioutil.TempDir("", "temp")
+			tempdir, err := os.MkdirTemp("", "temp")
 			if err != nil {
 				t.Fatalf("error creating temp dir: %s", err)
 			}
@@ -1848,7 +1863,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			os.Setenv("TMPDIR", tempdir)
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -1856,7 +1871,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 				defer os.Remove(file.Name())
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -1867,7 +1882,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -1880,7 +1895,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				t.Logf("received expected '%[1]T' error: %[1]s", err)
 				return
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -1894,7 +1909,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				return
 			}
 
-			credentialsValue, err := actualSession.Config.Credentials.Get()
+			credentialsValue, err := actualSession.Config.Credentials.GetWithContext(ctx)
 
 			if err != nil {
 				t.Fatalf("unexpected credentials Get() error: %s", err)
@@ -2085,6 +2100,8 @@ web_identity_token_file = no-such-file
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -2103,14 +2120,14 @@ web_identity_token_file = no-such-file
 				testCase.Config.StsEndpoint = aws.StringValue(mockStsSession.Config.Endpoint)
 			}
 
-			tempdir, err := ioutil.TempDir("", "temp")
+			tempdir, err := os.MkdirTemp("", "temp")
 			if err != nil {
 				t.Fatalf("error creating temp dir: %s", err)
 			}
 			defer os.Remove(tempdir)
 			os.Setenv("TMPDIR", tempdir)
 
-			tokenFile, err := ioutil.TempFile("", "aws-sdk-go-base-web-identity-token-file")
+			tokenFile, err := os.CreateTemp("", "aws-sdk-go-base-web-identity-token-file")
 			if err != nil {
 				t.Fatalf("unexpected error creating temporary web identity token file: %s", err)
 			}
@@ -2118,7 +2135,7 @@ web_identity_token_file = no-such-file
 
 			defer os.Remove(tokenFileName)
 
-			err = ioutil.WriteFile(tokenFileName, []byte(servicemocks.MockWebIdentityToken), 0600)
+			err = os.WriteFile(tokenFileName, []byte(servicemocks.MockWebIdentityToken), 0600)
 
 			if err != nil {
 				t.Fatalf("unexpected error writing web identity token file: %s", err)
@@ -2144,7 +2161,7 @@ web_identity_token_file = no-such-file
 			}
 
 			if testCase.SharedConfigurationFile != "" {
-				file, err := ioutil.TempFile("", "aws-sdk-go-base-shared-configuration-file")
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
 
 				if err != nil {
 					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
@@ -2156,7 +2173,7 @@ web_identity_token_file = no-such-file
 					testCase.SharedConfigurationFile += fmt.Sprintf("web_identity_token_file = %s\n", tokenFileName)
 				}
 
-				err = ioutil.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -2167,7 +2184,7 @@ web_identity_token_file = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -2180,7 +2197,7 @@ web_identity_token_file = no-such-file
 				t.Logf("received expected '%[1]T' error: %[1]s", err)
 				return
 			}
-			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
 			if err != nil {
 				if testCase.ExpectedError == nil {
 					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
@@ -2194,7 +2211,7 @@ web_identity_token_file = no-such-file
 				return
 			}
 
-			credentialsValue, err := actualSession.Config.Credentials.Get()
+			credentialsValue, err := actualSession.Config.Credentials.GetWithContext(ctx)
 
 			if err != nil {
 				t.Fatalf("unexpected credentials Get() error: %s", err)
@@ -2278,6 +2295,8 @@ func TestSessionRetryHandlers(t *testing.T) {
 		testcase := testcase
 
 		t.Run(testcase.Description, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
@@ -2287,11 +2306,11 @@ func TestSessionRetryHandlers(t *testing.T) {
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
 			}
-			awsConfig, err := awsbase.GetAwsConfig(context.Background(), config)
+			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, config)
 			if err != nil {
 				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
 			}
-			session, err := GetSession(&awsConfig, config)
+			session, err := GetSession(ctx, &awsConfig, config)
 			if err != nil {
 				t.Fatalf("unexpected error from GetSession(): %s", err)
 			}
@@ -2326,5 +2345,56 @@ func TestSessionRetryHandlers(t *testing.T) {
 				t.Errorf("expected RetryCount to be %d, got %d", expected, actual)
 			}
 		})
+	}
+}
+
+func TestLogger(t *testing.T) {
+	var buf bytes.Buffer
+	ctx := tflogtest.RootLogger(context.Background(), &buf)
+
+	oldEnv := servicemocks.InitSessionTestEnv()
+	defer servicemocks.PopEnv(oldEnv)
+
+	config := &awsbase.Config{
+		AccessKey: servicemocks.MockStaticAccessKey,
+		Region:    "us-east-1",
+		SecretKey: servicemocks.MockStaticSecretKey,
+	}
+
+	// config.SkipCredsValidation = true
+	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
+		servicemocks.MockStsGetCallerIdentityValidEndpoint,
+	})
+	defer ts.Close()
+	config.StsEndpoint = ts.URL
+
+	expectedName := fmt.Sprintf("provider.%s", loggerName)
+
+	ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, config)
+	if err != nil {
+		t.Fatalf("GetAwsConfig: unexpected '%[1]T': %[1]s", err)
+	}
+
+	_, err = tflogtest.MultilineJSONDecode(&buf)
+	if err != nil {
+		t.Fatalf("GetAwsConfig: decoding log lines: %s", err)
+	}
+
+	// Ignore log lines from GetAwsConfig()
+
+	_, err = GetSession(ctx, &awsConfig, config)
+	if err != nil {
+		t.Fatalf("GetSession: unexpected '%[1]T': %[1]s", err)
+	}
+
+	lines, err := tflogtest.MultilineJSONDecode(&buf)
+	if err != nil {
+		t.Fatalf("GetSession: decoding log lines: %s", err)
+	}
+
+	for i, line := range lines {
+		if a, e := line["@module"], expectedName; a != e {
+			t.Errorf("GetSession: line %d: expected module %q, got %q", i+1, e, a)
+		}
 	}
 }

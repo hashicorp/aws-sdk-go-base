@@ -12,14 +12,17 @@ import (
 	stsv2 "github.com/aws/aws-sdk-go-v2/service/sts"
 	ststypesv2 "github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 )
 
 func TestV2CredentialsProviderPassthrough(t *testing.T) {
+	ctx := test.Context(t)
+
 	v2creds := credentialsv2.NewStaticCredentialsProvider("key", "secret", "session")
 
 	creds := newV2Credentials(v2creds)
 
-	value, err := creds.GetWithContext(context.Background())
+	value, err := creds.GetWithContext(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -49,9 +52,12 @@ func TestV2CredentialsProviderExpriry(t *testing.T) {
 
 	for name, testcase := range testcases {
 		t.Run(name, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			creds := newV2Credentials(testcase.v2creds)
+
 			// Credentials need to be retrieved before we can check
-			_, err := creds.GetWithContext(context.Background())
+			_, err := creds.GetWithContext(ctx)
 			if err != nil {
 				t.Fatalf("unexpected error: %s", err)
 			}
@@ -71,7 +77,7 @@ func TestV2CredentialsProviderExpriry(t *testing.T) {
 				t.Fatalf("expected creds to be expired")
 			}
 
-			value, err := creds.GetWithContext(context.Background())
+			value, err := creds.GetWithContext(ctx)
 			if err != nil {
 				t.Fatalf("unexpected error: %s", err)
 			}
@@ -89,12 +95,15 @@ func TestV2CredentialsProviderExpriry(t *testing.T) {
 }
 
 func TestV2CredentialsProviderExpriry_AssumeRole(t *testing.T) {
+	ctx := test.Context(t)
+
 	stsClient := &mockAssumeRole{}
 	v2creds := stscredsv2.NewAssumeRoleProvider(stsClient, "role")
 
 	creds := newV2Credentials(v2creds)
+
 	// Credentials need to be retrieved before we can check expiry information
-	_, err := creds.GetWithContext(context.Background())
+	_, err := creds.GetWithContext(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -114,7 +123,7 @@ func TestV2CredentialsProviderExpriry_AssumeRole(t *testing.T) {
 		t.Fatalf("expected creds to be expired")
 	}
 
-	value, err := creds.GetWithContext(context.Background())
+	value, err := creds.GetWithContext(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -130,6 +139,8 @@ func TestV2CredentialsProviderExpriry_AssumeRole(t *testing.T) {
 }
 
 func TestV2CredentialsProviderCaching(t *testing.T) {
+	ctx := test.Context(t)
+
 	stsClientCalls := 0
 	expectedStsClientCalls := 0
 	stsClient := &mockAssumeRole{
@@ -144,7 +155,7 @@ func TestV2CredentialsProviderCaching(t *testing.T) {
 		expectedStsClientCalls = stsClientCalls
 	}
 
-	_, err := creds.GetWithContext(context.Background())
+	_, err := creds.GetWithContext(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -154,7 +165,7 @@ func TestV2CredentialsProviderCaching(t *testing.T) {
 		expectedStsClientCalls = stsClientCalls
 	}
 
-	_, err = creds.GetWithContext(context.Background())
+	_, err = creds.GetWithContext(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}
@@ -199,7 +210,7 @@ func TestV2CredentialsProviderCaching(t *testing.T) {
 		expectedStsClientCalls = stsClientCalls
 	}
 
-	_, err = creds.GetWithContext(context.Background())
+	_, err = creds.GetWithContext(ctx)
 	if err != nil {
 		t.Fatalf("unexpected error: %s", err)
 	}

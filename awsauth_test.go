@@ -1,13 +1,13 @@
 package awsbase
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
@@ -112,6 +112,8 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			resetEnv := servicemocks.UnsetEnv(t)
 			defer resetEnv()
 			// capture the test server's close method, to call after the test returns
@@ -127,7 +129,7 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			iamConn := iam.NewFromConfig(iamConfig)
 			stsConn := sts.NewFromConfig(stsConfig)
 
-			accountID, partition, err := getAccountIDAndPartition(context.Background(), iamConn, stsConn, testCase.AuthProviderName)
+			accountID, partition, err := getAccountIDAndPartition(ctx, iamConn, stsConn, testCase.AuthProviderName)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -146,6 +148,8 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 
 func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 	t.Run("EC2 metadata success", func(t *testing.T) {
+		ctx := test.Context(t)
+
 		resetEnv := servicemocks.UnsetEnv(t)
 		defer resetEnv()
 
@@ -156,7 +160,7 @@ func TestGetAccountIDAndPartitionFromEC2Metadata(t *testing.T) {
 		))
 		defer awsTs()
 
-		id, partition, err := getAccountIDAndPartitionFromEC2Metadata(context.Background())
+		id, partition, err := getAccountIDAndPartitionFromEC2Metadata(ctx)
 		if err != nil {
 			t.Fatalf("Getting account ID from EC2 metadata API failed: %s", err)
 		}
@@ -215,12 +219,14 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			closeIam, config, _ := mockdata.GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
 
-			accountID, partition, err := getAccountIDAndPartitionFromIAMGetUser(context.Background(), iamClient)
+			accountID, partition, err := getAccountIDAndPartitionFromIAMGetUser(ctx, iamClient)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -272,12 +278,14 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			closeIam, config, _ := mockdata.GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
 
-			accountID, partition, err := getAccountIDAndPartitionFromIAMListRoles(context.Background(), iamClient)
+			accountID, partition, err := getAccountIDAndPartitionFromIAMListRoles(ctx, iamClient)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
@@ -323,12 +331,14 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Description, func(t *testing.T) {
+			ctx := test.Context(t)
+
 			closeSts, config, _ := mockdata.GetMockedAwsApiSession("STS", testCase.MockEndpoints)
 			defer closeSts()
 
 			stsClient := sts.NewFromConfig(config)
 
-			accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(context.Background(), stsClient)
+			accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient)
 			if err != nil && testCase.ErrCount == 0 {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
