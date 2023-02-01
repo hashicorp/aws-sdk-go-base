@@ -17,7 +17,7 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
 )
 
 type debugLogger struct {
@@ -125,12 +125,9 @@ func decomposeHTTPResponse(resp *http.Response, elapsed time.Duration) (map[stri
 
 	attributes = append(attributes, attribute.Int64("http.duration", elapsed.Milliseconds()))
 
-	attributes = append(attributes, semconv.HTTPAttributesFromHTTPStatusCode(resp.StatusCode)...)
+	attributes = append(attributes, httpconv.ClientResponse(resp)...)
 
-	attributes = append(attributes, semconv.HTTPResponseContentLengthKey.Int64(resp.ContentLength))
-
-	headerAttributes := logging.DecomposeResponseHeaders(resp)
-	attributes = append(attributes, headerAttributes...)
+	attributes = append(attributes, logging.DecomposeResponseHeaders(resp)...)
 
 	bodyAttribute, err := decomposeResponseBody(resp)
 	if err != nil {

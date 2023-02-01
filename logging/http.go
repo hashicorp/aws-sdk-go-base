@@ -13,17 +13,22 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/slices"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
 func DecomposeHTTPRequest(req *http.Request) (map[string]any, error) {
 	var attributes []attribute.KeyValue
 
-	attributes = append(attributes, semconv.HTTPClientAttributesFromHTTPRequest(req)...)
+	attributes = append(attributes, httpconv.ClientRequest(req)...)
+	// Remove empty `http.flavor`
+	attributes = slices.Filter(attributes, func(attr attribute.KeyValue) bool {
+		return attr.Key != semconv.HTTPFlavorKey || attr.Value.Emit() != ""
+	})
 
-	headerAttributes := decomposeRequestHeaders(req)
-	attributes = append(attributes, headerAttributes...)
+	attributes = append(attributes, decomposeRequestHeaders(req)...)
 
 	bodyAttribute, err := decomposeRequestBody(req)
 	if err != nil {
@@ -69,9 +74,9 @@ func decomposeRequestHeaders(req *http.Request) []attribute.KeyValue {
 	}
 	header.Del("X-Amz-Security-Token")
 
-	for k := range header {
-		results = append(results, newRequestHeaderAttribute(k, header.Values(k)))
-	}
+	results = append(results, httpconv.RequestHeader(header)...)
+
+	results = cleanUpHeaderAttributes(results)
 
 	return results
 }
@@ -108,15 +113,6 @@ func decomposeRequestBody(req *http.Request) (attribute.KeyValue, error) {
 	body = MaskAWSAccessKey(body)
 
 	return attribute.String("http.request.body", body), nil
-}
-
-func newRequestHeaderAttribute(k string, v []string) attribute.KeyValue {
-	key := requestHeaderAttribute(k)
-	if len(v) == 1 {
-		return key.String(v[0])
-	} else {
-		return key.StringSlice(v)
-	}
 }
 
 func requestHeaderAttribute(k string) attribute.Key {
@@ -197,28 +193,21 @@ func DecomposeResponseHeaders(resp *http.Response) []attribute.KeyValue {
 	// Handled directly from the Response
 	header.Del("Content-Length")
 
-	results := make([]attribute.KeyValue, 0, len(header)+1)
+	results := make([]attribute.KeyValue, 0, len(header))
 
-	for k := range header {
-		results = append(results, newResponseHeaderAttribute(k, header.Values(k)))
-	}
+	results = append(results, httpconv.ResponseHeader(header)...)
+
+	results = cleanUpHeaderAttributes(results)
 
 	return results
 }
 
-func newResponseHeaderAttribute(k string, v []string) attribute.KeyValue {
-	key := requestResponseAttribute(k)
-	if len(v) == 1 {
-		return key.String(v[0])
-	} else {
-		return key.StringSlice(v)
-	}
-}
-
-func requestResponseAttribute(k string) attribute.Key {
-	return attribute.Key(requestResponseAttributeName(k))
-}
-
-func requestResponseAttributeName(k string) string {
-	return fmt.Sprintf("http.response.header.%s", normalizeHeaderName(k))
+// cleanUpHeaderAttributes converts header attributes with a single element to a string
+func cleanUpHeaderAttributes(attrs []attribute.KeyValue) []attribute.KeyValue {
+	return slices.ApplyToAll(attrs, func(attr attribute.KeyValue) attribute.KeyValue {
+		if l := attr.Value.AsStringSlice(); len(l) == 1 {
+			return attr.Key.String(l[0])
+		}
+		return attr
+	})
 }

@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.12.0"
+	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
 )
 
 type debugLogger struct{}
@@ -149,9 +149,7 @@ func decomposeHTTPResponse(resp *http.Response, body io.Reader, elapsed time.Dur
 
 	attributes = append(attributes, attribute.Int64("http.duration", elapsed.Milliseconds()))
 
-	attributes = append(attributes, semconv.HTTPAttributesFromHTTPStatusCode(resp.StatusCode)...)
-
-	attributes = append(attributes, semconv.HTTPResponseContentLengthKey.Int64(resp.ContentLength))
+	attributes = append(attributes, httpconv.ClientResponse(resp)...)
 
 	headerAttributes := logging.DecomposeResponseHeaders(resp)
 	attributes = append(attributes, headerAttributes...)
