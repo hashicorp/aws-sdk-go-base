@@ -47,6 +47,10 @@ func setAWSFields(ctx context.Context, r *request.Request) context.Context {
 	return ctx
 }
 
+type durationKeyT string
+
+const durationKey durationKeyT = "request-duration"
+
 // Replaces the built-in logging middleware from https://github.com/aws/aws-sdk-go/blob/main/aws/client/logger.go
 // We want access to the request struct, and cannot get it from the built-in.
 // The typical route of adding logging to the http.RoundTripper doesn't work for the AWS SDK for Go v1 without forcing us to manually implement
@@ -81,6 +85,10 @@ func logRequest(r *request.Request) {
 	}
 
 	tflog.Debug(ctx, "HTTP Request Sent", requestFields)
+
+	ctx = context.WithValue(ctx, durationKey, time.Now())
+
+	r.SetContext(ctx)
 }
 
 // Replaces the built-in logging middleware from https://github.com/aws/aws-sdk-go/blob/main/aws/client/logger.go
@@ -112,9 +120,14 @@ func logResponse(r *request.Request) {
 	handlerFn := func(req *request.Request) {
 		ctx := r.Context()
 
+		var elapsed time.Duration
+		if start, ok := ctx.Value(durationKey).(time.Time); ok {
+			elapsed = time.Since(start)
+		}
+
 		ctx = setAWSFields(ctx, r)
 
-		responseFields, err := decomposeHTTPResponse(r.HTTPResponse, bodyBuffer, 0)
+		responseFields, err := decomposeHTTPResponse(r.HTTPResponse, bodyBuffer, elapsed)
 		if err != nil {
 			tflog.Error(ctx, fmt.Sprintf("decomposing response: %s", err))
 			return
