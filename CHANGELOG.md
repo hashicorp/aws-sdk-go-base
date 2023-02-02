@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.22 (2023-02-02)
+
 BREAKING CHANGES
 
 * Adds `context.Context` return value to `GetAwsConfig` with configured logger. Adds `context.Context` parameter to `awsbasev1.GetSession`. ([#341](https://github.com/hashicorp/aws-sdk-go-base/pull/341))
