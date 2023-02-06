@@ -8,7 +8,6 @@ issues:
 linters:
   disable-all: true
   enable:
-    - deadcode
     - dogsled
     - errcheck
     - errname
@@ -20,12 +19,10 @@ linters:
     - ineffassign
     - misspell
     - staticcheck
-    - structcheck
     - unconvert
     - unparam
     - unused
     - typecheck
-    - varcheck
     - vet
 
 linters-settings:
