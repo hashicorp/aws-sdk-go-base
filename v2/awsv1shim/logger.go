@@ -167,8 +167,7 @@ func decomposeHTTPResponse(resp *http.Response, body io.Reader, elapsed time.Dur
 
 	attributes = append(attributes, httpconv.ClientResponse(resp)...)
 
-	headerAttributes := logging.DecomposeResponseHeaders(resp)
-	attributes = append(attributes, headerAttributes...)
+	attributes = append(attributes, logging.DecomposeResponseHeaders(resp)...)
 
 	bodyAttribute, err := decomposeResponseBody(body)
 	if err != nil {

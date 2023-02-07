@@ -22,6 +22,10 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
 )
 
+const (
+	maxRequestBodyLen = 512
+)
+
 func DecomposeHTTPRequest(req *http.Request) (map[string]any, error) {
 	var attributes []attribute.KeyValue
 
@@ -110,6 +114,10 @@ func decomposeRequestBody(req *http.Request) (attribute.KeyValue, error) {
 			return attribute.KeyValue{}, err
 		}
 		builder.WriteString(line)
+		if builder.Len() >= maxRequestBodyLen {
+			builder.WriteString("[truncated...]")
+			break
+		}
 	}
 
 	body := builder.String()
