@@ -2504,16 +2504,16 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 func TestAssumeRoleWithWebIdentity(t *testing.T) {
 	testCases := map[string]struct {
-		Config                     *Config
-		SetConfig                  bool
-		ExpandEnvVars              bool
-		EnvironmentVariables       map[string]string
-		SetEnvironmentVariable     bool
-		SharedConfigurationFile    string
-		SetSharedConfigurationFile bool
-		ExpectedCredentialsValue   aws.Credentials
-		ExpectedError              func(err error) bool
-		MockStsEndpoints           []*servicemocks.MockEndpoint
+		Config                          *Config
+		SetConfig                       bool
+		ExpandEnvVars                   bool
+		EnvironmentVariables            map[string]string
+		SetTokenFileEnvironmentVariable bool
+		SharedConfigurationFile         string
+		SetSharedConfigurationFile      bool
+		ExpectedCredentialsValue        aws.Credentials
+		ExpectedError                   func(err error) bool
+		MockStsEndpoints                []*servicemocks.MockEndpoint
 	}{
 		"config with inline token": {
 			Config: &Config{
@@ -2564,8 +2564,8 @@ func TestAssumeRoleWithWebIdentity(t *testing.T) {
 				"AWS_ROLE_ARN":          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
 				"AWS_ROLE_SESSION_NAME": servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
 			},
-			SetEnvironmentVariable:   true,
-			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			SetTokenFileEnvironmentVariable: true,
+			ExpectedCredentialsValue:        mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
 			},
@@ -2610,7 +2610,7 @@ role_session_name = %[2]s
 				"AWS_ROLE_ARN":          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
 				"AWS_ROLE_SESSION_NAME": servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
 			},
-			SetEnvironmentVariable: true,
+			SetTokenFileEnvironmentVariable: true,
 			SharedConfigurationFile: fmt.Sprintf(`
 [default]
 role_arn = %[1]s
@@ -2728,7 +2728,7 @@ web_identity_token_file = no-such-file
 				testCase.Config.AssumeRoleWithWebIdentity.WebIdentityTokenFile = tokenFileName
 			}
 
-			if testCase.SetEnvironmentVariable {
+			if testCase.SetTokenFileEnvironmentVariable {
 				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", tokenFileName)
 			}
 
