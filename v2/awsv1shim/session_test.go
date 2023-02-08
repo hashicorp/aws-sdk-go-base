@@ -2027,6 +2027,20 @@ role_session_name = %[2]s
 			},
 		},
 
+		// "config with file envvar": {
+		// 	Config: &awsbase.Config{
+		// 		AssumeRoleWithWebIdentity: &awsbase.AssumeRoleWithWebIdentity{
+		// 			RoleARN:     servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+		// 			SessionName: servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+		// 		},
+		// 	},
+		// 	SetEnvironmentVariable:   true,
+		// 	ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+		// 	MockStsEndpoints: []*servicemocks.MockEndpoint{
+		// 		servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+		// 	},
+		// },
+
 		"envvar overrides shared configuration": {
 			Config: &awsbase.Config{},
 			EnvironmentVariables: map[string]string{
