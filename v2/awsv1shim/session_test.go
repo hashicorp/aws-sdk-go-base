@@ -2017,8 +2017,8 @@ role_session_name = %[2]s
 				},
 			},
 			EnvironmentVariables: map[string]string{
-				"AWS_ROLE_ARN":                servicemocks.MockStsAssumeRoleWithWebIdentityArn,
-				"AWS_ROLE_SESSION_NAME":       servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+				"AWS_ROLE_ARN":                servicemocks.MockStsAssumeRoleWithWebIdentityAlternateArn,
+				"AWS_ROLE_SESSION_NAME":       servicemocks.MockStsAssumeRoleWithWebIdentityAlternateSessionName,
 				"AWS_WEB_IDENTITY_TOKEN_FILE": "no-such-file",
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
@@ -2026,6 +2026,20 @@ role_session_name = %[2]s
 				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
 			},
 		},
+
+		// "config with file envvar": {
+		// 	Config: &awsbase.Config{
+		// 		AssumeRoleWithWebIdentity: &awsbase.AssumeRoleWithWebIdentity{
+		// 			RoleARN:     servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+		// 			SessionName: servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+		// 		},
+		// 	},
+		// 	SetEnvironmentVariable:   true,
+		// 	ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+		// 	MockStsEndpoints: []*servicemocks.MockEndpoint{
+		// 		servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+		// 	},
+		// },
 
 		"envvar overrides shared configuration": {
 			Config: &awsbase.Config{},
@@ -2039,7 +2053,27 @@ role_session_name = %[2]s
 role_arn = %[1]s
 role_session_name = %[2]s
 web_identity_token_file = no-such-file
-`, servicemocks.MockStsAssumeRoleWithWebIdentityArn, servicemocks.MockStsAssumeRoleWithWebIdentitySessionName),
+`, servicemocks.MockStsAssumeRoleWithWebIdentityAlternateArn, servicemocks.MockStsAssumeRoleWithWebIdentityAlternateSessionName),
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+
+		"config overrides shared configuration": {
+			Config: &awsbase.Config{
+				AssumeRoleWithWebIdentity: &awsbase.AssumeRoleWithWebIdentity{
+					RoleARN:          servicemocks.MockStsAssumeRoleWithWebIdentityArn,
+					SessionName:      servicemocks.MockStsAssumeRoleWithWebIdentitySessionName,
+					WebIdentityToken: servicemocks.MockWebIdentityToken,
+				},
+			},
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+role_arn = %[1]s
+role_session_name = %[2]s
+web_identity_token_file = no-such-file
+`, servicemocks.MockStsAssumeRoleWithWebIdentityAlternateArn, servicemocks.MockStsAssumeRoleWithWebIdentityAlternateSessionName),
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,

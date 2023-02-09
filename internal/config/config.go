@@ -61,16 +61,6 @@ type AssumeRole struct {
 	TransitiveTagKeys []string
 }
 
-type AssumeRoleWithWebIdentity struct {
-	RoleARN              string
-	Duration             time.Duration
-	Policy               string
-	PolicyARNs           []string
-	SessionName          string
-	WebIdentityToken     string
-	WebIdentityTokenFile string
-}
-
 func (c Config) CustomCABundleReader() (*bytes.Reader, error) {
 	if c.CustomCABundle == "" {
 		return nil, nil
@@ -137,7 +127,17 @@ func (c Config) ResolveSharedCredentialsFiles() ([]string, error) {
 	return v, nil
 }
 
-func (c AssumeRoleWithWebIdentity) ResolveWebIdentityTokenFile() (string, error) {
+type AssumeRoleWithWebIdentity struct {
+	RoleARN              string
+	Duration             time.Duration
+	Policy               string
+	PolicyARNs           []string
+	SessionName          string
+	WebIdentityToken     string
+	WebIdentityTokenFile string
+}
+
+func (c AssumeRoleWithWebIdentity) resolveWebIdentityTokenFile() (string, error) {
 	v, err := expand.FilePath(c.WebIdentityTokenFile)
 	if err != nil {
 		return "", fmt.Errorf("expanding web identity token file: %w", err)
@@ -145,11 +145,16 @@ func (c AssumeRoleWithWebIdentity) ResolveWebIdentityTokenFile() (string, error)
 	return v, nil
 }
 
+func (c AssumeRoleWithWebIdentity) HasValidTokenSource() bool {
+	return c.WebIdentityToken != "" || c.WebIdentityTokenFile != ""
+}
+
+// Implements `stscreds.IdentityTokenRetriever`
 func (c AssumeRoleWithWebIdentity) GetIdentityToken() ([]byte, error) {
 	if c.WebIdentityToken != "" {
 		return []byte(c.WebIdentityToken), nil
 	}
-	webIdentityTokenFile, err := c.ResolveWebIdentityTokenFile()
+	webIdentityTokenFile, err := c.resolveWebIdentityTokenFile()
 	if err != nil {
 		return nil, err
 	}

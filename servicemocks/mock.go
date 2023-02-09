@@ -102,6 +102,9 @@ const (
 </ResponseMetadata>
 </AssumeRoleWithWebIdentityResponse>`
 
+	MockStsAssumeRoleWithWebIdentityAlternateArn         = `arn:aws:iam::666666666666:role/Alternate`
+	MockStsAssumeRoleWithWebIdentityAlternateSessionName = `AssumeRoleWithWebIdentityAlternateSessionName`
+
 	MockStsGetCallerIdentityAccountID                       = `222222222222`
 	MockStsGetCallerIdentityInvalidResponseBodyAccessDenied = `<ErrorResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
 <Error>
