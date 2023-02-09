@@ -1,7 +1,13 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
-# v2.0.0-beta.23 (Unreleased)
+# v2.0.0-beta.24 (Unreleased)
+
+# v2.0.0-beta.23 (2023-02-09)
+
+BUG FIXES
+
+* Truncates HTTP request bodies in logs. ([#351](https://github.com/hashicorp/aws-sdk-go-base/pull/351))
 
 ENHANCEMENTS
 
