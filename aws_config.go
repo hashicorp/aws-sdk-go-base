@@ -65,19 +65,31 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	if err != nil {
 		return ctx, aws.Config{}, err
 	}
+
+	// The providers set `MaxRetries` to a very large value.
+	// Add retries here so that authentication has a reasonable number of retries
+	if c.MaxRetries != 0 {
+		loadOptions = append(
+			loadOptions,
+			config.WithRetryMaxAttempts(c.MaxRetries),
+		)
+	}
+
 	loadOptions = append(
 		loadOptions,
 		config.WithCredentialsProvider(credentialsProvider),
 	)
+
 	if initialSource == ec2rolecreds.ProviderName {
 		loadOptions = append(
 			loadOptions,
 			config.WithEC2IMDSRegion(),
 		)
 	}
+
 	awsConfig, err := config.LoadDefaultConfig(baseCtx, loadOptions...)
 	if err != nil {
-		return ctx, awsConfig, fmt.Errorf("loading configuration: %w", err)
+		return ctx, aws.Config{}, fmt.Errorf("loading configuration: %w", err)
 	}
 
 	resolveRetryer(baseCtx, &awsConfig)
@@ -223,13 +235,6 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
 		config.WithEC2IMDSClientEnableState(c.EC2MetadataServiceEnableState),
-	}
-
-	if c.MaxRetries != 0 {
-		loadOptions = append(
-			loadOptions,
-			config.WithRetryMaxAttempts(c.MaxRetries),
-		)
 	}
 
 	if !c.SuppressDebugLog {

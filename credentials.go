@@ -26,10 +26,6 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	}
 	loadOptions = append(
 		loadOptions,
-		// Bypass retries when validating authentication
-		config.WithRetryer(func() aws.Retryer {
-			return aws.NopRetryer{}
-		}),
 		// The endpoint resolver is added here instead of in commonLoadOptions() so that it
 		// is not included in the aws.Config returned to the caller
 		config.WithEndpointResolverWithOptions(credentialsEndpointResolver(ctx, c)),
