@@ -114,6 +114,24 @@ const (
 </Error>
 <RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>
 </ErrorResponse>`
+	MockStsGetCallerIdentityValidResponseBodyExpiredToken = `<ErrorResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+<Error>
+  <Type>Sender</Type>
+  <Code>ExpiredToken</Code>
+  <Message>The security token included in the request is expired</Message>
+</Error>
+<ResponseMetadata>
+  <RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>
+</ResponseMetadata>
+</ErrorResponse>`
+	MockStsGetCallerIdentityInvalidResponseBodyExpiredToken = `<ErrorResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
+<Error>
+  <Type>Sender</Type>
+  <Code>ExpiredToken</Code>
+  <Message>The security token included in the request is expired</Message>
+</Error>
+<RequestId>01234567-89ab-cdef-0123-456789abcdef</RequestId>
+</ErrorResponse>`
 	MockStsGetCallerIdentityPartition         = `aws`
 	MockStsGetCallerIdentityValidResponseBody = `<GetCallerIdentityResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
   <GetCallerIdentityResult>
@@ -207,6 +225,36 @@ var (
 		},
 		Response: &MockResponse{
 			Body:        MockStsGetCallerIdentityInvalidResponseBodyAccessDenied,
+			ContentType: "text/xml",
+			StatusCode:  http.StatusForbidden,
+		},
+	}
+	MockStsGetCallerIdentityInvalidBodyExpiredToken = &MockEndpoint{
+		Request: &MockRequest{
+			Body: url.Values{
+				"Action":  []string{"GetCallerIdentity"},
+				"Version": []string{"2011-06-15"},
+			}.Encode(),
+			Method: http.MethodPost,
+			Uri:    "/",
+		},
+		Response: &MockResponse{
+			Body:        MockStsGetCallerIdentityInvalidResponseBodyExpiredToken,
+			ContentType: "text/xml",
+			StatusCode:  http.StatusForbidden,
+		},
+	}
+	MockStsGetCallerIdentityValidBodyExpiredToken = &MockEndpoint{
+		Request: &MockRequest{
+			Body: url.Values{
+				"Action":  []string{"GetCallerIdentity"},
+				"Version": []string{"2011-06-15"},
+			}.Encode(),
+			Method: http.MethodPost,
+			Uri:    "/",
+		},
+		Response: &MockResponse{
+			Body:        MockStsGetCallerIdentityValidResponseBodyExpiredToken,
 			ContentType: "text/xml",
 			StatusCode:  http.StatusForbidden,
 		},

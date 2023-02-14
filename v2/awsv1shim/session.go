@@ -148,6 +148,13 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 			})
 			r.Retryable = aws.Bool(false)
 		}
+
+		if r.IsErrorExpired() {
+			logger.Warn(ctx, "Disabling retries after next request due to expired credentials", map[string]any{
+				"error": r.Error,
+			})
+			r.Retryable = aws.Bool(false)
+		}
 	})
 
 	return sess, nil

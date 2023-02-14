@@ -321,6 +321,20 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 			ErrCount: 1,
 		},
 		{
+			Description: "sts:GetCallerIdentity expired token with invalid response",
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredToken,
+			},
+			ErrCount: 1,
+		},
+		{
+			Description: "sts:GetCallerIdentity expired token with valid response",
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidBodyExpiredToken,
+			},
+			ErrCount: 1,
+		},
+		{
 			Description: "sts:GetCallerIdentity success",
 			MockEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,

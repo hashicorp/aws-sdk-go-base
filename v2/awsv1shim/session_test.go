@@ -561,7 +561,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 [default]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
-		`,
+`,
 		},
 		{
 			Config: &awsbase.Config{
@@ -872,6 +872,22 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
+		{
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description: "expired token error",
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredToken")
+				//return tfawserr.ErrCodeEquals(err, "ExpiredToken")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredToken,
+			},
+		},
+
 		// 		{
 		// 			Config: &awsbase.Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
