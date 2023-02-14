@@ -881,7 +881,6 @@ region = us-east-1
 			Description: "expired token error",
 			ExpectedError: func(err error) bool {
 				return strings.Contains(err.Error(), "ExpiredToken")
-				//return tfawserr.ErrCodeEquals(err, "ExpiredToken")
 			},
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredToken,
