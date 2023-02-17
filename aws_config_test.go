@@ -22,6 +22,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
+	"github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/go-cmp/cmp"
@@ -92,6 +93,52 @@ func TestGetAwsConfig(t *testing.T) {
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleValidEndpoint,
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey:  servicemocks.MockStaticAccessKey,
+				Region:     "us-east-1",
+				SecretKey:  servicemocks.MockStaticSecretKey,
+				MaxRetries: 100,
+			},
+			Description:    "ExpiredToken",
+			ExpectedRegion: "us-east-1",
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredToken")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredToken,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description:    "ExpiredTokenException",
+			ExpectedRegion: "us-east-1",
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredTokenException")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredTokenException,
+			},
+		},
+		{
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description:    "RequestExpired",
+			ExpectedRegion: "us-east-1",
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "RequestExpired")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyRequestExpired,
 			},
 		},
 		{
@@ -3039,6 +3086,76 @@ func TestRetryHandlers(t *testing.T) {
 				results.Results[constants.MaxNetworkRetryCount-1] = retry.AttemptResult{
 					Err:       &retry.MaxAttemptsError{Attempt: constants.MaxNetworkRetryCount, Err: &net.OpError{Op: "dial", Err: errors.New("connection refused")}},
 					Retryable: true,
+				}
+				return results
+			}(),
+		},
+		"no retries for ExpiredToken": {
+			NextHandler: func() middleware.FinalizeHandler {
+				num := 0
+				reqsErrs := make([]error, 2)
+				for i := 0; i < 2; i++ {
+					reqsErrs[i] = &smithy.OperationError{
+						ServiceID:     "STS",
+						OperationName: "GetCallerIdentity",
+						Err: &smithyhttp.ResponseError{
+							Response: &smithyhttp.Response{
+								Response: &http.Response{
+									StatusCode: 403,
+								},
+							},
+							Err: &smithy.GenericAPIError{
+								Code:    "ExpiredToken",
+								Message: "The security token included in the request is expired",
+							},
+						},
+					}
+				}
+				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
+					if num >= len(reqsErrs) {
+						err = fmt.Errorf("more requests than expected")
+					} else {
+						err = reqsErrs[num]
+						num++
+					}
+					return out, metadata, err
+				})
+			},
+			Err: &smithy.OperationError{
+				ServiceID:     "STS",
+				OperationName: "GetCallerIdentity",
+				Err: &smithyhttp.ResponseError{
+					Response: &smithyhttp.Response{
+						Response: &http.Response{
+							StatusCode: 403,
+						},
+					},
+					Err: &smithy.GenericAPIError{
+						Code:    "ExpiredToken",
+						Message: "The security token included in the request is expired",
+					},
+				},
+			},
+			ExpectResults: func() retry.AttemptResults {
+				results := retry.AttemptResults{
+					Results: make([]retry.AttemptResult, 1),
+				}
+				results.Results[0] = retry.AttemptResult{
+					Err: &smithy.OperationError{
+						ServiceID:     "STS",
+						OperationName: "GetCallerIdentity",
+						Err: &smithyhttp.ResponseError{
+							Response: &smithyhttp.Response{
+								Response: &http.Response{
+									StatusCode: 403,
+								},
+							},
+							Err: &smithy.GenericAPIError{
+								Code:    "ExpiredToken",
+								Message: "The security token included in the request is expired",
+							},
+						},
+					},
 				}
 				return results
 			}(),

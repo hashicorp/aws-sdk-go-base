@@ -96,7 +96,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 
 	if !c.SkipCredsValidation {
 		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(baseCtx, awsConfig, c)); err != nil {
-			return ctx, awsConfig, fmt.Errorf("error validating provider credentials: %w", err)
+			return ctx, awsConfig, fmt.Errorf("validating provider credentials: %w", err)
 		}
 	}
 
