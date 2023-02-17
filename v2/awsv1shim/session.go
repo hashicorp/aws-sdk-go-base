@@ -129,9 +129,17 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 	sess.Handlers.Retry.PushBack(func(r *request.Request) {
 		logger := logging.RetrieveLogger(r.Context())
 
+		if r.IsErrorExpired() {
+			logger.Warn(ctx, "Disabling retries after next request due to expired credentials", map[string]any{
+				"error": r.Error,
+			})
+			r.Retryable = aws.Bool(false)
+		}
+
 		if r.RetryCount < constants.MaxNetworkRetryCount {
 			return
 		}
+
 		// RequestError: send request failed
 		// caused by: Post https://FQDN/: dial tcp: lookup FQDN: no such host
 		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "no such host") {
@@ -144,13 +152,6 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 		// caused by: Post https://FQDN/: dial tcp IPADDRESS:443: connect: connection refused
 		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "connection refused") {
 			logger.Warn(ctx, "Disabling retries after next request due to networking error", map[string]any{
-				"error": r.Error,
-			})
-			r.Retryable = aws.Bool(false)
-		}
-
-		if r.IsErrorExpired() {
-			logger.Warn(ctx, "Disabling retries after next request due to expired credentials", map[string]any{
 				"error": r.Error,
 			})
 			r.Retryable = aws.Bool(false)
