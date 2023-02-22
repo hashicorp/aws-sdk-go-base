@@ -321,6 +321,48 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 			ErrCount: 1,
 		},
 		{
+			Description: "sts:GetCallerIdentity ExpiredToken with invalid JSON response",
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredToken,
+			},
+			ErrCount: 1,
+		},
+		{
+			Description: "sts:GetCallerIdentity ExpiredToken with valid JSON response",
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidBodyExpiredToken,
+			},
+			ErrCount: 1,
+		},
+		{
+			Description: "sts:GetCallerIdentity ExpiredTokenException with invalid JSON response",
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredTokenException,
+			},
+			ErrCount: 1,
+		},
+		{
+			Description: "sts:GetCallerIdentity ExpiredTokenException with valid JSON response",
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidBodyExpiredTokenException,
+			},
+			ErrCount: 1,
+		},
+		{
+			Description: "sts:GetCallerIdentity RequestExpired with invalid JSON response",
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyRequestExpired,
+			},
+			ErrCount: 1,
+		},
+		{
+			Description: "sts:GetCallerIdentity RequestExpired with valid JSON response",
+			MockEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidBodyRequestExpired,
+			},
+			ErrCount: 1,
+		},
+		{
 			Description: "sts:GetCallerIdentity success",
 			MockEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,

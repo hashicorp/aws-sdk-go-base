@@ -561,7 +561,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 [default]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
-		`,
+`,
 		},
 		{
 			Config: &awsbase.Config{
@@ -872,6 +872,90 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
+		{
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description: "ExpiredToken invalid body",
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredToken")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredToken,
+			},
+		},
+		{
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description: "ExpiredToken valid body", // in case they change it
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredToken")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidBodyExpiredToken,
+			},
+		},
+		{
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description: "ExpiredTokenException invalid body",
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredTokenException")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredTokenException,
+			},
+		},
+		{
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description: "ExpiredTokenException valid body", // in case they change it
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredTokenException")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidBodyExpiredTokenException,
+			},
+		},
+		{
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description: "RequestExpired invalid body",
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "RequestExpired")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityInvalidBodyRequestExpired,
+			},
+		},
+		{
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			Description: "RequestExpired valid body", // in case they change it
+			ExpectedError: func(err error) bool {
+				return strings.Contains(err.Error(), "RequestExpired")
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsGetCallerIdentityValidBodyRequestExpired,
+			},
+		},
 		// 		{
 		// 			Config: &awsbase.Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
@@ -1118,7 +1202,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 					t.Fatalf("unexpected GetAwsConfig() '%[1]T' error: %[1]s", err)
 				}
 
-				t.Logf("received expected error: %s", err)
+				t.Logf("received expected error (awsbase.GetAwsConfig): %s", err)
 				return
 			}
 			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
@@ -1131,7 +1215,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 					t.Fatalf("unexpected GetSession() '%[1]T' error: %[1]s", err)
 				}
 
-				t.Logf("received expected error: %s", err)
+				t.Logf("received expected error (GetSession): %s", err)
 				return
 			}
 
@@ -2284,6 +2368,27 @@ func TestSessionRetryHandlers(t *testing.T) {
 			Error:                    errors.New("some error"),
 			ExpectedRetryableValue:   true,  // defaults to true for non-AWS errors
 			ExpectRetryToBeAttempted: false, // Does not actually get retried, because over max retry limit
+		},
+		{
+			Description:              "ExpiredToken error no retries",
+			RetryCount:               maxRetries,
+			Error:                    awserr.New("ExpiredToken", "The security token included in the request is expired", nil),
+			ExpectedRetryableValue:   false,
+			ExpectRetryToBeAttempted: false,
+		},
+		{
+			Description:              "ExpiredTokenException error no retries",
+			RetryCount:               maxRetries,
+			Error:                    awserr.New("ExpiredTokenException", "The security token included in the request is expired", nil),
+			ExpectedRetryableValue:   false,
+			ExpectRetryToBeAttempted: false,
+		},
+		{
+			Description:              "RequestExpired error no retries",
+			RetryCount:               maxRetries,
+			Error:                    awserr.New("RequestExpired", "The security token included in the request is expired", nil),
+			ExpectedRetryableValue:   false,
+			ExpectRetryToBeAttempted: false,
 		},
 		{
 			Description:              "send request no such host failed under MaxNetworkRetryCount",
