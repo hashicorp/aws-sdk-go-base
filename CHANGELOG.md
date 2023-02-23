@@ -1,7 +1,13 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
-# v2.0.0-beta.24 (Unreleased)
+# v2.0.0-beta.25 (Unreleased)
+
+# v2.0.0-beta.24 (2023-02-23)
+
+BUG FIXES
+
+* Avoids retries on `Expired Token` errors. ([#362](https://github.com/hashicorp/aws-sdk-go-base/pull/362))
 
 # v2.0.0-beta.23 (2023-02-09)
 
