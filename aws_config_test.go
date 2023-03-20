@@ -1052,7 +1052,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				}
 			}
 
-			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", &testCase.MockStsEndpoints)
 			defer closeSts()
 
 			testCase.Config.StsEndpoint = stsEndpoint
@@ -1132,6 +1132,11 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
 			if expected, actual := testCase.ExpectedRegion, awsConfig.Region; expected != actual {
 				t.Fatalf("expected region (%s), got: %s", expected, actual)
+			}
+
+			numMockStsEndpoints := len(testCase.MockStsEndpoints)
+			if numMockStsEndpoints > 0 {
+				t.Fatalf("expected all mock endpoints exhausted, remaining: %d", numMockStsEndpoints)
 			}
 		})
 	}
@@ -2489,7 +2494,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
-			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", &testCase.MockStsEndpoints)
 			defer closeSts()
 
 			testCase.Config.StsEndpoint = stsEndpoint
@@ -2544,6 +2549,11 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(aws.Credentials{}, "Expires")); diff != "" {
 				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
+			}
+
+			numMockStsEndpoints := len(testCase.MockStsEndpoints)
+			if numMockStsEndpoints > 0 {
+				t.Fatalf("expected all mock endpoints exhausted, remaining: %d", numMockStsEndpoints)
 			}
 		})
 	}
@@ -2768,7 +2778,7 @@ web_identity_token_file = no-such-file
 				os.Setenv(k, v)
 			}
 
-			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", &testCase.MockStsEndpoints)
 			defer closeSts()
 
 			testCase.Config.StsEndpoint = stsEndpoint
@@ -2861,6 +2871,11 @@ web_identity_token_file = no-such-file
 			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(aws.Credentials{}, "Expires")); diff != "" {
 				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
 			}
+
+			numMockStsEndpoints := len(testCase.MockStsEndpoints)
+			if numMockStsEndpoints > 0 {
+				t.Fatalf("expected all mock endpoints exhausted, remaining: %d", numMockStsEndpoints)
+			}
 		})
 	}
 }
@@ -2934,7 +2949,7 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 		tc := testCase
 
 		t.Run(tc.desc, func(t *testing.T) {
-			ts := servicemocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
+			ts := servicemocks.MockAwsApiServer("STS", &tc.mockStsEndpoints)
 			defer ts.Close()
 			tc.config.StsEndpoint = ts.URL
 
@@ -2962,6 +2977,11 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 
 			if part != tc.expectedPartition {
 				t.Errorf("expected partition (%s), got: %s", tc.expectedPartition, part)
+			}
+
+			numMockStsEndpoints := len(tc.mockStsEndpoints)
+			if numMockStsEndpoints > 0 {
+				t.Errorf("expected all mock endpoints exhausted, remaining: %d", numMockStsEndpoints)
 			}
 		})
 	}
@@ -3280,9 +3300,10 @@ func TestLogger(t *testing.T) {
 		SecretKey: servicemocks.MockStaticSecretKey,
 	}
 
-	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
+	mockStsEndpoints := []*servicemocks.MockEndpoint{
 		servicemocks.MockStsGetCallerIdentityValidEndpoint,
-	})
+	}
+	ts := servicemocks.MockAwsApiServer("STS", &mockStsEndpoints)
 	defer ts.Close()
 	config.StsEndpoint = ts.URL
 
@@ -3318,5 +3339,10 @@ func TestLogger(t *testing.T) {
 		if a, e := line["@module"], expectedName; a != e {
 			t.Errorf("GetAwsAccountIDAndPartition: line %d: expected module %q, got %q", i+1, e, a)
 		}
+	}
+
+	numMockStsEndpoints := len(mockStsEndpoints)
+	if numMockStsEndpoints > 0 {
+		t.Errorf("expected all mock endpoints exhausted, remaining: %d", numMockStsEndpoints)
 	}
 }
