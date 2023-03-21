@@ -63,11 +63,12 @@ jobs:
 
   semgrep:
     runs-on: ubuntu-latest
+    container:
+      image: returntocorp/semgrep
     steps:
       - uses: actions/checkout@v3
 
-      - name: semgrep
-        uses: returntocorp/semgrep-action@v1
+      - run: semgrep --error --quiet --config .semgrep
         env:
           REWRITE_RULE_IDS: 0
 
