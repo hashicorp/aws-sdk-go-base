@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/smithy-go/middleware"
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
@@ -35,7 +36,8 @@ func configCommonLogging(ctx context.Context) context.Context {
 	return tflog.MaskAllFieldValuesRegexes(ctx, logging.UniqueIDRegex)
 }
 
-func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, error) {
+func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	ctx = configCommonLogging(ctx)
 
 	baseCtx, logger := logging.New(ctx, loggerName)
@@ -58,7 +60,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	logger.Debug(baseCtx, "Resolving credentials provider")
 	credentialsProvider, initialSource, err := getCredentialsProvider(baseCtx, c)
 	if err != nil {
-		return ctx, aws.Config{}, err
+		return ctx, aws.Config{}, diags.AddSimpleError(err)
 	}
 	creds, err := credentialsProvider.Retrieve(baseCtx)
 	if err != nil {
@@ -70,7 +72,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 
 	loadOptions, err := commonLoadOptions(baseCtx, c)
 	if err != nil {
-		return ctx, aws.Config{}, err
+		return ctx, aws.Config{}, diags.AddSimpleError(err)
 	}
 
 	// The providers set `MaxRetries` to a very large value.
@@ -97,14 +99,14 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	logger.Debug(baseCtx, "Loading configuration")
 	awsConfig, err := config.LoadDefaultConfig(baseCtx, loadOptions...)
 	if err != nil {
-		return ctx, aws.Config{}, fmt.Errorf("loading configuration: %w", err)
+		return ctx, aws.Config{}, diags.AddSimpleError(fmt.Errorf("loading configuration: %w", err))
 	}
 
 	resolveRetryer(baseCtx, &awsConfig)
 
 	if !c.SkipCredsValidation {
 		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(baseCtx, awsConfig, c)); err != nil {
-			return ctx, awsConfig, fmt.Errorf("validating provider credentials: %w", err)
+			return ctx, awsConfig, diags.AddSimpleError(fmt.Errorf("validating provider credentials: %w", err))
 		}
 	}
 
