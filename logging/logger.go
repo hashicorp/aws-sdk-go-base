@@ -42,6 +42,14 @@ func (l TfLogger) Debug(ctx context.Context, msg string, fields ...map[string]an
 	}
 }
 
+func (l TfLogger) Trace(ctx context.Context, msg string, fields ...map[string]any) {
+	if l == "" {
+		tflog.Trace(ctx, msg, fields...)
+	} else {
+		tflog.SubsystemTrace(ctx, string(l), msg, fields...)
+	}
+}
+
 func (l TfLogger) SetField(ctx context.Context, key string, value any) context.Context {
 	if l == "" {
 		return tflog.SetField(ctx, key, value)

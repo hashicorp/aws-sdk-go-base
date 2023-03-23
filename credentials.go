@@ -17,6 +17,11 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 )
 
+const (
+	configSourceProviderConfig      = "provider"
+	configSourceEnvironmentVariable = "envvar"
+)
+
 func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, string, error) {
 	logger := logging.RetrieveLogger(ctx)
 
@@ -29,6 +34,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		// The endpoint resolver is added here instead of in commonLoadOptions() so that it
 		// is not included in the aws.Config returned to the caller
 		config.WithEndpointResolverWithOptions(credentialsEndpointResolver(ctx, c)),
+		config.WithLogConfigurationWarnings(true),
 	)
 
 	envConfig, err := config.NewEnvConfig()
@@ -44,11 +50,19 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	// The default AWS SDK authentication flow silently ignores invalid Profiles. Pre-validate that the Profile exists
 	// https://github.com/aws/aws-sdk-go-v2/issues/1591
 	profile := c.Profile
-	if profile == "" {
+	var profileSource string
+	if profile != "" {
+		profileSource = configSourceProviderConfig
+	} else {
 		profile = envConfig.SharedConfigProfile
+		profileSource = configSourceEnvironmentVariable
 	}
 
 	if profile != "" {
+		logger.Debug(ctx, "Using profile", map[string]any{
+			"tf_aws.profile":        profile,
+			"tf_aws.profile.source": profileSource,
+		})
 		sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
 		if err != nil {
 			return nil, "", err
@@ -58,14 +72,16 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 			for i, v := range sharedCredentialsFiles {
 				f[i] = fmt.Sprintf(`"%s"`, v)
 			}
-			logger.Debug(ctx, "Using shared credentials files from configuration", map[string]any{
-				"tf_aws.shared_credentials_files": f,
+			logger.Debug(ctx, "Using shared credentials files", map[string]any{
+				"tf_aws.shared_credentials_files":        f,
+				"tf_aws.shared_credentials_files.source": configSourceProviderConfig,
 			})
 		} else {
 			if envConfig.SharedCredentialsFile != "" {
 				sharedCredentialsFiles = []string{envConfig.SharedCredentialsFile}
-				logger.Debug(ctx, "Using shared credentials file environment variables", map[string]any{
-					"tf_aws.shared_credentials_files": sharedCredentialsFiles,
+				logger.Debug(ctx, "Using shared credentials files", map[string]any{
+					"tf_aws.shared_credentials_files":        sharedCredentialsFiles,
+					"tf_aws.shared_credentials_files.source": configSourceEnvironmentVariable,
 				})
 			}
 		}
@@ -79,18 +95,23 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 			for i, v := range sharedConfigFiles {
 				f[i] = fmt.Sprintf(`"%s"`, v)
 			}
-			logger.Debug(ctx, "Using shared configuration files from configuration", map[string]any{
-				"tf_aws.shared_config_files": f,
+			logger.Debug(ctx, "Using shared configuration files", map[string]any{
+				"tf_aws.shared_config_files":        f,
+				"tf_aws.shared_config_files.source": configSourceProviderConfig,
 			})
 		} else {
 			if envConfig.SharedConfigFile != "" {
 				sharedConfigFiles = []string{envConfig.SharedConfigFile}
-				logger.Debug(ctx, "Using shared configuration file environment variables", map[string]any{
-					"tf_aws.shared_config_files": sharedConfigFiles,
+				logger.Debug(ctx, "Using shared configuration files", map[string]any{
+					"tf_aws.shared_config_files":        sharedConfigFiles,
+					"tf_aws.shared_config_files.source": configSourceEnvironmentVariable,
 				})
 			}
 		}
 
+		logger.Debug(ctx, "Loading profile", map[string]any{
+			"tf_aws.profile": profile,
+		})
 		_, err = config.LoadSharedConfigProfile(ctx, profile, func(opts *config.LoadSharedConfigOptions) {
 			if len(sharedCredentialsFiles) != 0 {
 				opts.CredentialsFiles = sharedCredentialsFiles
@@ -106,8 +127,9 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	// We need to validate both the configured and envvar named profiles for validity,
 	// but to use proper precedence, we only set the configured named profile
 	if c.Profile != "" {
-		logger.Debug(ctx, "Using profile from configuration", map[string]any{
-			"tf_aws.profile": c.Profile,
+		logger.Debug(ctx, "Setting profile", map[string]any{
+			"tf_aws.profile":        profile,
+			"tf_aws.profile.source": configSourceProviderConfig,
 		})
 		loadOptions = append(
 			loadOptions,
@@ -126,8 +148,9 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		if c.Token != "" {
 			params = append(params, "token")
 		}
-		logger.Debug(ctx, "Using authentication parameters from configuration", map[string]any{
-			"tf_aws.auth_fields": params,
+		logger.Debug(ctx, "Using authentication parameters", map[string]any{
+			"tf_aws.auth_fields":        params,
+			"tf_aws.auth_fields.source": configSourceProviderConfig,
 		})
 		loadOptions = append(
 			loadOptions,
@@ -141,6 +164,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		)
 	}
 
+	logger.Debug(ctx, "Loading configuration")
 	cfg, err := config.LoadDefaultConfig(ctx, loadOptions...)
 	if err != nil {
 		return nil, "", fmt.Errorf("loading configuration: %w", err)
@@ -162,12 +186,13 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		cfg.Credentials = provider
 	}
 
+	logger.Debug(ctx, "Retrieving credentials")
 	creds, err := cfg.Credentials.Retrieve(ctx)
 	if err != nil {
 		if c.Profile != "" && os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
 			err = fmt.Errorf(`A Profile was specified along with the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY". The Profile is now used instead of the environment variable credentials.
 
-Error: %w`, err)
+AWS Error: %w`, err)
 		}
 		return nil, "", c.NewNoValidCredentialSourcesError(err)
 	}
@@ -185,7 +210,15 @@ Error: %w`, err)
 }
 
 func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
+	logger := logging.RetrieveLogger(ctx)
+
 	ar := c.AssumeRoleWithWebIdentity
+
+	logger.Info(ctx, "Assuming IAM Role With Web Identity", map[string]any{
+		"tf_aws.assume_role_with_web_identity.role_arn":     ar.RoleARN,
+		"tf_aws.assume_role_with_web_identity.session_name": ar.SessionName,
+	})
+
 	client := stsClient(ctx, awsConfig, c)
 
 	appCreds := stscreds.NewWebIdentityRoleProvider(client, ar.RoleARN, ar, func(opts *stscreds.WebIdentityRoleOptions) {
@@ -217,7 +250,6 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 		return nil, errors.New("Assume Role: role ARN not set")
 	}
 
-	// When assuming a role, we need to first authenticate the base credentials above, then assume the desired role
 	logger.Info(ctx, "Assuming IAM Role", map[string]any{
 		"tf_aws.assume_role.role_arn":        ar.RoleARN,
 		"tf_aws.assume_role.session_name":    ar.SessionName,
@@ -225,6 +257,7 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 		"tf_aws.assume_role.source_identity": ar.SourceIdentity,
 	})
 
+	// When assuming a role, we need to first authenticate the base credentials above, then assume the desired role
 	client := stsClient(ctx, awsConfig, c)
 
 	appCreds := stscreds.NewAssumeRoleProvider(client, ar.RoleARN, func(opts *stscreds.AssumeRoleOptions) {

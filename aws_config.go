@@ -40,23 +40,29 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	baseCtx, logger := logging.New(ctx, loggerName)
 	baseCtx = logging.RegisterLogger(baseCtx, logger)
 
+	logger.Trace(baseCtx, "Resolving AWS configuration")
+
 	if metadataUrl := os.Getenv("AWS_METADATA_URL"); metadataUrl != "" {
 		logger.Warn(baseCtx, `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
 		if ec2MetadataServiceEndpoint := os.Getenv("AWS_EC2_METADATA_SERVICE_ENDPOINT"); ec2MetadataServiceEndpoint != "" {
 			if ec2MetadataServiceEndpoint != metadataUrl {
-				logger.Warn(baseCtx, fmt.Sprintf(`[WARN] The environment variable "AWS_EC2_METADATA_SERVICE_ENDPOINT" is already set to %q. Ignoring "AWS_METADATA_URL".`, ec2MetadataServiceEndpoint))
+				logger.Warn(baseCtx, fmt.Sprintf(`The environment variable "AWS_EC2_METADATA_SERVICE_ENDPOINT" is already set to %q. Ignoring "AWS_METADATA_URL".`, ec2MetadataServiceEndpoint))
 			}
 		} else {
-			logger.Warn(baseCtx, fmt.Sprintf(`[WARN] Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl))
+			logger.Warn(baseCtx, fmt.Sprintf(`Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl))
 			os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", metadataUrl)
 		}
 	}
 
+	logger.Debug(baseCtx, "Resolving credentials provider")
 	credentialsProvider, initialSource, err := getCredentialsProvider(baseCtx, c)
 	if err != nil {
 		return ctx, aws.Config{}, err
 	}
-	creds, _ := credentialsProvider.Retrieve(baseCtx)
+	creds, err := credentialsProvider.Retrieve(baseCtx)
+	if err != nil {
+		return ctx, aws.Config{}, fmt.Errorf("retrieving credentials: %w", err)
+	}
 	logger.Info(baseCtx, "Retrieved credentials", map[string]any{
 		"tf_aws.credentials_source": creds.Source,
 	})
@@ -87,6 +93,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 		)
 	}
 
+	logger.Debug(baseCtx, "Loading configuration")
 	awsConfig, err := config.LoadDefaultConfig(baseCtx, loadOptions...)
 	if err != nil {
 		return ctx, aws.Config{}, fmt.Errorf("loading configuration: %w", err)
@@ -191,11 +198,15 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	var httpClient config.HTTPClient
 
 	if v := c.HTTPClient; v == nil {
+		logger.Trace(ctx, "Building default HTTP client")
 		httpClient, err = defaultHttpClient(c)
 		if err != nil {
 			return nil, err
 		}
 	} else {
+		logger.Debug(ctx, "Setting HTTP client", map[string]any{
+			"tf_aws.http_client.source": configSourceProviderConfig,
+		})
 		httpClient = v
 	}
 
