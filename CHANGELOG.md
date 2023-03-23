@@ -3,6 +3,10 @@
 
 # v2.0.0-beta.25 (Unreleased)
 
+ENHANCEMENTS
+
+* Enables more logging during setup. ([#386](https://github.com/hashicorp/aws-sdk-go-base/pull/386))
+
 # v2.0.0-beta.24 (2023-02-23)
 
 BUG FIXES
