@@ -21,6 +21,6 @@ tools:
 	cd tools && go install github.com/pavius/impi/cmd/impi
 
 semgrep:
-	@docker run --rm --volume "${PWD}:/src" returntocorp/semgrep --config .semgrep --no-rewrite-rule-ids
+	@docker run --rm --volume "${PWD}:/src" returntocorp/semgrep semgrep --config .semgrep --no-rewrite-rule-ids
 
 .PHONY: lint test tools
