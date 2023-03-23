@@ -33,7 +33,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
 	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/mockdata"
-	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
@@ -108,16 +107,9 @@ func TestGetSession(t *testing.T) {
 		SharedCredentialsFile      string
 	}{
 		{
-			Config:      &awsbase.Config{},
-			Description: "no configuration or credentials",
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, awsbase.IsNoValidCredentialSourcesError) {
-					t.Fatalf("expected NoValidCredentialSourcesError, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			Config:        &awsbase.Config{},
+			Description:   "no configuration or credentials",
+			ValidateDiags: test.ExpectErrDiagValidator("NoValidCredentialSourcesError", awsbase.IsNoValidCredentialSourcesError),
 		},
 		{
 			Config: &awsbase.Config{
@@ -304,14 +296,14 @@ func TestGetSession(t *testing.T) {
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
-		[default]
-		aws_access_key_id = DefaultSharedCredentialsAccessKey
-		aws_secret_access_key = DefaultSharedCredentialsSecretKey
+[default]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
-		[SharedCredentialsProfile]
-		aws_access_key_id = ProfileSharedCredentialsAccessKey
-		aws_secret_access_key = ProfileSharedCredentialsSecretKey
-		`,
+[SharedCredentialsProfile]
+aws_access_key_id = ProfileSharedCredentialsAccessKey
+aws_secret_access_key = ProfileSharedCredentialsSecretKey
+`,
 		},
 		{
 			Config: &awsbase.Config{
@@ -707,10 +699,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
-		[default]
-		aws_access_key_id = DefaultSharedCredentialsAccessKey
-		aws_secret_access_key = DefaultSharedCredentialsSecretKey
-		`,
+[default]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+`,
 		},
 		{
 			Config: &awsbase.Config{
@@ -754,10 +746,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
-		[default]
-		aws_access_key_id = DefaultSharedCredentialsAccessKey
-		aws_secret_access_key = DefaultSharedCredentialsSecretKey
-		`,
+[default]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+`,
 		},
 		{
 			Config: &awsbase.Config{
@@ -805,10 +797,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
-		[default]
-		aws_access_key_id = DefaultSharedCredentialsAccessKey
-		aws_secret_access_key = DefaultSharedCredentialsSecretKey
-		`,
+[default]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+`,
 		},
 		{
 			Config: &awsbase.Config{
@@ -826,10 +818,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 			SharedCredentialsFile: `
-		[default]
-		aws_access_key_id = DefaultSharedCredentialsAccessKey
-		aws_secret_access_key = DefaultSharedCredentialsSecretKey
-		`,
+[default]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+`,
 		},
 		{
 			Config: &awsbase.Config{
@@ -869,15 +861,8 @@ region = us-east-1
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "assume role error",
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, awsbase.IsCannotAssumeRoleError) {
-					t.Fatalf("expected NoValidCredentialSourcesError, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			Description:    "assume role error",
+			ValidateDiags:  test.ExpectErrDiagValidator("CannotAssumeRoleError", awsbase.IsCannotAssumeRoleError),
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleInvalidEndpointInvalidClientTokenId,
@@ -891,16 +876,9 @@ region = us-east-1
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description: "ExpiredToken invalid body",
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					return strings.Contains(err.Error(), "ExpiredToken")
-				}) {
-					t.Fatalf("expected ExpiredToken, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator("ExpiredToken", func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredToken")
+			}),
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredToken,
 			},
@@ -912,16 +890,9 @@ region = us-east-1
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description: "ExpiredToken valid body", // in case they change it
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					return strings.Contains(err.Error(), "ExpiredToken")
-				}) {
-					t.Fatalf("expected ExpiredToken, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator("ExpiredToken", func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredToken")
+			}),
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidBodyExpiredToken,
 			},
@@ -933,16 +904,9 @@ region = us-east-1
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description: "ExpiredTokenException invalid body",
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					return strings.Contains(err.Error(), "ExpiredTokenException")
-				}) {
-					t.Fatalf("expected ExpiredTokenException, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator("ExpiredTokenException", func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredTokenException")
+			}),
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredTokenException,
 			},
@@ -954,16 +918,9 @@ region = us-east-1
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description: "ExpiredTokenException valid body", // in case they change it
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					return strings.Contains(err.Error(), "ExpiredTokenException")
-				}) {
-					t.Fatalf("expected ExpiredTokenException, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator("ExpiredTokenException", func(err error) bool {
+				return strings.Contains(err.Error(), "ExpiredTokenException")
+			}),
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidBodyExpiredTokenException,
 			},
@@ -975,16 +932,9 @@ region = us-east-1
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description: "RequestExpired invalid body",
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					return strings.Contains(err.Error(), "RequestExpired")
-				}) {
-					t.Fatalf("expected RequestExpired, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator("RequestExpired", func(err error) bool {
+				return strings.Contains(err.Error(), "RequestExpired")
+			}),
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityInvalidBodyRequestExpired,
 			},
@@ -996,16 +946,9 @@ region = us-east-1
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description: "RequestExpired valid body", // in case they change it
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					return strings.Contains(err.Error(), "RequestExpired")
-				}) {
-					t.Fatalf("expected RequestExpired, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator("RequestExpired", func(err error) bool {
+				return strings.Contains(err.Error(), "RequestExpired")
+			}),
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidBodyRequestExpired,
 			},
@@ -1056,15 +999,8 @@ region = us-east-1
 				Region:                        "us-east-1",
 				EC2MetadataServiceEnableState: imds.ClientDisabled,
 			},
-			Description: "skip EC2 Metadata API check",
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, awsbase.IsNoValidCredentialSourcesError) {
-					t.Fatalf("expected NoValidCredentialSourcesError, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			Description:    "skip EC2 Metadata API check",
+			ValidateDiags:  test.ExpectErrDiagValidator("NoValidCredentialSourcesError", awsbase.IsNoValidCredentialSourcesError),
 			ExpectedRegion: "us-east-1",
 			// The IMDS server must be enabled so that auth will succeed if the IMDS is called
 			EnableEc2MetadataServer: true,
@@ -1080,17 +1016,10 @@ region = us-east-1
 			EnvironmentVariables: map[string]string{
 				"AWS_PROFILE": "no-such-profile",
 			},
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					var e configv2.SharedConfigProfileNotExistError
-					return errors.As(err, &e)
-				}) {
-					t.Fatalf("expected NoValidCredentialSourcesError, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator("SharedConfigProfileNotExistError", func(err error) bool {
+				var e configv2.SharedConfigProfileNotExistError
+				return errors.As(err, &e)
+			}),
 			SharedCredentialsFile: `
 [some-profile]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
@@ -1103,17 +1032,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region:  "us-east-1",
 			},
 			Description: "invalid profile name from config",
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					var e configv2.SharedConfigProfileNotExistError
-					return errors.As(err, &e)
-				}) {
-					t.Fatalf("expected NoValidCredentialSourcesError, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator("SharedConfigProfileNotExistError", func(err error) bool {
+				var e configv2.SharedConfigProfileNotExistError
+				return errors.As(err, &e)
+			}),
 			SharedCredentialsFile: `
 [some-profile]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
@@ -1152,17 +1074,10 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
 				"AWS_PROFILE":           "no-such-profile",
 			},
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					var e configv2.SharedConfigProfileNotExistError
-					return errors.As(err, &e)
-				}) {
-					t.Fatalf("expected NoValidCredentialSourcesError, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator("SharedConfigProfileNotExistError", func(err error) bool {
+				var e configv2.SharedConfigProfileNotExistError
+				return errors.As(err, &e)
+			}),
 			SharedCredentialsFile: `
 [some-profile]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
@@ -2103,16 +2018,9 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				SecretKey:  servicemocks.MockStaticSecretKey,
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					return strings.Contains(err.Error(), "role ARN not set")
-				}) {
-					t.Fatalf("expected \"role ARN not set\" error, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator(`"role ARN not set" error`, func(err error) bool {
+				return strings.Contains(err.Error(), "role ARN not set")
+			}),
 		},
 	}
 
@@ -2382,16 +2290,9 @@ web_identity_token_file = no-such-file
 				AssumeRoleWithWebIdentity: &awsbase.AssumeRoleWithWebIdentity{},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					return strings.Contains(err.Error(), "role ARN not set")
-				}) {
-					t.Fatalf("expected \"role ARN not set\" error, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator(`"role ARN not set" error`, func(err error) bool {
+				return strings.Contains(err.Error(), "role ARN not set")
+			}),
 		},
 
 		"invalid no token": {
@@ -2401,16 +2302,9 @@ web_identity_token_file = no-such-file
 				},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: func(t *testing.T, diags diag.Diagnostics) {
-				if !test.ExpectErrDiag(diags, func(err error) bool {
-					return strings.Contains(err.Error(), "one of WebIdentityToken, WebIdentityTokenFile must be set")
-				}) {
-					t.Fatalf("expected \"one of WebIdentityToken, WebIdentityTokenFile must be set\" error, got %v", diags)
-				}
-				if l := diags.Count(); l != 1 {
-					t.Fatalf("expected 1 Diagnostic, got %d", l)
-				}
-			},
+			ValidateDiags: test.ExpectErrDiagValidator(`"one of WebIdentityToken, WebIdentityTokenFile must be set" error`, func(err error) bool {
+				return strings.Contains(err.Error(), "one of WebIdentityToken, WebIdentityTokenFile must be set")
+			}),
 		},
 	}
 
