@@ -1198,9 +1198,12 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				return
 			}
 
-			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
-			if err != nil {
-				t.Fatalf("expected no error from GetSession(), got '%[1]T' error: %[1]s", err)
+			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
+
+			diags.Append(ds...)
+
+			if diags.HasError() {
+				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
 			}
 
 			credentialsValue, err := actualSession.Config.Credentials.GetWithContext(ctx)
@@ -1676,9 +1679,12 @@ use_fips_endpoint = true
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
-			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
+			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
+
+			diags.Append(ds...)
+
+			if diags.HasError() {
+				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
 			}
 
 			if e, a := testCase.ExpectedUseFIPSEndpoint, actualSession.Config.UseFIPSEndpoint; e != a {
@@ -1895,9 +1901,12 @@ ca_bundle = no-such-file
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
-			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
+			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
+
+			diags.Append(ds...)
+
+			if diags.HasError() {
+				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
 			}
 
 			roundTripper := actualSession.Config.HTTPClient.Transport
@@ -2082,9 +2091,12 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				return
 			}
 
-			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
-			if err != nil {
-				t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
+			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
+
+			diags.Append(ds...)
+
+			if diags.HasError() {
+				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
 			}
 
 			credentialsValue, err := actualSession.Config.Credentials.GetWithContext(ctx)
@@ -2407,9 +2419,12 @@ web_identity_token_file = no-such-file
 				return
 			}
 
-			actualSession, err := GetSession(ctx, &awsConfig, testCase.Config)
-			if err != nil {
-				t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
+			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
+
+			diags.Append(ds...)
+
+			if diags.HasError() {
+				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
 			}
 
 			credentialsValue, err := actualSession.Config.Credentials.GetWithContext(ctx)
@@ -2605,9 +2620,12 @@ func TestLogger(t *testing.T) {
 
 	// Ignore log lines from GetAwsConfig()
 
-	_, err = GetSession(ctx, &awsConfig, config)
-	if err != nil {
-		t.Fatalf("GetSession: unexpected '%[1]T': %[1]s", err)
+	_, ds := GetSession(ctx, &awsConfig, config)
+
+	diags.Append(ds...)
+
+	if diags.HasError() {
+		t.Fatalf("expected no errors from GetSession(), got : %v", diags)
 	}
 
 	lines, err := tflogtest.MultilineJSONDecode(&buf)
