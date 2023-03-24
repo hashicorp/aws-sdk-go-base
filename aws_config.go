@@ -46,14 +46,26 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	logger.Trace(baseCtx, "Resolving AWS configuration")
 
 	if metadataUrl := os.Getenv("AWS_METADATA_URL"); metadataUrl != "" {
-		logger.Warn(baseCtx, `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
-		if ec2MetadataServiceEndpoint := os.Getenv("AWS_EC2_METADATA_SERVICE_ENDPOINT"); ec2MetadataServiceEndpoint != "" {
-			if ec2MetadataServiceEndpoint != metadataUrl {
-				logger.Warn(baseCtx, fmt.Sprintf(`The environment variable "AWS_EC2_METADATA_SERVICE_ENDPOINT" is already set to %q. Ignoring "AWS_METADATA_URL".`, ec2MetadataServiceEndpoint))
+		// Ignore deprecated value if it's overridden in the config
+		if c.EC2MetadataServiceEndpoint == "" {
+			warningMsg := `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`
+
+			if ec2MetadataServiceEndpoint := os.Getenv("AWS_EC2_METADATA_SERVICE_ENDPOINT"); ec2MetadataServiceEndpoint != "" {
+				if ec2MetadataServiceEndpoint != metadataUrl {
+					warningMsg += "\n" + fmt.Sprintf(
+						`"AWS_EC2_METADATA_SERVICE_ENDPOINT" is set to %q and "AWS_METADATA_URL" is set to %q. Ignoring "AWS_METADATA_URL".`,
+						ec2MetadataServiceEndpoint,
+						metadataUrl,
+					)
+				}
+			} else {
+				logger.Warn(baseCtx, fmt.Sprintf(`Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl))
+				os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", metadataUrl)
 			}
-		} else {
-			logger.Warn(baseCtx, fmt.Sprintf(`Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl))
-			os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", metadataUrl)
+			diags = diags.AddWarning(
+				"Deprecated Environment Variable",
+				warningMsg,
+			)
 		}
 	}
 
@@ -64,7 +76,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	}
 	creds, err := credentialsProvider.Retrieve(baseCtx)
 	if err != nil {
-		return ctx, aws.Config{}, fmt.Errorf("retrieving credentials: %w", err)
+		return ctx, aws.Config{}, diags.AddSimpleError(fmt.Errorf("retrieving credentials: %w", err))
 	}
 	logger.Info(baseCtx, "Retrieved credentials", map[string]any{
 		"tf_aws.credentials_source": creds.Source,
@@ -110,7 +122,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 		}
 	}
 
-	return ctx, awsConfig, nil
+	return ctx, awsConfig, diags
 }
 
 // Adapted from the per-service-client `resolveRetryer()` functions in the AWS SDK for Go v2

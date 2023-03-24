@@ -27,6 +27,7 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
@@ -2028,6 +2029,7 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 		EnvironmentVariables               map[string]string
 		SharedConfigurationFile            string
 		ExpectedEC2MetadataServiceEndpoint string
+		ValidateDiags                      test.DiagsValidator
 	}{
 		"no configuration": {
 			Config: &Config{
@@ -2065,6 +2067,10 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 				"AWS_METADATA_URL": "https://127.0.0.1:1234",
 			},
 			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewWarningDiagnostic(
+				"Deprecated Environment Variable",
+				`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`,
+			)),
 		},
 		"envvar overrides deprecated envvar": {
 			Config: &Config{
@@ -2076,6 +2082,11 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 				"AWS_EC2_METADATA_SERVICE_ENDPOINT": "https://127.0.0.1:1234",
 			},
 			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewWarningDiagnostic(
+				"Deprecated Environment Variable",
+				`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`+"\n"+
+					`"AWS_EC2_METADATA_SERVICE_ENDPOINT" is set to "https://127.0.0.1:1234" and "AWS_METADATA_URL" is set to "https://127.1.1.1:1111". Ignoring "AWS_METADATA_URL".`,
+			)),
 		},
 
 		"shared configuration file": {
@@ -2140,11 +2151,19 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 ec2_metadata_service_endpoint = https://127.1.1.1:1111
 `,
 			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewWarningDiagnostic(
+				"Deprecated Environment Variable",
+				`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`,
+			)),
 		},
 	}
 
 	for testName, testCase := range testCases {
 		testCase := testCase
+
+		if testCase.ValidateDiags == nil {
+			testCase.ValidateDiags = test.ExpectNoDiags
+		}
 
 		t.Run(testName, func(t *testing.T) {
 			oldEnv := servicemocks.InitSessionTestEnv()
@@ -2175,9 +2194,8 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 			testCase.Config.SkipCredsValidation = true
 
 			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
-			if diags.HasError() {
-				t.Fatalf("error in GetAwsConfig(): %v", diags)
-			}
+
+			testCase.ValidateDiags(t, diags)
 
 			ec2MetadataServiceEndpoint, _, err := awsconfig.ResolveEC2IMDSEndpointConfig(awsConfig.ConfigSources)
 			if err != nil {

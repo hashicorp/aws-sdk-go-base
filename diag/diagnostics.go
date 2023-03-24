@@ -16,7 +16,7 @@ func (diags Diagnostics) AddSimpleError(err error) Diagnostics {
 }
 
 // AddWarning adds a generic warning diagnostic to the collection.
-func (diags *Diagnostics) AddWarning(summary string, detail string) Diagnostics {
+func (diags Diagnostics) AddWarning(summary string, detail string) Diagnostics {
 	return diags.Append(NewWarningDiagnostic(summary, detail))
 }
 
