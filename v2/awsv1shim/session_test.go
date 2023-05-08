@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -17,7 +16,6 @@ import (
 	"testing"
 	"time"
 
-	retryv2 "github.com/aws/aws-sdk-go-v2/aws/retry"
 	configv2 "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go/aws"
@@ -32,7 +30,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
 	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/mockdata"
-	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
@@ -1296,7 +1293,7 @@ func TestMaxAttempts(t *testing.T) {
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			ExpectedMaxAttempts: retryv2.DefaultMaxAttempts,
+			ExpectedMaxAttempts: -1,
 		},
 
 		"config": {
@@ -2356,20 +2353,6 @@ func TestSessionRetryHandlers(t *testing.T) {
 		ExpectRetryToBeAttempted bool
 	}{
 		{
-			Description:              "other error under maxRetries",
-			RetryCount:               maxRetries - 1,
-			Error:                    errors.New("some error"),
-			ExpectedRetryableValue:   true, // defaults to true for non-AWS errors
-			ExpectRetryToBeAttempted: true,
-		},
-		{
-			Description:              "other error over maxRetries",
-			RetryCount:               maxRetries,
-			Error:                    errors.New("some error"),
-			ExpectedRetryableValue:   true,  // defaults to true for non-AWS errors
-			ExpectRetryToBeAttempted: false, // Does not actually get retried, because over max retry limit
-		},
-		{
 			Description:              "ExpiredToken error no retries",
 			RetryCount:               maxRetries,
 			Error:                    awserr.New("ExpiredToken", "The security token included in the request is expired", nil),
@@ -2389,48 +2372,6 @@ func TestSessionRetryHandlers(t *testing.T) {
 			Error:                    awserr.New("RequestExpired", "The security token included in the request is expired", nil),
 			ExpectedRetryableValue:   false,
 			ExpectRetryToBeAttempted: false,
-		},
-		{
-			Description:              "send request no such host failed under MaxNetworkRetryCount",
-			RetryCount:               constants.MaxNetworkRetryCount - 1,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("no such host")}),
-			ExpectedRetryableValue:   true,
-			ExpectRetryToBeAttempted: true,
-		},
-		{
-			Description:              "send request no such host failed over MaxNetworkRetryCount",
-			RetryCount:               constants.MaxNetworkRetryCount,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("no such host")}),
-			ExpectedRetryableValue:   false,
-			ExpectRetryToBeAttempted: false,
-		},
-		{
-			Description:              "send request connection refused failed under MaxNetworkRetryCount",
-			RetryCount:               constants.MaxNetworkRetryCount - 1,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("connection refused")}),
-			ExpectedRetryableValue:   true,
-			ExpectRetryToBeAttempted: true,
-		},
-		{
-			Description:              "send request connection refused failed over MaxNetworkRetryCount",
-			RetryCount:               constants.MaxNetworkRetryCount,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("connection refused")}),
-			ExpectedRetryableValue:   false,
-			ExpectRetryToBeAttempted: false,
-		},
-		{
-			Description:              "send request other error failed under MaxNetworkRetryCount",
-			RetryCount:               constants.MaxNetworkRetryCount - 1,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("other error")}),
-			ExpectedRetryableValue:   true,
-			ExpectRetryToBeAttempted: true,
-		},
-		{
-			Description:              "send request other error failed over MaxNetworkRetryCount",
-			RetryCount:               constants.MaxNetworkRetryCount,
-			Error:                    awserr.New(request.ErrCodeRequestError, "send request failed", &net.OpError{Op: "dial", Err: errors.New("other error")}),
-			ExpectedRetryableValue:   true,
-			ExpectRetryToBeAttempted: true,
 		},
 	}
 	for _, testcase := range testcases {

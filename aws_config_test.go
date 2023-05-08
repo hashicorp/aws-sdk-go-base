@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -28,7 +27,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
-	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
@@ -1434,7 +1432,7 @@ func TestMaxAttempts(t *testing.T) {
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			ExpectedMaxAttempts: retry.DefaultMaxAttempts,
+			ExpectedMaxAttempts: 0,
 		},
 
 		"config": {
@@ -1533,11 +1531,11 @@ max_attempts = 10
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
 
-			retryer := awsConfig.Retryer()
-			if retryer == nil {
-				t.Fatal("no retryer set")
+			retryerFactory := awsConfig.Retryer
+			if retryerFactory != nil {
+				t.Fatal("expected no retryer factory")
 			}
-			if a, e := retryer.MaxAttempts(), testCase.ExpectedMaxAttempts; a != e {
+			if a, e := awsConfig.RetryMaxAttempts, testCase.ExpectedMaxAttempts; a != e {
 				t.Errorf(`expected MaxAttempts "%d", got: "%d"`, e, a)
 			}
 		})
@@ -2967,13 +2965,6 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	}
 }
 
-type mockRetryableError struct{ b bool }
-
-func (m mockRetryableError) RetryableError() bool { return m.b }
-func (m mockRetryableError) Error() string {
-	return fmt.Sprintf("mock retryable %t", m.b)
-}
-
 func TestRetryHandlers(t *testing.T) {
 	const maxRetries = 10
 
@@ -2982,114 +2973,6 @@ func TestRetryHandlers(t *testing.T) {
 		ExpectResults retry.AttemptResults
 		Err           error
 	}{
-		"stops at maxRetries for retryable errors": {
-			NextHandler: func() middleware.FinalizeHandler {
-				num := 0
-				reqsErrs := make([]error, maxRetries)
-				for i := 0; i < maxRetries; i++ {
-					reqsErrs[i] = mockRetryableError{b: true}
-				}
-				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
-					if num >= len(reqsErrs) {
-						err = fmt.Errorf("more requests than expected")
-					} else {
-						err = reqsErrs[num]
-						num++
-					}
-					return out, metadata, err
-				})
-			},
-			Err: fmt.Errorf("exceeded maximum number of attempts"),
-			ExpectResults: func() retry.AttemptResults {
-				results := retry.AttemptResults{
-					Results: make([]retry.AttemptResult, maxRetries),
-				}
-				for i := 0; i < maxRetries-1; i++ {
-					results.Results[i] = retry.AttemptResult{
-						Err:       mockRetryableError{b: true},
-						Retryable: true,
-						Retried:   true,
-					}
-				}
-				results.Results[maxRetries-1] = retry.AttemptResult{
-					Err:       &retry.MaxAttemptsError{Attempt: maxRetries, Err: mockRetryableError{b: true}},
-					Retryable: true,
-				}
-				return results
-			}(),
-		},
-		"stops at MaxNetworkRetryCount for 'no such host' errors": {
-			NextHandler: func() middleware.FinalizeHandler {
-				num := 0
-				reqsErrs := make([]error, constants.MaxNetworkRetryCount)
-				for i := 0; i < constants.MaxNetworkRetryCount; i++ {
-					reqsErrs[i] = &net.OpError{Op: "dial", Err: errors.New("no such host")}
-				}
-				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
-					if num >= len(reqsErrs) {
-						err = fmt.Errorf("more requests than expected")
-					} else {
-						err = reqsErrs[num]
-						num++
-					}
-					return out, metadata, err
-				})
-			},
-			Err: fmt.Errorf("exceeded maximum number of attempts"),
-			ExpectResults: func() retry.AttemptResults {
-				results := retry.AttemptResults{
-					Results: make([]retry.AttemptResult, constants.MaxNetworkRetryCount),
-				}
-				for i := 0; i < constants.MaxNetworkRetryCount-1; i++ {
-					results.Results[i] = retry.AttemptResult{
-						Err:       &net.OpError{Op: "dial", Err: errors.New("no such host")},
-						Retryable: true,
-						Retried:   true,
-					}
-				}
-				results.Results[constants.MaxNetworkRetryCount-1] = retry.AttemptResult{
-					Err:       &retry.MaxAttemptsError{Attempt: constants.MaxNetworkRetryCount, Err: &net.OpError{Op: "dial", Err: errors.New("no such host")}},
-					Retryable: true,
-				}
-				return results
-			}(),
-		},
-		"stops at MaxNetworkRetryCount for 'connection refused' errors": {
-			NextHandler: func() middleware.FinalizeHandler {
-				num := 0
-				reqsErrs := make([]error, constants.MaxNetworkRetryCount)
-				for i := 0; i < constants.MaxNetworkRetryCount; i++ {
-					reqsErrs[i] = &net.OpError{Op: "dial", Err: errors.New("connection refused")}
-				}
-				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
-					if num >= len(reqsErrs) {
-						err = fmt.Errorf("more requests than expected")
-					} else {
-						err = reqsErrs[num]
-						num++
-					}
-					return out, metadata, err
-				})
-			},
-			Err: fmt.Errorf("exceeded maximum number of attempts"),
-			ExpectResults: func() retry.AttemptResults {
-				results := retry.AttemptResults{
-					Results: make([]retry.AttemptResult, constants.MaxNetworkRetryCount),
-				}
-				for i := 0; i < constants.MaxNetworkRetryCount-1; i++ {
-					results.Results[i] = retry.AttemptResult{
-						Err:       &net.OpError{Op: "dial", Err: errors.New("connection refused")},
-						Retryable: true,
-						Retried:   true,
-					}
-				}
-				results.Results[constants.MaxNetworkRetryCount-1] = retry.AttemptResult{
-					Err:       &retry.MaxAttemptsError{Attempt: constants.MaxNetworkRetryCount, Err: &net.OpError{Op: "dial", Err: errors.New("connection refused")}},
-					Retryable: true,
-				}
-				return results
-			}(),
-		},
 		"no retries for ExpiredToken": {
 			NextHandler: func() middleware.FinalizeHandler {
 				num := 0
@@ -3160,42 +3043,6 @@ func TestRetryHandlers(t *testing.T) {
 				return results
 			}(),
 		},
-		"stops at maxRetries for other network errors": {
-			NextHandler: func() middleware.FinalizeHandler {
-				num := 0
-				reqsErrs := make([]error, maxRetries)
-				for i := 0; i < maxRetries; i++ {
-					reqsErrs[i] = &net.OpError{Op: "dial", Err: errors.New("other error")}
-				}
-				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
-					if num >= len(reqsErrs) {
-						err = fmt.Errorf("more requests than expected")
-					} else {
-						err = reqsErrs[num]
-						num++
-					}
-					return out, metadata, err
-				})
-			},
-			Err: fmt.Errorf("exceeded maximum number of attempts"),
-			ExpectResults: func() retry.AttemptResults {
-				results := retry.AttemptResults{
-					Results: make([]retry.AttemptResult, maxRetries),
-				}
-				for i := 0; i < maxRetries-1; i++ {
-					results.Results[i] = retry.AttemptResult{
-						Err:       &net.OpError{Op: "dial", Err: errors.New("other error")},
-						Retryable: true,
-						Retried:   true,
-					}
-				}
-				results.Results[maxRetries-1] = retry.AttemptResult{
-					Err:       &retry.MaxAttemptsError{Attempt: maxRetries, Err: &net.OpError{Op: "dial", Err: errors.New("other error")}},
-					Retryable: true,
-				}
-				return results
-			}(),
-		},
 	}
 
 	for name, testcase := range testcases {
@@ -3212,19 +3059,15 @@ func TestRetryHandlers(t *testing.T) {
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
 			}
-			ctx, awsConfig, err := GetAwsConfig(context.Background(), config)
+			ctx, _, err := GetAwsConfig(context.Background(), config)
 			if err != nil {
 				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
 			}
-			if awsConfig.Retryer == nil {
-				t.Fatal("No Retryer configured on awsConfig")
-			}
 
-			am := retry.NewAttemptMiddleware(&withNoDelay{
-				Retryer: awsConfig.Retryer(),
-			}, func(i interface{}) interface{} {
-				return i
-			})
+			am := retry.NewAttemptMiddleware(retry.NewStandard(),
+				func(i interface{}) interface{} {
+					return i
+				})
 			_, metadata, err := am.HandleFinalize(ctx, middleware.FinalizeInput{Request: nil}, testcase.NextHandler())
 			if err != nil && testcase.Err == nil {
 				t.Errorf("expect no error, got %v", err)
@@ -3252,19 +3095,6 @@ func TestRetryHandlers(t *testing.T) {
 			}
 		})
 	}
-}
-
-type withNoDelay struct {
-	aws.Retryer
-}
-
-func (r *withNoDelay) RetryDelay(attempt int, err error) (time.Duration, error) {
-	delay, delayErr := r.Retryer.RetryDelay(attempt, err)
-	if delayErr != nil {
-		return delay, delayErr
-	}
-
-	return 0 * time.Second, nil
 }
 
 func TestLogger(t *testing.T) {

@@ -46,11 +46,14 @@ func getSessionOptions(ctx context.Context, awsC *awsv2.Config, c *awsbase.Confi
 		Config: aws.Config{
 			Credentials:          newV2Credentials(awsC.Credentials),
 			HTTPClient:           httpClient,
-			MaxRetries:           aws.Int(0),
 			Region:               aws.String(awsC.Region),
 			UseFIPSEndpoint:      convertFIPSEndpointState(useFIPSEndpoint),
 			UseDualStackEndpoint: convertDualStackEndpointState(useDualStackEndpoint),
 		},
+	}
+
+	if awsC.RetryMaxAttempts != 0 {
+		options.Config.MaxRetries = &awsC.RetryMaxAttempts
 	}
 
 	if !c.SuppressDebugLog {
@@ -96,11 +99,6 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 		return nil, fmt.Errorf("creating AWS session: %w", err)
 	}
 
-	// Set retries after resolving credentials to prevent retries during resolution
-	if retryer := awsC.Retryer(); retryer != nil {
-		sess = sess.Copy(&aws.Config{MaxRetries: aws.Int(retryer.MaxAttempts())})
-	}
-
 	SetSessionUserAgent(sess, c.APNInfo, c.UserAgent)
 
 	sess.Handlers.Build.PushBack(userAgentFromContextHandler)
@@ -120,38 +118,11 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(v))
 	}
 
-	// Generally, we want to configure a lower retry theshold for networking issues
-	// as the session retry threshold is very high by default and can mask permanent
-	// networking failures, such as a non-existent service endpoint.
-	// MaxRetries will override this logic if it has a lower retry threshold.
-	// NOTE: This logic can be fooled by other request errors raising the retry count
-	//       before any networking error occurs
 	sess.Handlers.Retry.PushBack(func(r *request.Request) {
 		logger := logging.RetrieveLogger(r.Context())
 
 		if r.IsErrorExpired() {
 			logger.Warn(ctx, "Disabling retries after next request due to expired credentials", map[string]any{
-				"error": r.Error,
-			})
-			r.Retryable = aws.Bool(false)
-		}
-
-		if r.RetryCount < constants.MaxNetworkRetryCount {
-			return
-		}
-
-		// RequestError: send request failed
-		// caused by: Post https://FQDN/: dial tcp: lookup FQDN: no such host
-		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "no such host") {
-			logger.Warn(ctx, "Disabling retries after next request due to networking error", map[string]any{
-				"error": r.Error,
-			})
-			r.Retryable = aws.Bool(false)
-		}
-		// RequestError: send request failed
-		// caused by: Post https://FQDN/: dial tcp IPADDRESS:443: connect: connection refused
-		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "connection refused") {
-			logger.Warn(ctx, "Disabling retries after next request due to networking error", map[string]any{
 				"error": r.Error,
 			})
 			r.Retryable = aws.Bool(false)
