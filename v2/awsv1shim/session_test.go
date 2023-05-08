@@ -19,13 +19,11 @@ import (
 	configv2 "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
 	"github.com/aws/aws-sdk-go/aws/client/metadata"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/iam"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
@@ -2337,95 +2335,6 @@ web_identity_token_file = no-such-file
 
 			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(credentials.Value{}, "ProviderName")); diff != "" {
 				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestSessionRetryHandlers(t *testing.T) {
-	const maxRetries = 25
-
-	testcases := []struct {
-		Description              string
-		RetryCount               int
-		Error                    error
-		ExpectedRetryableValue   bool
-		ExpectRetryToBeAttempted bool
-	}{
-		{
-			Description:              "ExpiredToken error no retries",
-			RetryCount:               maxRetries,
-			Error:                    awserr.New("ExpiredToken", "The security token included in the request is expired", nil),
-			ExpectedRetryableValue:   false,
-			ExpectRetryToBeAttempted: false,
-		},
-		{
-			Description:              "ExpiredTokenException error no retries",
-			RetryCount:               maxRetries,
-			Error:                    awserr.New("ExpiredTokenException", "The security token included in the request is expired", nil),
-			ExpectedRetryableValue:   false,
-			ExpectRetryToBeAttempted: false,
-		},
-		{
-			Description:              "RequestExpired error no retries",
-			RetryCount:               maxRetries,
-			Error:                    awserr.New("RequestExpired", "The security token included in the request is expired", nil),
-			ExpectedRetryableValue:   false,
-			ExpectRetryToBeAttempted: false,
-		},
-	}
-	for _, testcase := range testcases {
-		testcase := testcase
-
-		t.Run(testcase.Description, func(t *testing.T) {
-			ctx := test.Context(t)
-
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
-
-			config := &awsbase.Config{
-				AccessKey:           servicemocks.MockStaticAccessKey,
-				MaxRetries:          maxRetries,
-				SecretKey:           servicemocks.MockStaticSecretKey,
-				SkipCredsValidation: true,
-			}
-			ctx, awsConfig, err := awsbase.GetAwsConfig(ctx, config)
-			if err != nil {
-				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
-			}
-			session, err := GetSession(ctx, &awsConfig, config)
-			if err != nil {
-				t.Fatalf("unexpected error from GetSession(): %s", err)
-			}
-
-			iamconn := iam.New(session)
-
-			request, _ := iamconn.GetUserRequest(&iam.GetUserInput{})
-			request.RetryCount = testcase.RetryCount
-			request.Error = testcase.Error
-
-			// Prevent the retryer from using the default retry delay
-			retryer := request.Retryer.(client.DefaultRetryer)
-			retryer.MinRetryDelay = 1 * time.Microsecond
-			retryer.MaxRetryDelay = 1 * time.Microsecond
-			request.Retryer = retryer
-
-			request.Handlers.Retry.Run(request)
-			request.Handlers.AfterRetry.Run(request)
-
-			if request.Retryable == nil {
-				t.Fatal("retryable is nil")
-			}
-			if actual, expected := aws.BoolValue(request.Retryable), testcase.ExpectedRetryableValue; actual != expected {
-				t.Errorf("expected Retryable to be %t, got %t", expected, actual)
-			}
-
-			expectedRetryCount := testcase.RetryCount
-			if testcase.ExpectRetryToBeAttempted {
-				expectedRetryCount++
-			}
-			if actual, expected := request.RetryCount, expectedRetryCount; actual != expected {
-				t.Errorf("expected RetryCount to be %d, got %d", expected, actual)
 			}
 		})
 	}

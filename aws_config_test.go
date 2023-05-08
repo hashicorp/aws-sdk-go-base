@@ -17,11 +17,9 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
-	"github.com/aws/smithy-go"
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/go-cmp/cmp"
@@ -2960,138 +2958,6 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 
 			if part != tc.expectedPartition {
 				t.Errorf("expected partition (%s), got: %s", tc.expectedPartition, part)
-			}
-		})
-	}
-}
-
-func TestRetryHandlers(t *testing.T) {
-	const maxRetries = 10
-
-	testcases := map[string]struct {
-		NextHandler   func() middleware.FinalizeHandler
-		ExpectResults retry.AttemptResults
-		Err           error
-	}{
-		"no retries for ExpiredToken": {
-			NextHandler: func() middleware.FinalizeHandler {
-				num := 0
-				reqsErrs := make([]error, 2)
-				for i := 0; i < 2; i++ {
-					reqsErrs[i] = &smithy.OperationError{
-						ServiceID:     "STS",
-						OperationName: "GetCallerIdentity",
-						Err: &smithyhttp.ResponseError{
-							Response: &smithyhttp.Response{
-								Response: &http.Response{
-									StatusCode: 403,
-								},
-							},
-							Err: &smithy.GenericAPIError{
-								Code:    "ExpiredToken",
-								Message: "The security token included in the request is expired",
-							},
-						},
-					}
-				}
-				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
-					if num >= len(reqsErrs) {
-						err = fmt.Errorf("more requests than expected")
-					} else {
-						err = reqsErrs[num]
-						num++
-					}
-					return out, metadata, err
-				})
-			},
-			Err: &smithy.OperationError{
-				ServiceID:     "STS",
-				OperationName: "GetCallerIdentity",
-				Err: &smithyhttp.ResponseError{
-					Response: &smithyhttp.Response{
-						Response: &http.Response{
-							StatusCode: 403,
-						},
-					},
-					Err: &smithy.GenericAPIError{
-						Code:    "ExpiredToken",
-						Message: "The security token included in the request is expired",
-					},
-				},
-			},
-			ExpectResults: func() retry.AttemptResults {
-				results := retry.AttemptResults{
-					Results: make([]retry.AttemptResult, 1),
-				}
-				results.Results[0] = retry.AttemptResult{
-					Err: &smithy.OperationError{
-						ServiceID:     "STS",
-						OperationName: "GetCallerIdentity",
-						Err: &smithyhttp.ResponseError{
-							Response: &smithyhttp.Response{
-								Response: &http.Response{
-									StatusCode: 403,
-								},
-							},
-							Err: &smithy.GenericAPIError{
-								Code:    "ExpiredToken",
-								Message: "The security token included in the request is expired",
-							},
-						},
-					},
-				}
-				return results
-			}(),
-		},
-	}
-
-	for name, testcase := range testcases {
-		testcase := testcase
-
-		t.Run(name, func(t *testing.T) {
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
-
-			config := &Config{
-				AccessKey:           servicemocks.MockStaticAccessKey,
-				Region:              "us-east-1",
-				MaxRetries:          maxRetries,
-				SecretKey:           servicemocks.MockStaticSecretKey,
-				SkipCredsValidation: true,
-			}
-			ctx, _, err := GetAwsConfig(context.Background(), config)
-			if err != nil {
-				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
-			}
-
-			am := retry.NewAttemptMiddleware(retry.NewStandard(),
-				func(i interface{}) interface{} {
-					return i
-				})
-			_, metadata, err := am.HandleFinalize(ctx, middleware.FinalizeInput{Request: nil}, testcase.NextHandler())
-			if err != nil && testcase.Err == nil {
-				t.Errorf("expect no error, got %v", err)
-			} else if err == nil && testcase.Err != nil {
-				t.Errorf("expect error, got none")
-			} else if err != nil && testcase.Err != nil {
-				if !strings.Contains(err.Error(), testcase.Err.Error()) {
-					t.Errorf("expect %v, got %v", testcase.Err, err)
-				}
-			}
-
-			attemptResults, ok := retry.GetAttemptResults(metadata)
-			if !ok {
-				t.Fatalf("expected metadata to contain attempt results, got none")
-			}
-			if e, a := testcase.ExpectResults, attemptResults; !reflect.DeepEqual(e, a) {
-				t.Fatalf("expected %v, got %v", e, a)
-			}
-
-			for i, attempt := range attemptResults.Results {
-				_, ok := retry.GetAttemptResults(attempt.ResponseMetadata)
-				if ok {
-					t.Errorf("expect no attempt to include AttemptResults metadata, %v does, %#v", i, attempt)
-				}
 			}
 		})
 	}

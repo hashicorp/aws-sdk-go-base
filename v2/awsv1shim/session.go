@@ -118,17 +118,6 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 		sess.Handlers.Build.PushBack(request.MakeAddToUserAgentFreeFormHandler(v))
 	}
 
-	sess.Handlers.Retry.PushBack(func(r *request.Request) {
-		logger := logging.RetrieveLogger(r.Context())
-
-		if r.IsErrorExpired() {
-			logger.Warn(ctx, "Disabling retries after next request due to expired credentials", map[string]any{
-				"error": r.Error,
-			})
-			r.Retryable = aws.Bool(false)
-		}
-	})
-
 	return sess, nil
 }
 
