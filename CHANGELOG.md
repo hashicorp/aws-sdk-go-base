@@ -3,6 +3,8 @@
 
 # v2.0.0-beta.26 (Unreleased)
 
+* Removes special handling to work around very high AWS API retry counts. ([#462](https://github.com/hashicorp/aws-sdk-go-base/pull/462))
+
 # v2.0.0-beta.25 (2023-03-23)
 
 ENHANCEMENTS
