@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.3
 	github.com/aws/aws-sdk-go-v2/service/sts v1.19.0
 	github.com/google/go-cmp v0.5.9
-	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.25
+	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.26
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/terraform-plugin-log v0.8.0
 	go.opentelemetry.io/otel v1.15.1
