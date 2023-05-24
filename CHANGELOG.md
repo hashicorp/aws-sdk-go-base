@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.27 (2023-05-24)
+
 BUG FIXES
 
 * Reintroduces special handling to work around very high AWS API retry counts removed in v2.0.0-beta.26 ([#481](https://github.com/hashicorp/aws-sdk-go-base/pull/481))
