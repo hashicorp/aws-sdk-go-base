@@ -5,15 +5,22 @@ package awsbase
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log"
+	"net"
 	"os"
+	"strings"
+	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/smithy-go/middleware"
+	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
@@ -92,6 +99,8 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 		return ctx, aws.Config{}, fmt.Errorf("loading configuration: %w", err)
 	}
 
+	resolveRetryer(baseCtx, &awsConfig)
+
 	if !c.SkipCredsValidation {
 		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(baseCtx, awsConfig, c)); err != nil {
 			return ctx, awsConfig, fmt.Errorf("validating provider credentials: %w", err)
@@ -99,6 +108,50 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	}
 
 	return ctx, awsConfig, nil
+}
+
+// Adapted from the per-service-client `resolveRetryer()` functions in the AWS SDK for Go v2
+// e.g. https://github.com/aws/aws-sdk-go-v2/blob/main/service/accessanalyzer/api_client.go
+// Currently only supports "standard" retry mode
+func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
+	var standardOptions []func(*retry.StandardOptions)
+
+	if v, found, _ := awsconfig.GetRetryMaxAttempts(ctx, awsConfig.ConfigSources); found && v != 0 {
+		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
+			so.MaxAttempts = v
+		})
+	}
+
+	awsConfig.Retryer = func() aws.Retryer {
+		return &networkErrorShortcutter{
+			RetryerV2: retry.NewStandard(standardOptions...),
+		}
+	}
+}
+
+// networkErrorShortcutter is used to enable networking error shortcutting
+type networkErrorShortcutter struct {
+	aws.RetryerV2
+}
+
+// We're misusing RetryDelay here, since this is the only function that takes the attempt count
+func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Duration, error) {
+	if attempt >= constants.MaxNetworkRetryCount {
+		var netOpErr *net.OpError
+		if errors.As(err, &netOpErr) {
+			// It's disappointing that we have to do string matching here, rather than being able to using `errors.Is()` or even strings exported by the Go `net` package
+			if strings.Contains(netOpErr.Error(), "no such host") || strings.Contains(netOpErr.Error(), "connection refused") {
+				// TODO: figure out how to get correct logger here
+				log.Printf("[WARN] Disabling retries after next request due to networking error: %s", err)
+				return 0, &retry.MaxAttemptsError{
+					Attempt: attempt,
+					Err:     err,
+				}
+			}
+		}
+	}
+
+	return r.RetryerV2.RetryDelay(attempt, err)
 }
 
 func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, error) {
