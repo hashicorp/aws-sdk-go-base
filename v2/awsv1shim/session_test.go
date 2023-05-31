@@ -1408,6 +1408,101 @@ max_attempts = 10
 	}
 }
 
+func TestRetryCodes(t *testing.T) {
+	testCases := map[string]struct {
+		Config                     *awsbase.Config
+		EnvironmentVariables       map[string]string
+		ExpectedRetryableErrors    []awserr.Error
+		ExpectedNonRetryableErrors []awserr.Error
+	}{
+		"no configuration": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedNonRetryableErrors: []awserr.Error{
+				awserr.New("error 1", "", nil),
+			},
+		},
+
+		"AWS_RETRY_CODES single": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_CODES": "error 1",
+			},
+			ExpectedRetryableErrors: []awserr.Error{
+				awserr.New("error 1", "", nil),
+			},
+			ExpectedNonRetryableErrors: []awserr.Error{
+				awserr.New("error 2", "", nil),
+			},
+		},
+
+		"AWS_RETRY_CODES multiple": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_CODES": "error 1,error 2",
+			},
+			ExpectedRetryableErrors: []awserr.Error{
+				awserr.New("error 1", "", nil),
+				awserr.New("error 2", "", nil),
+			},
+			ExpectedNonRetryableErrors: []awserr.Error{
+				awserr.New("error 3", "", nil),
+			},
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("GetAwsConfig() returned error: %s", err)
+			}
+			actualSession, err := GetSession(&awsConfig, testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetSession() '%[1]T': %[1]s", err)
+			}
+
+			for _, e := range testCase.ExpectedRetryableErrors {
+				r := &request.Request{
+					Error: e,
+				}
+				actualSession.Handlers.Retry.Run(r)
+				if !aws.BoolValue(r.Retryable) {
+					t.Errorf(`expected error %q would be retryable, got not retryable`, e)
+				}
+			}
+			for _, e := range testCase.ExpectedNonRetryableErrors {
+				r := &request.Request{
+					Error: e,
+				}
+				actualSession.Handlers.Retry.Run(r)
+				if aws.BoolValue(r.Retryable) {
+					t.Errorf(`expected error %q would not be retryable, got retryable`, e)
+				}
+			}
+		})
+	}
+}
+
 func TestServiceEndpointTypes(t *testing.T) {
 	testCases := map[string]struct {
 		Config                       *awsbase.Config

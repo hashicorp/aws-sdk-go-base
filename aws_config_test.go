@@ -1544,6 +1544,93 @@ max_attempts = 10
 	}
 }
 
+func TestRetryCodes(t *testing.T) {
+	testCases := map[string]struct {
+		Config                     *Config
+		EnvironmentVariables       map[string]string
+		ExpectedRetryableErrors    []smithy.APIError
+		ExpectedNonRetryableErrors []smithy.APIError
+	}{
+		"no configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedNonRetryableErrors: []smithy.APIError{
+				&smithy.GenericAPIError{Code: "error 1"},
+			},
+		},
+
+		"AWS_RETRY_CODES single": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_CODES": "error 1",
+			},
+			ExpectedRetryableErrors: []smithy.APIError{
+				&smithy.GenericAPIError{Code: "error 1"},
+			},
+			ExpectedNonRetryableErrors: []smithy.APIError{
+				&smithy.GenericAPIError{Code: "error 2"},
+			},
+		},
+
+		"AWS_RETRY_CODES multiple": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_CODES": "error 1,error 2",
+			},
+			ExpectedRetryableErrors: []smithy.APIError{
+				&smithy.GenericAPIError{Code: "error 1"},
+				&smithy.GenericAPIError{Code: "error 2"},
+			},
+			ExpectedNonRetryableErrors: []smithy.APIError{
+				&smithy.GenericAPIError{Code: "error 3"},
+			},
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			retryer := awsConfig.Retryer()
+			if retryer == nil {
+				t.Fatal("no retryer set")
+			}
+			for _, e := range testCase.ExpectedRetryableErrors {
+				if a := retryer.IsErrorRetryable(e); !a {
+					t.Errorf(`expected error %q would be retryable, got not retryable`, e)
+				}
+			}
+			for _, e := range testCase.ExpectedNonRetryableErrors {
+				if a := retryer.IsErrorRetryable(e); a {
+					t.Errorf(`expected error %q would not be retryable, got retryable`, e)
+				}
+			}
+		})
+	}
+}
+
 func TestServiceEndpointTypes(t *testing.T) {
 	testCases := map[string]struct {
 		Config                            *Config

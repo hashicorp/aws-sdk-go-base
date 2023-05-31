@@ -7,6 +7,7 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"context"
 	"fmt"
 	"os"
+	"strings"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go/aws"
@@ -99,6 +100,18 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 	// Set retries after resolving credentials to prevent retries during resolution
 	if retryer := awsC.Retryer(); retryer != nil {
 		sess = sess.Copy(&aws.Config{MaxRetries: aws.Int(retryer.MaxAttempts())})
+	}
+
+	// Add custom error code retries. It's easier to recheck the environment variable
+	// here as the retry codes aren't available from the original v2 config
+	if retryCodes := os.Getenv("AWS_RETRY_CODES"); retryCodes != "" {
+		codes := strings.Split(retryCodes, ",")
+		log.Printf("[DEBUG] Using additional retry codes: %s", codes)
+		sess.Handlers.Retry.PushBack(func(r *request.Request) {
+			if tfawserr.ErrCodeEquals(r.Error, codes...) {
+				r.Retryable = aws.Bool(true)
+			}
+		})
 	}
 
 	SetSessionUserAgent(sess, c.APNInfo, c.UserAgent)

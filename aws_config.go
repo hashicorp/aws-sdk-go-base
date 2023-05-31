@@ -122,10 +122,18 @@ func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
 		})
 	}
 
+	var r aws.Retryer = &networkErrorShortcutter{
+		RetryerV2: retry.NewStandard(standardOptions...),
+	}
+
+	// Add additional retry codes
+	if retryCodes := os.Getenv("AWS_RETRY_CODES"); retryCodes != "" {
+		codes := strings.Split(retryCodes, ",")
+		r = retry.AddWithErrorCodes(r, codes...)
+	}
+
 	awsConfig.Retryer = func() aws.Retryer {
-		return &networkErrorShortcutter{
-			RetryerV2: retry.NewStandard(standardOptions...),
-		}
+		return r
 	}
 }
 
