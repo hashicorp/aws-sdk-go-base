@@ -293,6 +293,12 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 			config.WithEC2IMDSEndpoint(c.EC2MetadataServiceEndpoint),
 		)
 	}
+	
+	if c.RetryMode != "" {
+		loadOptions = append(loadOptions,
+			config.WithRetryMode(c.RetryMode),
+		)
+	}
 
 	if c.EC2MetadataServiceEndpointMode != "" {
 		var endpointMode imds.EndpointModeState
