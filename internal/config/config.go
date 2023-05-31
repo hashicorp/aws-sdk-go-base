@@ -35,6 +35,7 @@ type Config struct {
 	MaxRetries                     int
 	Profile                        string
 	Region                         string
+	RetryMode                      string
 	SecretKey                      string
 	SharedCredentialsFiles         []string
 	SharedConfigFiles              []string
