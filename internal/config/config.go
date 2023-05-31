@@ -35,7 +35,7 @@ type Config struct {
 	MaxRetries                     int
 	Profile                        string
 	Region                         string
-	RetryMode                      string
+	RetryMode                      aws.RetryMode
 	SecretKey                      string
 	SharedCredentialsFiles         []string
 	SharedConfigFiles              []string
