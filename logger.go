@@ -4,12 +4,15 @@
 package awsbase
 
 import (
+	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/textproto"
 	"strings"
 	"time"
 
@@ -21,6 +24,11 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
+)
+
+const (
+	maxResponseBodyLen = 4096
+	responseBufferLen  = maxResponseBodyLen + 1024
 )
 
 type debugLogger struct {
@@ -146,16 +154,35 @@ func decomposeHTTPResponse(resp *http.Response, elapsed time.Duration) (map[stri
 	return result, nil
 }
 
-func decomposeResponseBody(resp *http.Response) (attribute.KeyValue, error) {
-	respBytes, err := io.ReadAll(resp.Body)
+func decomposeResponseBody(resp *http.Response) (kv attribute.KeyValue, err error) {
+	content, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return attribute.KeyValue{}, err
+		return kv, err
 	}
 
-	body := logging.MaskAWSAccessKey(string(respBytes))
-
 	// Restore the body reader
-	resp.Body = io.NopCloser(bytes.NewBuffer(respBytes))
+	resp.Body = io.NopCloser(bytes.NewBuffer(content))
+
+	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(content)))
+
+	var builder strings.Builder
+	for {
+		line, err := reader.ReadLine()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return kv, err
+		}
+		fmt.Fprintln(&builder, line)
+		if builder.Len() >= maxResponseBodyLen {
+			fmt.Fprintln(&builder, "[truncated...]")
+			break
+		}
+	}
+
+	body := builder.String()
+	body = logging.MaskAWSAccessKey(body)
 
 	return attribute.String("http.response.body", body), nil
 }
