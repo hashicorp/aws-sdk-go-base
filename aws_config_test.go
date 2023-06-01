@@ -1545,11 +1545,17 @@ max_attempts = 10
 }
 
 func TestRetryMode(t *testing.T) {
+	var (
+		standardRetryer = reflect.TypeOf((*retry.Standard)(nil))
+		adaptiveRetryer = reflect.TypeOf((*retry.AdaptiveMode)(nil))
+	)
+
 	testCases := map[string]struct {
 		Config                  *Config
 		EnvironmentVariables    map[string]string
 		SharedConfigurationFile string
 		ExpectedRetryMode       aws.RetryMode
+		RetyerType              reflect.Type
 	}{
 		"no configuration": {
 			Config: &Config{
@@ -1557,15 +1563,17 @@ func TestRetryMode(t *testing.T) {
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectedRetryMode: "",
+			RetyerType:        standardRetryer,
 		},
 
 		"config": {
 			Config: &Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
-				RetryMode: aws.RetryModeStandard,
+				RetryMode: aws.RetryModeAdaptive,
 			},
-			ExpectedRetryMode: aws.RetryModeStandard,
+			ExpectedRetryMode: aws.RetryModeAdaptive,
+			RetyerType:        adaptiveRetryer,
 		},
 
 		"AWS_RETRY_MODE": {
@@ -1577,6 +1585,7 @@ func TestRetryMode(t *testing.T) {
 				"AWS_RETRY_MODE": "adaptive",
 			},
 			ExpectedRetryMode: aws.RetryModeAdaptive,
+			RetyerType:        adaptiveRetryer,
 		},
 
 		"shared configuration file": {
@@ -1585,10 +1594,11 @@ func TestRetryMode(t *testing.T) {
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			SharedConfigurationFile: `
-		[default]
-		retry_mode = standard
-		`,
-			ExpectedRetryMode: aws.RetryModeStandard,
+[default]
+retry_mode = adaptive
+`,
+			ExpectedRetryMode: aws.RetryModeAdaptive,
+			RetyerType:        adaptiveRetryer,
 		},
 
 		"config overrides AWS_RETRY_MODE": {
@@ -1601,6 +1611,7 @@ func TestRetryMode(t *testing.T) {
 				"AWS_RETRY_MODE": "adaptive",
 			},
 			ExpectedRetryMode: aws.RetryModeStandard,
+			RetyerType:        standardRetryer,
 		},
 
 		"AWS_RETRY_MODE overrides shared configuration": {
@@ -1612,10 +1623,11 @@ func TestRetryMode(t *testing.T) {
 				"AWS_RETRY_MODE": "standard",
 			},
 			SharedConfigurationFile: `
-		[default]
-		retry_mode = adaptive
-		`,
+[default]
+retry_mode = adaptive
+`,
 			ExpectedRetryMode: aws.RetryModeStandard,
+			RetyerType:        standardRetryer,
 		},
 	}
 
@@ -1658,6 +1670,21 @@ func TestRetryMode(t *testing.T) {
 			retryMode := awsConfig.RetryMode
 			if a, e := retryMode, testCase.ExpectedRetryMode; a != e {
 				t.Errorf(`expected RetryMode "%s", got: "%s"`, e.String(), a.String())
+			}
+
+			retryer := awsConfig.Retryer()
+			if retryer == nil {
+				t.Fatal("no retryer set")
+			}
+
+			nes, ok := retryer.(*networkErrorShortcutter)
+			if !ok {
+				t.Fatalf(`expected type "*networkErrorShortcutter", got "%T"`, retryer)
+			}
+
+			retryer = nes.RetryerV2
+			if a, e := reflect.TypeOf(retryer), testCase.RetyerType; a != e {
+				t.Errorf(`expected type "%s", got: "%s"`, e, a)
 			}
 		})
 	}
