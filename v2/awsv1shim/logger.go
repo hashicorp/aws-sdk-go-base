@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -25,8 +24,7 @@ import (
 )
 
 const (
-	maxResponseBodyLen = 4096
-	responseBufferLen  = maxResponseBodyLen + 1024
+	responseBufferLen = logging.MaxResponseBodyLen + 1024
 )
 
 type debugLogger struct{}
@@ -199,24 +197,10 @@ func decomposeResponseBody(bodyReader io.Reader) (kv attribute.KeyValue, err err
 
 	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(content)))
 
-	var builder strings.Builder
-	for {
-		line, err := reader.ReadLine()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return kv, err
-		}
-		fmt.Fprintln(&builder, line)
-		if builder.Len() >= maxResponseBodyLen {
-			fmt.Fprintln(&builder, "[truncated...]")
-			break
-		}
+	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
+	if err != nil {
+		return kv, err
 	}
-
-	body := builder.String()
-	body = logging.MaskAWSAccessKey(body)
 
 	return attribute.String("http.response.body", body), nil
 }
@@ -230,6 +214,8 @@ type limitedWriter struct {
 	N int64     // max bytes remaining
 }
 
+// Write writes data into the wrapped Writer up to a limit of N bytes
+// Silently stops writing and returns full size of p to allow use with io.TeeReader
 func (w *limitedWriter) Write(p []byte) (int, error) {
 	if w.N <= 0 {
 		return len(p), nil

@@ -7,7 +7,6 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -24,11 +23,6 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
-)
-
-const (
-	maxResponseBodyLen = 4096
-	responseBufferLen  = maxResponseBodyLen + 1024
 )
 
 type debugLogger struct {
@@ -165,24 +159,10 @@ func decomposeResponseBody(resp *http.Response) (kv attribute.KeyValue, err erro
 
 	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(content)))
 
-	var builder strings.Builder
-	for {
-		line, err := reader.ReadLine()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return kv, err
-		}
-		fmt.Fprintln(&builder, line)
-		if builder.Len() >= maxResponseBodyLen {
-			fmt.Fprintln(&builder, "[truncated...]")
-			break
-		}
+	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
+	if err != nil {
+		return kv, err
 	}
-
-	body := builder.String()
-	body = logging.MaskAWSAccessKey(body)
 
 	return attribute.String("http.response.body", body), nil
 }
