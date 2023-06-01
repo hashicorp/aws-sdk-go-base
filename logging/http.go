@@ -23,7 +23,9 @@ import (
 )
 
 const (
-	maxRequestBodyLen = 512
+	maxRequestBodyLen = 1024
+
+	MaxResponseBodyLen = 4096
 )
 
 func DecomposeHTTPRequest(req *http.Request) (map[string]any, error) {
@@ -88,40 +90,26 @@ func decomposeRequestHeaders(req *http.Request) []attribute.KeyValue {
 	return results
 }
 
-func decomposeRequestBody(req *http.Request) (attribute.KeyValue, error) {
+func decomposeRequestBody(req *http.Request) (kv attribute.KeyValue, err error) {
 	reqBytes, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
-		return attribute.KeyValue{}, err
+		return kv, err
 	}
 
 	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(reqBytes)))
 
 	if _, err = reader.ReadLine(); err != nil {
-		return attribute.KeyValue{}, err
+		return kv, err
 	}
 
 	if _, err = reader.ReadMIMEHeader(); err != nil {
-		return attribute.KeyValue{}, err
+		return kv, err
 	}
 
-	var builder strings.Builder
-	for {
-		line, err := reader.ReadContinuedLine()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return attribute.KeyValue{}, err
-		}
-		builder.WriteString(line)
-		if builder.Len() >= maxRequestBodyLen {
-			builder.WriteString("[truncated...]")
-			break
-		}
+	body, err := ReadTruncatedBody(reader, maxRequestBodyLen)
+	if err != nil {
+		return kv, err
 	}
-
-	body := builder.String()
-	body = MaskAWSAccessKey(body)
 
 	return attribute.String("http.request.body", body), nil
 }
@@ -221,4 +209,27 @@ func cleanUpHeaderAttributes(attrs []attribute.KeyValue) []attribute.KeyValue {
 		}
 		return attr
 	})
+}
+
+func ReadTruncatedBody(reader *textproto.Reader, len int) (string, error) {
+	var builder strings.Builder
+	for {
+		line, err := reader.ReadLine()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return "", err
+		}
+		fmt.Fprintln(&builder, line)
+		if builder.Len() >= len {
+			fmt.Fprint(&builder, "[truncated...]")
+			break
+		}
+	}
+
+	body := builder.String()
+	body = MaskAWSAccessKey(body)
+
+	return body, nil
 }

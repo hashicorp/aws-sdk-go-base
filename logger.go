@@ -4,12 +4,14 @@
 package awsbase
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/textproto"
 	"strings"
 	"time"
 
@@ -146,16 +148,21 @@ func decomposeHTTPResponse(resp *http.Response, elapsed time.Duration) (map[stri
 	return result, nil
 }
 
-func decomposeResponseBody(resp *http.Response) (attribute.KeyValue, error) {
-	respBytes, err := io.ReadAll(resp.Body)
+func decomposeResponseBody(resp *http.Response) (kv attribute.KeyValue, err error) {
+	content, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return attribute.KeyValue{}, err
+		return kv, err
 	}
 
-	body := logging.MaskAWSAccessKey(string(respBytes))
-
 	// Restore the body reader
-	resp.Body = io.NopCloser(bytes.NewBuffer(respBytes))
+	resp.Body = io.NopCloser(bytes.NewBuffer(content))
+
+	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(content)))
+
+	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
+	if err != nil {
+		return kv, err
+	}
 
 	return attribute.String("http.response.body", body), nil
 }

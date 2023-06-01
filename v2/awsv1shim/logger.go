@@ -4,12 +4,14 @@
 package awsv1shim
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"fmt"
 	"io"
 	"log"
 	"net/http"
+	"net/textproto"
 	"strings"
 	"time"
 
@@ -19,6 +21,10 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
+)
+
+const (
+	responseBufferLen = logging.MaxResponseBodyLen + 1024
 )
 
 type debugLogger struct{}
@@ -116,7 +122,7 @@ func logResponse(r *request.Request) {
 	bodyBuffer := bytes.NewBuffer(nil)
 
 	r.HTTPResponse.Body = &teeReaderCloser{
-		Reader: io.TeeReader(r.HTTPResponse.Body, bodyBuffer),
+		Reader: io.TeeReader(r.HTTPResponse.Body, limitWriter(bodyBuffer, responseBufferLen)),
 		Source: r.HTTPResponse.Body,
 	}
 
@@ -183,13 +189,44 @@ func decomposeHTTPResponse(resp *http.Response, body io.Reader, elapsed time.Dur
 	return result, nil
 }
 
-func decomposeResponseBody(bodyReader io.Reader) (attribute.KeyValue, error) {
-	respBytes, err := io.ReadAll(bodyReader)
+func decomposeResponseBody(bodyReader io.Reader) (kv attribute.KeyValue, err error) {
+	content, err := io.ReadAll(bodyReader)
 	if err != nil {
-		return attribute.KeyValue{}, err
+		return kv, err
 	}
 
-	body := logging.MaskAWSAccessKey(string(respBytes))
+	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(content)))
+
+	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
+	if err != nil {
+		return kv, err
+	}
 
 	return attribute.String("http.response.body", body), nil
+}
+
+func limitWriter(w io.Writer, n int64) io.Writer {
+	return &limitedWriter{w, n}
+}
+
+type limitedWriter struct {
+	W io.Writer // the underlying writer
+	N int64     // max bytes remaining
+}
+
+// Write writes data into the wrapped Writer up to a limit of N bytes
+// Silently stops writing and returns full size of p to allow use with io.TeeReader
+func (w *limitedWriter) Write(p []byte) (int, error) {
+	if w.N <= 0 {
+		return len(p), nil
+	}
+	if int64(len(p)) > w.N {
+		n, err := w.W.Write(p[0:w.N])
+		w.N -= int64(n)
+		return len(p), err
+	} else {
+		n, err := w.W.Write(p)
+		w.N -= int64(n)
+		return n, err
+	}
 }
