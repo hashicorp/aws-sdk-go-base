@@ -17,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	retryModev2 "github.com/aws/aws-sdk-go-v2/aws"
 	retryv2 "github.com/aws/aws-sdk-go-v2/aws/retry"
 	configv2 "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
@@ -1403,6 +1404,125 @@ max_attempts = 10
 
 			if a, e := *actualSession.Config.MaxRetries, testCase.ExpectedMaxAttempts; a != e {
 				t.Errorf(`expected MaxAttempts "%d", got: "%d"`, e, a)
+			}
+		})
+	}
+}
+
+func TestRetryMode(t *testing.T) {
+	testCases := map[string]struct {
+		Config                  *awsbase.Config
+		EnvironmentVariables    map[string]string
+		SharedConfigurationFile string
+		ExpectedRetryMode       retryModev2.RetryMode
+	}{
+		"no configuration": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedRetryMode: "",
+		},
+
+		"config": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+				RetryMode: retryModev2.RetryModeStandard,
+			},
+			ExpectedRetryMode: retryModev2.RetryModeStandard,
+		},
+
+		"AWS_RETRY_MODE": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_MODE": "adaptive",
+			},
+			ExpectedRetryMode: retryModev2.RetryModeAdaptive,
+		},
+
+		"shared configuration file": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+		[default]
+		retry_mode = standard
+		`,
+			ExpectedRetryMode: retryModev2.RetryModeStandard,
+		},
+
+		"config overrides AWS_RETRY_MODE": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+				RetryMode: retryModev2.RetryModeStandard,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_MODE": "adaptive",
+			},
+			ExpectedRetryMode: retryModev2.RetryModeStandard,
+		},
+
+		"AWS_RETRY_MODE overrides shared configuration": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_MODE": "standard",
+			},
+			SharedConfigurationFile: `
+		[default]
+		retry_mode = adaptive
+		`,
+			ExpectedRetryMode: retryModev2.RetryModeStandard,
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			retryMode := awsConfig.RetryMode
+			if a, e := retryMode, testCase.ExpectedRetryMode; a != e {
+				t.Errorf(`expected RetryMode "%s", got: "%s"`, e.String(), a.String())
 			}
 		})
 	}

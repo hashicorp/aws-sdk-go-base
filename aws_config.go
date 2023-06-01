@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/defaults"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -112,21 +113,59 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 
 // Adapted from the per-service-client `resolveRetryer()` functions in the AWS SDK for Go v2
 // e.g. https://github.com/aws/aws-sdk-go-v2/blob/main/service/accessanalyzer/api_client.go
-// Currently only supports "standard" retry mode
 func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
-	var standardOptions []func(*retry.StandardOptions)
+	retryMode := awsConfig.RetryMode
+	if len(retryMode) == 0 {
+		defaultsMode := resolveDefaultsMode(ctx, awsConfig)
+		modeConfig, err := defaults.GetModeConfiguration(defaultsMode)
+		if err == nil {
+			retryMode = modeConfig.RetryMode
+		}
+	}
+	if len(retryMode) == 0 {
+		retryMode = aws.RetryModeStandard
+	}
 
+	var standardOptions []func(*retry.StandardOptions)
 	if v, found, _ := awsconfig.GetRetryMaxAttempts(ctx, awsConfig.ConfigSources); found && v != 0 {
 		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
 			so.MaxAttempts = v
 		})
 	}
 
+	var retryer aws.RetryerV2
+	switch retryMode {
+	case aws.RetryModeAdaptive:
+		var adaptiveOptions []func(*retry.AdaptiveModeOptions)
+		if len(standardOptions) != 0 {
+			adaptiveOptions = append(adaptiveOptions, func(ao *retry.AdaptiveModeOptions) {
+				ao.StandardOptions = append(ao.StandardOptions, standardOptions...)
+			})
+		}
+		retryer = retry.NewAdaptiveMode(adaptiveOptions...)
+
+	default:
+		retryer = retry.NewStandard(standardOptions...)
+	}
+
 	awsConfig.Retryer = func() aws.Retryer {
 		return &networkErrorShortcutter{
-			RetryerV2: retry.NewStandard(standardOptions...),
+			RetryerV2: retryer,
 		}
 	}
+}
+
+// Adapted from the per-service-client `setResolvedDefaultsMode()` functions in the AWS SDK for Go v2
+// e.g. https://github.com/aws/aws-sdk-go-v2/blob/main/service/accessanalyzer/api_client.go
+func resolveDefaultsMode(_ context.Context, awsConfig *aws.Config) aws.DefaultsMode {
+	var mode aws.DefaultsMode
+	mode.SetFromString(string(awsConfig.DefaultsMode))
+
+	if mode == aws.DefaultsModeAuto {
+		mode = defaults.ResolveDefaultsModeAuto(awsConfig.Region, awsConfig.RuntimeEnvironment)
+	}
+
+	return mode
 }
 
 // networkErrorShortcutter is used to enable networking error shortcutting
@@ -291,6 +330,12 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	if c.EC2MetadataServiceEndpoint != "" {
 		loadOptions = append(loadOptions,
 			config.WithEC2IMDSEndpoint(c.EC2MetadataServiceEndpoint),
+		)
+	}
+
+	if c.RetryMode != "" {
+		loadOptions = append(loadOptions,
+			config.WithRetryMode(c.RetryMode),
 		)
 	}
 

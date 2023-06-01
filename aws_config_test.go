@@ -1544,6 +1544,152 @@ max_attempts = 10
 	}
 }
 
+func TestRetryMode(t *testing.T) {
+	var (
+		standardRetryer = reflect.TypeOf((*retry.Standard)(nil))
+		adaptiveRetryer = reflect.TypeOf((*retry.AdaptiveMode)(nil))
+	)
+
+	testCases := map[string]struct {
+		Config                  *Config
+		EnvironmentVariables    map[string]string
+		SharedConfigurationFile string
+		ExpectedRetryMode       aws.RetryMode
+		RetyerType              reflect.Type
+	}{
+		"no configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedRetryMode: "",
+			RetyerType:        standardRetryer,
+		},
+
+		"config": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+				RetryMode: aws.RetryModeAdaptive,
+			},
+			ExpectedRetryMode: aws.RetryModeAdaptive,
+			RetyerType:        adaptiveRetryer,
+		},
+
+		"AWS_RETRY_MODE": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_MODE": "adaptive",
+			},
+			ExpectedRetryMode: aws.RetryModeAdaptive,
+			RetyerType:        adaptiveRetryer,
+		},
+
+		"shared configuration file": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+[default]
+retry_mode = adaptive
+`,
+			ExpectedRetryMode: aws.RetryModeAdaptive,
+			RetyerType:        adaptiveRetryer,
+		},
+
+		"config overrides AWS_RETRY_MODE": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+				RetryMode: aws.RetryModeStandard,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_MODE": "adaptive",
+			},
+			ExpectedRetryMode: aws.RetryModeStandard,
+			RetyerType:        standardRetryer,
+		},
+
+		"AWS_RETRY_MODE overrides shared configuration": {
+			Config: &Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_RETRY_MODE": "standard",
+			},
+			SharedConfigurationFile: `
+[default]
+retry_mode = adaptive
+`,
+			ExpectedRetryMode: aws.RetryModeStandard,
+			RetyerType:        standardRetryer,
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			if err != nil {
+				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			}
+
+			retryMode := awsConfig.RetryMode
+			if a, e := retryMode, testCase.ExpectedRetryMode; a != e {
+				t.Errorf(`expected RetryMode "%s", got: "%s"`, e.String(), a.String())
+			}
+
+			retryer := awsConfig.Retryer()
+			if retryer == nil {
+				t.Fatal("no retryer set")
+			}
+
+			nes, ok := retryer.(*networkErrorShortcutter)
+			if !ok {
+				t.Fatalf(`expected type "*networkErrorShortcutter", got "%T"`, retryer)
+			}
+
+			retryer = nes.RetryerV2
+			if a, e := reflect.TypeOf(retryer), testCase.RetyerType; a != e {
+				t.Errorf(`expected type "%s", got: "%s"`, e, a)
+			}
+		})
+	}
+}
+
 func TestServiceEndpointTypes(t *testing.T) {
 	testCases := map[string]struct {
 		Config                            *Config

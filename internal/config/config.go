@@ -12,6 +12,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
@@ -35,6 +36,7 @@ type Config struct {
 	MaxRetries                     int
 	Profile                        string
 	Region                         string
+	RetryMode                      aws.RetryMode
 	SecretKey                      string
 	SharedCredentialsFiles         []string
 	SharedConfigFiles              []string
