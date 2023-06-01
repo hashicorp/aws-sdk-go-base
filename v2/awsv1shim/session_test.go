@@ -17,8 +17,8 @@ import (
 	"testing"
 	"time"
 
-	retryv2 "github.com/aws/aws-sdk-go-v2/aws/retry"
 	retryModev2 "github.com/aws/aws-sdk-go-v2/aws"
+	retryv2 "github.com/aws/aws-sdk-go-v2/aws/retry"
 	configv2 "github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/aws-sdk-go/aws"

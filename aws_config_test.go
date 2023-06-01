@@ -1663,7 +1663,6 @@ func TestRetryMode(t *testing.T) {
 	}
 }
 
-
 func TestServiceEndpointTypes(t *testing.T) {
 	testCases := map[string]struct {
 		Config                            *Config
