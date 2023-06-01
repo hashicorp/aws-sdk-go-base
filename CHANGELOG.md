@@ -1,6 +1,14 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BUG FIXES
+
+* Limits HTTP response body size in logs to 4 KB ([#490](https://github.com/hashicorp/aws-sdk-go-base/pull/490))
+
+ENHANCEMENTS
+
+* Updates limit of HTTP requsest body size in logs to 1 KB ([#490](https://github.com/hashicorp/aws-sdk-go-base/pull/490))
+
 # v2.0.0-beta.27 (2023-05-24)
 
 BUG FIXES
