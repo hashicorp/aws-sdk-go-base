@@ -1,11 +1,13 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.29 (2023-06-08)
+
 ENHANCEMENT
 
 * Enables support for Adaptive retry mode ([#489](https://github.com/hashicorp/aws-sdk-go-base/pull/489))
 
-# v2.0.0-beta.2 (2023-06-01)
+# v2.0.0-beta.28 (2023-06-01)
 
 BUG FIXES
 
