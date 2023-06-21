@@ -24,9 +24,16 @@ var UniqueIDRegex = regexp.MustCompile(`(A3T[A-Z0-9]` +
 	`|ASIA` + // STS temporary access key
 	`)[A-Z0-9]{16,}`)
 
-func MaskAWSAccessKey(field string) string {
+var SensitiveKeyRegex = regexp.MustCompile(`\d[A-Za-z0-9/+=]{16,}`)
+
+func MaskSensitiveValues(field string) string {
 	field = UniqueIDRegex.ReplaceAllStringFunc(field, func(s string) string {
 		return partialMaskString(s, 4, 4) //nolint:gomnd
 	})
+
+	field = SensitiveKeyRegex.ReplaceAllStringFunc(field, func(s string) string {
+		return partialMaskString(s, 4, 4) //nolint:gomnd
+	})
+
 	return field
 }
