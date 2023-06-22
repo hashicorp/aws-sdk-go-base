@@ -10,91 +10,79 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/aws/aws-sdk-go/aws"
 	smithy "github.com/aws/smithy-go"
-	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
 )
 
 func TestErrCodeEquals(t *testing.T) {
-	testCases := []struct {
-		Name     string
+	testCases := map[string]struct {
 		Err      error
 		Codes    []string
 		Expected bool
 	}{
-		{
-			Name: "nil error",
+		"nil error": {
+			Err:      nil,
+			Expected: false,
 		},
-		{
-			Name: "Top-level CannotAssumeRoleError",
-			Err:  awsbase.CannotAssumeRoleError{},
+		"other error": {
+			Err:      fmt.Errorf("other error"),
+			Expected: false,
 		},
-		{
-			Name:     "Top-level smithy.GenericAPIError matching first code",
+		"Top-level smithy.GenericAPIError matching first code": {
 			Err:      &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
 			Codes:    []string{"TestCode"},
 			Expected: true,
 		},
-		{
-			Name:     "Top-level smithy.GenericAPIError matching last code",
+		"Top-level smithy.GenericAPIError matching last code": {
 			Err:      &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
 			Codes:    []string{"NotMatching", "TestCode"},
 			Expected: true,
 		},
-		{
-			Name: "Top-level smithy.GenericAPIError no code",
-			Err:  &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
+		"Top-level smithy.GenericAPIError no code": {
+			Err: &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
 		},
-		{
-			Name:  "Top-level smithy.GenericAPIError non-matching codes",
+		"Top-level smithy.GenericAPIError non-matching codes": {
 			Err:   &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
 			Codes: []string{"NotMatching", "AlsoNotMatching"},
 		},
-		{
-			Name:     "Wrapped smithy.GenericAPIError matching first code",
+		"Wrapped smithy.GenericAPIError matching first code": {
 			Err:      fmt.Errorf("test: %w", &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"}),
 			Codes:    []string{"TestCode"},
 			Expected: true,
 		},
-		{
-			Name:     "Wrapped smithy.GenericAPIError matching last code",
+		"Wrapped smithy.GenericAPIError matching last code": {
 			Err:      fmt.Errorf("test: %w", &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"}),
 			Codes:    []string{"NotMatching", "TestCode"},
 			Expected: true,
 		},
-		{
-			Name:  "Wrapped smithy.GenericAPIError non-matching codes",
+		"Wrapped smithy.GenericAPIError non-matching codes": {
 			Err:   fmt.Errorf("test: %w", &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"}),
 			Codes: []string{"NotMatching", "AlsoNotMatching"},
 		},
-		{
-			Name:     "Top-level sts ExpiredTokenException matching first code",
+		"Top-level sts ExpiredTokenException matching first code": {
 			Err:      &types.ExpiredTokenException{ErrorCodeOverride: aws.String("TestCode"), Message: aws.String("TestMessage")},
 			Codes:    []string{"TestCode"},
 			Expected: true,
 		},
-		{
-			Name:     "Top-level sts ExpiredTokenException matching last code",
+		"Top-level sts ExpiredTokenException matching last code": {
 			Err:      &types.ExpiredTokenException{ErrorCodeOverride: aws.String("TestCode"), Message: aws.String("TestMessage")},
 			Codes:    []string{"NotMatching", "TestCode"},
 			Expected: true,
 		},
-		{
-			Name:     "Wrapped sts ExpiredTokenException matching first code",
+		"Wrapped sts ExpiredTokenException matching first code": {
 			Err:      fmt.Errorf("test: %w", &types.ExpiredTokenException{ErrorCodeOverride: aws.String("TestCode"), Message: aws.String("TestMessage")}),
 			Codes:    []string{"TestCode"},
 			Expected: true,
 		},
-		{
-			Name:     "Wrapped sts ExpiredTokenException matching last code",
+		"Wrapped sts ExpiredTokenException matching last code": {
 			Err:      fmt.Errorf("test: %w", &types.ExpiredTokenException{ErrorCodeOverride: aws.String("TestCode"), Message: aws.String("TestMessage")}),
 			Codes:    []string{"NotMatching", "TestCode"},
 			Expected: true,
 		},
 	}
 
-	for _, testCase := range testCases {
+	for name, testCase := range testCases {
 		testCase := testCase
 
-		t.Run(testCase.Name, func(t *testing.T) {
+		t.Run(name, func(t *testing.T) {
 			got := ErrCodeEquals(testCase.Err, testCase.Codes...)
 
 			if got != testCase.Expected {
