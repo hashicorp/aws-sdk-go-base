@@ -26,10 +26,20 @@ var UniqueIDRegex = regexp.MustCompile(`(A3T[A-Z0-9]` +
 
 var SensitiveKeyRegex = regexp.MustCompile(`\d[A-Za-z0-9/+=]{16,}`)
 
-func MaskSensitiveValues(field string) string {
+func MaskAWSAccessKey(field string) string {
 	field = UniqueIDRegex.ReplaceAllStringFunc(field, func(s string) string {
 		return partialMaskString(s, 4, 4) //nolint:gomnd
 	})
+
+	field = SensitiveKeyRegex.ReplaceAllStringFunc(field, func(s string) string {
+		return partialMaskString(s, 4, 4) //nolint:gomnd
+	})
+
+	return field
+}
+
+func MaskAWSSensitiveValues(field string) string {
+	field = MaskAWSAccessKey(field)
 
 	field = SensitiveKeyRegex.ReplaceAllStringFunc(field, func(s string) string {
 		return partialMaskString(s, 4, 4) //nolint:gomnd

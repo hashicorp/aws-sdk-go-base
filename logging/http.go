@@ -161,7 +161,7 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 				builder.WriteString(", ")
 			}
 		}
-		return key.String(fmt.Sprintf("%s %s", scheme, MaskSensitiveValues(builder.String()))), true
+		return key.String(fmt.Sprintf("%s %s", scheme, MaskAWSSensitiveValues(builder.String()))), true
 	} else {
 		return key.String(fmt.Sprintf("%s %s", scheme, strings.Repeat("*", len(params)))), true
 	}
@@ -229,7 +229,7 @@ func ReadTruncatedBody(reader *textproto.Reader, len int) (string, error) {
 	}
 
 	body := builder.String()
-	body = MaskSensitiveValues(body)
+	body = MaskAWSSensitiveValues(body)
 
 	return body, nil
 }
