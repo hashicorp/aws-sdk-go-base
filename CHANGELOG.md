@@ -1,6 +1,13 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.30 (2023-06-22)
+
+ENHANCEMENT
+
+* Adds more sensitive value masking in HTTP request and response logs ([#523](https://github.com/hashicorp/aws-sdk-go-base/pull/523))
+* Adds `tfawserr.ErrCodeEquals` for AWS services that don't define Go error types ([#524](https://github.com/hashicorp/aws-sdk-go-base/pull/524))
+
 # v2.0.0-beta.29 (2023-06-08)
 
 ENHANCEMENT
