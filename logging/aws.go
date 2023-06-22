@@ -30,11 +30,6 @@ func MaskAWSAccessKey(field string) string {
 	field = UniqueIDRegex.ReplaceAllStringFunc(field, func(s string) string {
 		return partialMaskString(s, 4, 4) //nolint:gomnd
 	})
-
-	field = SensitiveKeyRegex.ReplaceAllStringFunc(field, func(s string) string {
-		return partialMaskString(s, 4, 4) //nolint:gomnd
-	})
-
 	return field
 }
 
@@ -44,6 +39,5 @@ func MaskAWSSensitiveValues(field string) string {
 	field = SensitiveKeyRegex.ReplaceAllStringFunc(field, func(s string) string {
 		return partialMaskString(s, 4, 4) //nolint:gomnd
 	})
-
 	return field
 }
