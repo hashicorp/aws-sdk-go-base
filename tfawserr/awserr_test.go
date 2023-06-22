@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
-	"github.com/aws/aws-sdk-go/aws"
 	smithy "github.com/aws/smithy-go"
 )
 
