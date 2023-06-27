@@ -1,5 +1,7 @@
 module github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2
 
+go 1.19
+
 require (
 	github.com/aws/aws-sdk-go v1.44.288
 	github.com/aws/aws-sdk-go-v2 v1.18.1
@@ -37,7 +39,5 @@ require (
 	golang.org/x/sys v0.4.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-go 1.18
 
 replace github.com/hashicorp/aws-sdk-go-base/v2 => ../..
