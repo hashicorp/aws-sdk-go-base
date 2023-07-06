@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.31 (2023-07-06)
+
 ENHANCEMENT
 
 * Adds `tfawserr.ErrMessageContains` for AWS services that don't define Go error types ([#533](https://github.com/hashicorp/aws-sdk-go-base/pull/533))
