@@ -70,9 +70,9 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	}
 
 	logger.Debug(baseCtx, "Resolving credentials provider")
-	credentialsProvider, initialSource, err := getCredentialsProvider(baseCtx, c)
-	if err != nil {
-		return ctx, aws.Config{}, diags.AddSimpleError(err)
+	credentialsProvider, initialSource, d := getCredentialsProvider(baseCtx, c)
+	if d.HasError() {
+		return ctx, aws.Config{}, diags.Append(d...)
 	}
 	creds, err := credentialsProvider.Retrieve(baseCtx)
 	if err != nil {
@@ -207,7 +207,9 @@ func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Durat
 	return r.RetryerV2.RetryDelay(attempt, err)
 }
 
-func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, error) {
+func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	ctx = configCommonLogging(ctx)
 	ctx, logger := logging.New(ctx, loggerName)
 	ctx = logging.RegisterLogger(ctx, logger)
 
@@ -215,7 +217,7 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 		stsClient := stsClient(ctx, awsConfig, c)
 		accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient)
 		if err != nil {
-			return "", "", fmt.Errorf("validating provider credentials: %w", err)
+			return "", "", diags.AddSimpleError(fmt.Errorf("validating provider credentials: %w", err))
 		}
 
 		return accountID, partition, nil
@@ -235,10 +237,10 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 			return accountID, partition, nil
 		}
 
-		return "", "", fmt.Errorf(
+		return "", "", diags.AddSimpleError(fmt.Errorf(
 			"AWS account ID not previously found and failed retrieving via all available methods. "+
 				"See https://www.terraform.io/docs/providers/aws/index.html#skip_requesting_account_id for workaround and implications. "+
-				"Errors: %w", err)
+				"Errors: %w", err))
 	}
 
 	return "", endpoints.PartitionForRegion(awsConfig.Region), nil

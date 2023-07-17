@@ -4,14 +4,15 @@
 package awsbase
 
 import (
-	"fmt"
 	"testing"
+
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 )
 
 func TestIsCannotAssumeRoleError(t *testing.T) {
 	testCases := []struct {
 		Name     string
-		Err      error
+		Diag     diag.Diagnostic
 		Expected bool
 	}{
 		{
@@ -19,16 +20,11 @@ func TestIsCannotAssumeRoleError(t *testing.T) {
 		},
 		{
 			Name: "Top-level NoValidCredentialSourcesError",
-			Err:  NoValidCredentialSourcesError{},
+			Diag: NoValidCredentialSourcesError{},
 		},
 		{
 			Name:     "Top-level CannotAssumeRoleError",
-			Err:      CannotAssumeRoleError{},
-			Expected: true,
-		},
-		{
-			Name:     "Nested CannotAssumeRoleError",
-			Err:      fmt.Errorf("test: %w", CannotAssumeRoleError{}),
+			Diag:     CannotAssumeRoleError{},
 			Expected: true,
 		},
 	}
@@ -37,7 +33,7 @@ func TestIsCannotAssumeRoleError(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Name, func(t *testing.T) {
-			got := IsCannotAssumeRoleError(testCase.Err)
+			got := IsCannotAssumeRoleError(testCase.Diag)
 
 			if got != testCase.Expected {
 				t.Errorf("got %t, expected %t", got, testCase.Expected)
@@ -49,7 +45,7 @@ func TestIsCannotAssumeRoleError(t *testing.T) {
 func TestIsNoValidCredentialSourcesError(t *testing.T) {
 	testCases := []struct {
 		Name     string
-		Err      error
+		Diag     diag.Diagnostic
 		Expected bool
 	}{
 		{
@@ -57,16 +53,11 @@ func TestIsNoValidCredentialSourcesError(t *testing.T) {
 		},
 		{
 			Name: "Top-level CannotAssumeRoleError",
-			Err:  CannotAssumeRoleError{},
+			Diag: CannotAssumeRoleError{},
 		},
 		{
 			Name:     "Top-level NoValidCredentialSourcesError",
-			Err:      NoValidCredentialSourcesError{},
-			Expected: true,
-		},
-		{
-			Name:     "Nested NoValidCredentialSourcesError",
-			Err:      fmt.Errorf("test: %w", NoValidCredentialSourcesError{}),
+			Diag:     NoValidCredentialSourcesError{},
 			Expected: true,
 		},
 	}
@@ -75,7 +66,7 @@ func TestIsNoValidCredentialSourcesError(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Name, func(t *testing.T) {
-			got := IsNoValidCredentialSourcesError(testCase.Err)
+			got := IsNoValidCredentialSourcesError(testCase.Diag)
 
 			if got != testCase.Expected {
 				t.Errorf("got %t, expected %t", got, testCase.Expected)

@@ -61,7 +61,7 @@ func TestGetAwsConfig(t *testing.T) {
 		{
 			Config:        &Config{},
 			Description:   "no configuration or credentials",
-			ValidateDiags: test.ExpectErrDiagValidator("NoValidCredentialSourcesError", IsNoValidCredentialSourcesError),
+			ValidateDiags: test.ExpectDiagValidator("NoValidCredentialSourcesError", IsNoValidCredentialSourcesError),
 		},
 		{
 			Config: &Config{
@@ -860,7 +860,7 @@ region = us-east-1
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description:    "assume role error",
-			ValidateDiags:  test.ExpectErrDiagValidator("CannotAssumeRoleError", IsCannotAssumeRoleError),
+			ValidateDiags:  test.ExpectDiagValidator("CannotAssumeRoleError", IsCannotAssumeRoleError),
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleInvalidEndpointInvalidClientTokenId,
@@ -913,7 +913,7 @@ source_profile = SourceSharedCredentials
 				EC2MetadataServiceEnableState: imds.ClientDisabled,
 			},
 			Description:    "skip EC2 Metadata API check",
-			ValidateDiags:  test.ExpectErrDiagValidator("NoValidCredentialSourcesError", IsNoValidCredentialSourcesError),
+			ValidateDiags:  test.ExpectDiagValidator("NoValidCredentialSourcesError", IsNoValidCredentialSourcesError),
 			ExpectedRegion: "us-east-1",
 			// The IMDS server must be enabled so that auth will succeed if the IMDS is called
 			EnableEc2MetadataServer: true,
@@ -2626,8 +2626,11 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				SecretKey:  servicemocks.MockStaticSecretKey,
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
-			ValidateDiags: test.ExpectErrDiagValidator(`"role ARN not set" error`, func(err error) bool {
-				return strings.Contains(err.Error(), "role ARN not set")
+			ValidateDiags: test.ExpectDiagValidator(`"role ARN not set" error`, func(d diag.Diagnostic) bool {
+				return d.Equal(diag.NewErrorDiagnostic(
+					"Cannot assume IAM Role",
+					"IAM Role ARN not set",
+				))
 			}),
 		},
 	}
@@ -2885,9 +2888,10 @@ web_identity_token_file = no-such-file
 				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: test.ExpectErrDiagValidator(`"role ARN not set" error`, func(err error) bool {
-				return strings.Contains(err.Error(), "role ARN not set")
-			}),
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
+				"Assume Role With Web Identity",
+				"Role ARN was not set",
+			)),
 		},
 
 		"invalid no token": {
@@ -2897,9 +2901,10 @@ web_identity_token_file = no-such-file
 				},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: test.ExpectErrDiagValidator(`"one of WebIdentityToken, WebIdentityTokenFile must be set" error`, func(err error) bool {
-				return strings.Contains(err.Error(), "one of WebIdentityToken, WebIdentityTokenFile must be set")
-			}),
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
+				"Assume Role With Web Identity",
+				"One of WebIdentityToken, WebIdentityTokenFile must be set",
+			)),
 		},
 	}
 
@@ -3018,6 +3023,7 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 		expectedPartition string
 		expectError       bool
 		mockStsEndpoints  []*servicemocks.MockEndpoint
+		ValidateDiags     test.DiagsValidator
 	}{
 		{
 			desc: "StandardProvider_Config",
@@ -3075,6 +3081,10 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	for _, testCase := range testCases {
 		tc := testCase
 
+		if testCase.ValidateDiags == nil {
+			testCase.ValidateDiags = test.ExpectNoDiags
+		}
+
 		t.Run(tc.desc, func(t *testing.T) {
 			ts := servicemocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
 			defer ts.Close()
@@ -3085,19 +3095,21 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
-			acctID, part, err := GetAwsAccountIDAndPartition(ctx, awsConfig, tc.config)
-			if err != nil {
-				if !tc.expectError {
-					t.Fatalf("expected no error, got: %s", err)
-				}
+			acctID, part, diags := GetAwsAccountIDAndPartition(ctx, awsConfig, tc.config)
 
-				if !IsNoValidCredentialSourcesError(err) {
-					t.Fatalf("expected no valid credential sources error, got: %s", err)
-				}
+			testCase.ValidateDiags(t, diags)
+			// if err != nil {
+			// 	if !tc.expectError {
+			// 		t.Fatalf("expected no error, got: %s", err)
+			// 	}
 
-				t.Logf("received expected error: %s", err)
-				return
-			}
+			// 	if !IsNoValidCredentialSourcesError(err) {
+			// 		t.Fatalf("expected no valid credential sources error, got: %s", err)
+			// 	}
+
+			// 	t.Logf("received expected error: %s", err)
+			// 	return
+			// }
 
 			if acctID != tc.expectedAcctID {
 				t.Errorf("expected account ID (%s), got: %s", tc.expectedAcctID, acctID)
@@ -3448,8 +3460,8 @@ func TestLogger(t *testing.T) {
 		}
 	}
 
-	_, _, err = GetAwsAccountIDAndPartition(ctx, awsConfig, config)
-	if err != nil {
+	_, _, diags = GetAwsAccountIDAndPartition(ctx, awsConfig, config)
+	if diags.HasError() {
 		t.Fatalf("GetAwsAccountIDAndPartition: unexpected '%[1]T': %[1]s", err)
 	}
 

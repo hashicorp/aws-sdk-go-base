@@ -5,17 +5,27 @@ package config
 
 import (
 	"fmt"
+
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 )
 
 // CannotAssumeRoleError occurs when AssumeRole cannot complete.
 type CannotAssumeRoleError struct {
 	Config *Config
-	Err    error
+	err    error
 }
 
-func (e CannotAssumeRoleError) Error() string {
+func (e CannotAssumeRoleError) Severity() diag.Severity {
+	return diag.SeverityError
+}
+
+func (e CannotAssumeRoleError) Summary() string {
+	return "Cannot assume IAM Role"
+}
+
+func (e CannotAssumeRoleError) Detail() string {
 	if e.Config == nil || e.Config.AssumeRole == nil {
-		return fmt.Sprintf("cannot assume role: %s", e.Err)
+		return fmt.Sprintf("Error: %s", e.err)
 	}
 
 	return fmt.Sprintf(`IAM Role (%s) cannot be assumed.
@@ -25,27 +35,49 @@ There are a number of possible causes of this - the most common are:
   * The credentials do not have appropriate permission to assume the role
   * The role ARN is not valid
 
-AWS Error: %s
-`, e.Config.AssumeRole.RoleARN, e.Err)
+Error: %s
+`, e.Config.AssumeRole.RoleARN, e.err)
 }
 
-func (e CannotAssumeRoleError) Unwrap() error {
-	return e.Err
+func (e CannotAssumeRoleError) Equal(other diag.Diagnostic) bool {
+	ed, ok := other.(CannotAssumeRoleError)
+	if !ok {
+		return false
+	}
+
+	return ed.Summary() == e.Summary() && ed.Detail() == e.Detail()
+}
+
+func (e CannotAssumeRoleError) Err() error {
+	return e.err
 }
 
 func (c *Config) NewCannotAssumeRoleError(err error) CannotAssumeRoleError {
-	return CannotAssumeRoleError{Config: c, Err: err}
+	return CannotAssumeRoleError{
+		Config: c,
+		err:    err,
+	}
 }
+
+var _ diag.DiagnosticWithErr = CannotAssumeRoleError{}
 
 // CannotAssumeRoleWithWebIdentityError occurs when AssumeRoleWithWebIdentity cannot complete.
 type CannotAssumeRoleWithWebIdentityError struct {
 	Config *Config
-	Err    error
+	err    error
 }
 
-func (e CannotAssumeRoleWithWebIdentityError) Error() string {
+func (e CannotAssumeRoleWithWebIdentityError) Severity() diag.Severity {
+	return diag.SeverityError
+}
+
+func (e CannotAssumeRoleWithWebIdentityError) Summary() string {
+	return "Cannot assume IAM Role with web identity"
+}
+
+func (e CannotAssumeRoleWithWebIdentityError) Detail() string {
 	if e.Config == nil || e.Config.AssumeRoleWithWebIdentity == nil {
-		return fmt.Sprintf("cannot assume role with web identity: %s", e.Err)
+		return fmt.Sprintf("cannot assume role with web identity: %s", e.err)
 	}
 
 	return fmt.Sprintf(`IAM Role (%s) cannot be assumed with web identity token.
@@ -55,42 +87,76 @@ There are a number of possible causes of this - the most common are:
   * The web identity token does not have appropriate permission to assume the role
   * The role ARN is not valid
 
-AWS Error: %s
-`, e.Config.AssumeRoleWithWebIdentity.RoleARN, e.Err)
+Error: %s
+`, e.Config.AssumeRoleWithWebIdentity.RoleARN, e.err)
 }
 
-func (e CannotAssumeRoleWithWebIdentityError) Unwrap() error {
-	return e.Err
+func (e CannotAssumeRoleWithWebIdentityError) Equal(other diag.Diagnostic) bool {
+	ed, ok := other.(CannotAssumeRoleWithWebIdentityError)
+	if !ok {
+		return false
+	}
+
+	return ed.Summary() == e.Summary() && ed.Detail() == e.Detail()
+}
+
+func (e CannotAssumeRoleWithWebIdentityError) Err() error {
+	return e.err
 }
 
 func (c *Config) NewCannotAssumeRoleWithWebIdentityError(err error) CannotAssumeRoleWithWebIdentityError {
-	return CannotAssumeRoleWithWebIdentityError{Config: c, Err: err}
+	return CannotAssumeRoleWithWebIdentityError{
+		Config: c,
+		err:    err,
+	}
 }
+
+var _ diag.DiagnosticWithErr = CannotAssumeRoleWithWebIdentityError{}
 
 // NoValidCredentialSourcesError occurs when all credential lookup methods have been exhausted without results.
 type NoValidCredentialSourcesError struct {
 	Config *Config
-	Err    error
+	err    error
 }
 
-func (e NoValidCredentialSourcesError) Error() string {
+func (e NoValidCredentialSourcesError) Severity() diag.Severity {
+	return diag.SeverityError
+}
+
+func (e NoValidCredentialSourcesError) Summary() string {
+	return "No valid credential sources found"
+}
+
+func (e NoValidCredentialSourcesError) Detail() string {
 	if e.Config == nil {
-		return fmt.Sprintf("no valid credential sources found: %s", e.Err)
+		return e.err.Error()
 	}
 
-	return fmt.Sprintf(`no valid credential sources for %[1]s found.
-
-Please see %[2]s
+	return fmt.Sprintf(`Please see %[1]s
 for more information about providing credentials.
 
-AWS Error: %[3]s
-`, e.Config.CallerName, e.Config.CallerDocumentationURL, e.Err)
+Error: %[2]s
+`, e.Config.CallerDocumentationURL, e.err)
 }
 
-func (e NoValidCredentialSourcesError) Unwrap() error {
-	return e.Err
+func (e NoValidCredentialSourcesError) Equal(other diag.Diagnostic) bool {
+	ed, ok := other.(NoValidCredentialSourcesError)
+	if !ok {
+		return false
+	}
+
+	return ed.Summary() == e.Summary() && ed.Detail() == e.Detail()
+}
+
+func (e NoValidCredentialSourcesError) Err() error {
+	return e.err
 }
 
 func (c *Config) NewNoValidCredentialSourcesError(err error) NoValidCredentialSourcesError {
-	return NoValidCredentialSourcesError{Config: c, Err: err}
+	return NoValidCredentialSourcesError{
+		Config: c,
+		err:    err,
+	}
 }
+
+var _ diag.DiagnosticWithErr = NoValidCredentialSourcesError{}

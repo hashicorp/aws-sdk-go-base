@@ -10,6 +10,8 @@ type DiagsValidator func(*testing.T, diag.Diagnostics)
 
 type ErrValidator func(error) bool
 
+type DiagValidator func(diag.Diagnostic) bool
+
 func ExpectNoDiags(t *testing.T, diags diag.Diagnostics) {
 	expectDiagsCount(t, diags, 0)
 }
@@ -25,11 +27,23 @@ func ExpectErrDiagValidator(msg string, ev ErrValidator) DiagsValidator {
 	}
 }
 
+func ExpectDiagValidator(msg string, dv DiagValidator) DiagsValidator {
+	return func(t *testing.T, diags diag.Diagnostics) {
+		// Check for the correct type of error before checking for single diagnostic
+		if !expectDiagsContainsDiagFunc(diags, dv) {
+			t.Fatalf("expected %s, got %#v", msg, diags)
+		}
+
+		expectDiagsCount(t, diags, 1)
+	}
+
+}
+
 func ExpectWarningDiagValidator(expected diag.Diagnostic) DiagsValidator {
 	return func(t *testing.T, diags diag.Diagnostics) {
 		// Check for the correct type of error before checking for single diagnostic
 		if !expectDiagsContainsDiag(diags, expected) {
-			t.Fatalf("expected Diagnosgtic matching %#v, got %#v", expected, diags)
+			t.Fatalf("expected Diagnostic matching %#v, got %#v", expected, diags)
 		}
 
 		expectDiagsCount(t, diags, 1)
@@ -56,6 +70,15 @@ func expectDiagsContainsErr(diags diag.Diagnostics, ev ErrValidator) bool {
 func expectDiagsContainsDiag(diags diag.Diagnostics, expected diag.Diagnostic) bool {
 	for _, d := range diags {
 		if d.Equal(expected) {
+			return true
+		}
+	}
+	return false
+}
+
+func expectDiagsContainsDiagFunc(diags diag.Diagnostics, dv DiagValidator) bool {
+	for _, d := range diags {
+		if dv(d) {
 			return true
 		}
 	}

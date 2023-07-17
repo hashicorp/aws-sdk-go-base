@@ -33,6 +33,7 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	awsbase "github.com/hashicorp/aws-sdk-go-base/v2"
 	"github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2/mockdata"
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
@@ -109,7 +110,7 @@ func TestGetSession(t *testing.T) {
 		{
 			Config:        &awsbase.Config{},
 			Description:   "no configuration or credentials",
-			ValidateDiags: test.ExpectErrDiagValidator("NoValidCredentialSourcesError", awsbase.IsNoValidCredentialSourcesError),
+			ValidateDiags: test.ExpectDiagValidator("NoValidCredentialSourcesError", awsbase.IsNoValidCredentialSourcesError),
 		},
 		{
 			Config: &awsbase.Config{
@@ -862,7 +863,7 @@ region = us-east-1
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Description:    "assume role error",
-			ValidateDiags:  test.ExpectErrDiagValidator("CannotAssumeRoleError", awsbase.IsCannotAssumeRoleError),
+			ValidateDiags:  test.ExpectDiagValidator("CannotAssumeRoleError", awsbase.IsCannotAssumeRoleError),
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleInvalidEndpointInvalidClientTokenId,
@@ -1000,7 +1001,7 @@ region = us-east-1
 				EC2MetadataServiceEnableState: imds.ClientDisabled,
 			},
 			Description:    "skip EC2 Metadata API check",
-			ValidateDiags:  test.ExpectErrDiagValidator("NoValidCredentialSourcesError", awsbase.IsNoValidCredentialSourcesError),
+			ValidateDiags:  test.ExpectDiagValidator("NoValidCredentialSourcesError", awsbase.IsNoValidCredentialSourcesError),
 			ExpectedRegion: "us-east-1",
 			// The IMDS server must be enabled so that auth will succeed if the IMDS is called
 			EnableEc2MetadataServer: true,
@@ -1200,7 +1201,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
 			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
 
-			diags.Append(ds...)
+			diags = diags.Append(ds...)
 
 			if diags.HasError() {
 				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
@@ -1681,7 +1682,7 @@ use_fips_endpoint = true
 
 			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
 
-			diags.Append(ds...)
+			diags = diags.Append(ds...)
 
 			if diags.HasError() {
 				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
@@ -1903,7 +1904,7 @@ ca_bundle = no-such-file
 
 			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
 
-			diags.Append(ds...)
+			diags = diags.Append(ds...)
 
 			if diags.HasError() {
 				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
@@ -2027,8 +2028,11 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				SecretKey:  servicemocks.MockStaticSecretKey,
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
-			ValidateDiags: test.ExpectErrDiagValidator(`"role ARN not set" error`, func(err error) bool {
-				return strings.Contains(err.Error(), "role ARN not set")
+			ValidateDiags: test.ExpectDiagValidator(`"role ARN not set" error`, func(d diag.Diagnostic) bool {
+				return d.Equal(diag.NewErrorDiagnostic(
+					"Cannot assume IAM Role",
+					"IAM Role ARN not set",
+				))
 			}),
 		},
 	}
@@ -2093,7 +2097,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
 
-			diags.Append(ds...)
+			diags = diags.Append(ds...)
 
 			if diags.HasError() {
 				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
@@ -2302,9 +2306,10 @@ web_identity_token_file = no-such-file
 				AssumeRoleWithWebIdentity: &awsbase.AssumeRoleWithWebIdentity{},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: test.ExpectErrDiagValidator(`"role ARN not set" error`, func(err error) bool {
-				return strings.Contains(err.Error(), "role ARN not set")
-			}),
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
+				"Assume Role With Web Identity",
+				"Role ARN was not set",
+			)),
 		},
 
 		"invalid no token": {
@@ -2314,9 +2319,10 @@ web_identity_token_file = no-such-file
 				},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: test.ExpectErrDiagValidator(`"one of WebIdentityToken, WebIdentityTokenFile must be set" error`, func(err error) bool {
-				return strings.Contains(err.Error(), "one of WebIdentityToken, WebIdentityTokenFile must be set")
-			}),
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
+				"Assume Role With Web Identity",
+				"One of WebIdentityToken, WebIdentityTokenFile must be set",
+			)),
 		},
 	}
 
@@ -2421,7 +2427,7 @@ web_identity_token_file = no-such-file
 
 			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
 
-			diags.Append(ds...)
+			diags = diags.Append(ds...)
 
 			if diags.HasError() {
 				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
@@ -2622,7 +2628,7 @@ func TestLogger(t *testing.T) {
 
 	_, ds := GetSession(ctx, &awsConfig, config)
 
-	diags.Append(ds...)
+	diags = diags.Append(ds...)
 
 	if diags.HasError() {
 		t.Fatalf("expected no errors from GetSession(), got : %v", diags)
