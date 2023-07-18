@@ -2,18 +2,16 @@ package diag
 
 var _ DiagnosticWithErr = NativeErrorDiagnostic{}
 
-// NativeErrorDiagnostic is a generic diagnostic with error severity.
+// NativeErrorDiagnostic is a diagnostic with error severity which wraps a Go error.
 type NativeErrorDiagnostic struct {
 	// detail  string
 	// summary string
 	err error
 }
 
-// NewErrorDiagnostic returns a new error severity diagnostic with the given summary and detail.
-func NewNativeErrorDiagnostic( /*summary string detail string,*/ err error) NativeErrorDiagnostic {
+// NewNativeErrorDiagnostic returns a new error severity diagnostic with the given error.
+func NewNativeErrorDiagnostic(err error) NativeErrorDiagnostic {
 	return NativeErrorDiagnostic{
-		// detail:  detail,
-		// summary: summary,
 		err: err,
 	}
 }

@@ -3098,18 +3098,6 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 			acctID, part, diags := GetAwsAccountIDAndPartition(ctx, awsConfig, tc.config)
 
 			testCase.ValidateDiags(t, diags)
-			// if err != nil {
-			// 	if !tc.expectError {
-			// 		t.Fatalf("expected no error, got: %s", err)
-			// 	}
-
-			// 	if !IsNoValidCredentialSourcesError(err) {
-			// 		t.Fatalf("expected no valid credential sources error, got: %s", err)
-			// 	}
-
-			// 	t.Logf("received expected error: %s", err)
-			// 	return
-			// }
 
 			if acctID != tc.expectedAcctID {
 				t.Errorf("expected account ID (%s), got: %s", tc.expectedAcctID, acctID)
