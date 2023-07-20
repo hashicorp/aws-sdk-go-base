@@ -147,12 +147,12 @@ func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
 	// An empty config, no key supplied
 	cfg := Config{}
 
-	_, _, err := getCredentialsProvider(ctx, &cfg)
-	if err == nil {
+	_, _, diags := getCredentialsProvider(ctx, &cfg)
+	if diags == nil {
 		t.Fatal("expected error returned when getting creds w/ invalid EC2 IMDS endpoint")
 	}
-	if !IsNoValidCredentialSourcesError(err) {
-		t.Fatalf("expected NoValidCredentialSourcesError, got '%[1]T': %[1]s", err)
+	if !ContainsNoValidCredentialSourcesError(diags) {
+		t.Fatalf("expected NoValidCredentialSourcesError, got '%[1]T': %[1]s", diags)
 	}
 }
 
@@ -259,9 +259,9 @@ func TestAWSGetCredentials_assumeRole(t *testing.T) {
 	defer ts.Close()
 	cfg.StsEndpoint = ts.URL
 
-	creds, source, err := getCredentialsProvider(ctx, &cfg)
-	if err != nil {
-		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
+	creds, source, diags := getCredentialsProvider(ctx, &cfg)
+	if diags != nil {
+		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", diags)
 	}
 
 	if a, e := source, credentials.StaticCredentialsName; a != e {

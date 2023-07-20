@@ -21,6 +21,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/smithy-go/middleware"
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
@@ -35,7 +36,8 @@ func configCommonLogging(ctx context.Context) context.Context {
 	return tflog.MaskAllFieldValuesRegexes(ctx, logging.UniqueIDRegex)
 }
 
-func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, error) {
+func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, diag.Diagnostics) {
+	var diags diag.Diagnostics
 	ctx = configCommonLogging(ctx)
 
 	baseCtx, logger := logging.New(ctx, loggerName)
@@ -44,25 +46,37 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	logger.Trace(baseCtx, "Resolving AWS configuration")
 
 	if metadataUrl := os.Getenv("AWS_METADATA_URL"); metadataUrl != "" {
-		logger.Warn(baseCtx, `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`)
-		if ec2MetadataServiceEndpoint := os.Getenv("AWS_EC2_METADATA_SERVICE_ENDPOINT"); ec2MetadataServiceEndpoint != "" {
-			if ec2MetadataServiceEndpoint != metadataUrl {
-				logger.Warn(baseCtx, fmt.Sprintf(`The environment variable "AWS_EC2_METADATA_SERVICE_ENDPOINT" is already set to %q. Ignoring "AWS_METADATA_URL".`, ec2MetadataServiceEndpoint))
+		// Ignore deprecated value if it's overridden in the config
+		if c.EC2MetadataServiceEndpoint == "" {
+			warningMsg := `The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`
+
+			if ec2MetadataServiceEndpoint := os.Getenv("AWS_EC2_METADATA_SERVICE_ENDPOINT"); ec2MetadataServiceEndpoint != "" {
+				if ec2MetadataServiceEndpoint != metadataUrl {
+					warningMsg += "\n" + fmt.Sprintf(
+						`"AWS_EC2_METADATA_SERVICE_ENDPOINT" is set to %q and "AWS_METADATA_URL" is set to %q. Ignoring "AWS_METADATA_URL".`,
+						ec2MetadataServiceEndpoint,
+						metadataUrl,
+					)
+				}
+			} else {
+				logger.Warn(baseCtx, fmt.Sprintf(`Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl))
+				os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", metadataUrl)
 			}
-		} else {
-			logger.Warn(baseCtx, fmt.Sprintf(`Setting "AWS_EC2_METADATA_SERVICE_ENDPOINT" to %q.`, metadataUrl))
-			os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", metadataUrl)
+			diags = diags.AddWarning(
+				"Deprecated Environment Variable",
+				warningMsg,
+			)
 		}
 	}
 
 	logger.Debug(baseCtx, "Resolving credentials provider")
-	credentialsProvider, initialSource, err := getCredentialsProvider(baseCtx, c)
-	if err != nil {
-		return ctx, aws.Config{}, err
+	credentialsProvider, initialSource, d := getCredentialsProvider(baseCtx, c)
+	if d.HasError() {
+		return ctx, aws.Config{}, diags.Append(d...)
 	}
 	creds, err := credentialsProvider.Retrieve(baseCtx)
 	if err != nil {
-		return ctx, aws.Config{}, fmt.Errorf("retrieving credentials: %w", err)
+		return ctx, aws.Config{}, diags.AddSimpleError(fmt.Errorf("retrieving credentials: %w", err))
 	}
 	logger.Info(baseCtx, "Retrieved credentials", map[string]any{
 		"tf_aws.credentials_source": creds.Source,
@@ -70,7 +84,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 
 	loadOptions, err := commonLoadOptions(baseCtx, c)
 	if err != nil {
-		return ctx, aws.Config{}, err
+		return ctx, aws.Config{}, diags.AddSimpleError(err)
 	}
 
 	// The providers set `MaxRetries` to a very large value.
@@ -97,18 +111,18 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	logger.Debug(baseCtx, "Loading configuration")
 	awsConfig, err := config.LoadDefaultConfig(baseCtx, loadOptions...)
 	if err != nil {
-		return ctx, aws.Config{}, fmt.Errorf("loading configuration: %w", err)
+		return ctx, aws.Config{}, diags.AddSimpleError(fmt.Errorf("loading configuration: %w", err))
 	}
 
 	resolveRetryer(baseCtx, &awsConfig)
 
 	if !c.SkipCredsValidation {
 		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(baseCtx, awsConfig, c)); err != nil {
-			return ctx, awsConfig, fmt.Errorf("validating provider credentials: %w", err)
+			return ctx, awsConfig, diags.AddSimpleError(fmt.Errorf("validating provider credentials: %w", err))
 		}
 	}
 
-	return ctx, awsConfig, nil
+	return ctx, awsConfig, diags
 }
 
 // Adapted from the per-service-client `resolveRetryer()` functions in the AWS SDK for Go v2
@@ -193,7 +207,9 @@ func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Durat
 	return r.RetryerV2.RetryDelay(attempt, err)
 }
 
-func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, error) {
+func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+	ctx = configCommonLogging(ctx)
 	ctx, logger := logging.New(ctx, loggerName)
 	ctx = logging.RegisterLogger(ctx, logger)
 
@@ -201,7 +217,7 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 		stsClient := stsClient(ctx, awsConfig, c)
 		accountID, partition, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(ctx, stsClient)
 		if err != nil {
-			return "", "", fmt.Errorf("validating provider credentials: %w", err)
+			return "", "", diags.AddSimpleError(fmt.Errorf("validating provider credentials: %w", err))
 		}
 
 		return accountID, partition, nil
@@ -221,10 +237,10 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 			return accountID, partition, nil
 		}
 
-		return "", "", fmt.Errorf(
+		return "", "", diags.AddSimpleError(fmt.Errorf(
 			"AWS account ID not previously found and failed retrieving via all available methods. "+
 				"See https://www.terraform.io/docs/providers/aws/index.html#skip_requesting_account_id for workaround and implications. "+
-				"Errors: %w", err)
+				"Errors: %w", err))
 	}
 
 	return "", endpoints.PartitionForRegion(awsConfig.Region), nil

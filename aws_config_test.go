@@ -27,6 +27,7 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
@@ -52,17 +53,15 @@ func TestGetAwsConfig(t *testing.T) {
 		EnvironmentVariables       map[string]string
 		ExpectedCredentialsValue   aws.Credentials
 		ExpectedRegion             string
-		ExpectedError              func(err error) bool
 		MockStsEndpoints           []*servicemocks.MockEndpoint
 		SharedConfigurationFile    string
 		SharedCredentialsFile      string
+		ValidateDiags              test.DiagsValidator
 	}{
 		{
-			Config:      &Config{},
-			Description: "no configuration or credentials",
-			ExpectedError: func(err error) bool {
-				return IsNoValidCredentialSourcesError(err)
-			},
+			Config:        &Config{},
+			Description:   "no configuration or credentials",
+			ValidateDiags: test.ExpectDiagValidator("NoValidCredentialSourcesError", IsNoValidCredentialSourcesError),
 		},
 		{
 			Config: &Config{
@@ -104,9 +103,9 @@ func TestGetAwsConfig(t *testing.T) {
 			},
 			Description:    "ExpiredToken",
 			ExpectedRegion: "us-east-1",
-			ExpectedError: func(err error) bool {
+			ValidateDiags: test.ExpectErrDiagValidator("ExpiredToken", func(err error) bool {
 				return strings.Contains(err.Error(), "ExpiredToken")
-			},
+			}),
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredToken,
 			},
@@ -119,9 +118,9 @@ func TestGetAwsConfig(t *testing.T) {
 			},
 			Description:    "ExpiredTokenException",
 			ExpectedRegion: "us-east-1",
-			ExpectedError: func(err error) bool {
+			ValidateDiags: test.ExpectErrDiagValidator("ExpiredTokenException", func(err error) bool {
 				return strings.Contains(err.Error(), "ExpiredTokenException")
-			},
+			}),
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredTokenException,
 			},
@@ -134,9 +133,9 @@ func TestGetAwsConfig(t *testing.T) {
 			},
 			Description:    "RequestExpired",
 			ExpectedRegion: "us-east-1",
-			ExpectedError: func(err error) bool {
+			ValidateDiags: test.ExpectErrDiagValidator("RequestExpired", func(err error) bool {
 				return strings.Contains(err.Error(), "RequestExpired")
-			},
+			}),
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityInvalidBodyRequestExpired,
 			},
@@ -860,10 +859,8 @@ region = us-east-1
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "assume role error",
-			ExpectedError: func(err error) bool {
-				return IsCannotAssumeRoleError(err)
-			},
+			Description:    "assume role error",
+			ValidateDiags:  test.ExpectDiagValidator("CannotAssumeRoleError", IsCannotAssumeRoleError),
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleInvalidEndpointInvalidClientTokenId,
@@ -890,10 +887,10 @@ region = us-east-1
 				Region:  "us-east-1",
 			},
 			Description: "session creation error",
-			ExpectedError: func(err error) bool {
+			ValidateDiags: test.ExpectErrDiagValidator("CredentialRequiresARNError", func(err error) bool {
 				var e config.CredentialRequiresARNError
 				return errors.As(err, &e)
-			},
+			}),
 			SharedConfigurationFile: `
 [profile SharedConfigurationProfile]
 source_profile = SourceSharedCredentials
@@ -915,10 +912,8 @@ source_profile = SourceSharedCredentials
 				Region:                        "us-east-1",
 				EC2MetadataServiceEnableState: imds.ClientDisabled,
 			},
-			Description: "skip EC2 Metadata API check",
-			ExpectedError: func(err error) bool {
-				return IsNoValidCredentialSourcesError(err)
-			},
+			Description:    "skip EC2 Metadata API check",
+			ValidateDiags:  test.ExpectDiagValidator("NoValidCredentialSourcesError", IsNoValidCredentialSourcesError),
 			ExpectedRegion: "us-east-1",
 			// The IMDS server must be enabled so that auth will succeed if the IMDS is called
 			EnableEc2MetadataServer: true,
@@ -934,10 +929,10 @@ source_profile = SourceSharedCredentials
 			EnvironmentVariables: map[string]string{
 				"AWS_PROFILE": "no-such-profile",
 			},
-			ExpectedError: func(err error) bool {
+			ValidateDiags: test.ExpectErrDiagValidator("SharedConfigProfileNotExistError", func(err error) bool {
 				var e config.SharedConfigProfileNotExistError
 				return errors.As(err, &e)
-			},
+			}),
 			SharedCredentialsFile: `
 [some-profile]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
@@ -950,10 +945,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				Region:  "us-east-1",
 			},
 			Description: "invalid profile name from config",
-			ExpectedError: func(err error) bool {
+			ValidateDiags: test.ExpectErrDiagValidator("SharedConfigProfileNotExistError", func(err error) bool {
 				var e config.SharedConfigProfileNotExistError
 				return errors.As(err, &e)
-			},
+			}),
 			SharedCredentialsFile: `
 [some-profile]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
@@ -992,10 +987,10 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
 				"AWS_PROFILE":           "no-such-profile",
 			},
-			ExpectedError: func(err error) bool {
+			ValidateDiags: test.ExpectErrDiagValidator("SharedConfigProfileNotExistError", func(err error) bool {
 				var e config.SharedConfigProfileNotExistError
 				return errors.As(err, &e)
-			},
+			}),
 			SharedCredentialsFile: `
 [some-profile]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
@@ -1006,6 +1001,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 
 	for _, testCase := range testCases {
 		testCase := testCase
+
+		if testCase.ValidateDiags == nil {
+			testCase.ValidateDiags = test.ExpectNoDiags
+		}
 
 		t.Run(testCase.Description, func(t *testing.T) {
 			oldEnv := servicemocks.InitSessionTestEnv()
@@ -1100,23 +1099,11 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				os.Setenv(k, v)
 			}
 
-			ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
 
-			if err != nil {
-				if testCase.ExpectedError == nil {
-					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
-				}
-
-				if !testCase.ExpectedError(err) {
-					t.Fatalf("unexpected GetAwsConfig() '%[1]T' error: %[1]s", err)
-				}
-
-				t.Logf("received expected '%[1]T' error: %[1]s", err)
+			testCase.ValidateDiags(t, diags)
+			if diags.HasError() {
 				return
-			}
-
-			if err == nil && testCase.ExpectedError != nil {
-				t.Fatalf("expected error, got no error")
 			}
 
 			credentialsValue, err := awsConfig.Credentials.Retrieve(ctx)
@@ -1152,9 +1139,9 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 		httpSdkAgent = request.Header.Get("X-Amz-User-Agent")
 	})
 
-	ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
-	if err != nil {
-		t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+	ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+	if diags.HasError() {
+		t.Fatalf("error in GetAwsConfig(): %v", diags)
 	}
 
 	client := stsClient(ctx, awsConfig, testCase.Config)
@@ -1163,7 +1150,7 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 		ctx = useragent.Context(ctx, testCase.Context)
 	}
 
-	_, err = client.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{},
+	_, err := client.GetCallerIdentity(ctx, &sts.GetCallerIdentityInput{},
 		func(opts *sts.Options) {
 			opts.APIOptions = append(opts.APIOptions, func(stack *middleware.Stack) error {
 				return stack.Finalize.Add(readUserAgent, middleware.Before)
@@ -1410,9 +1397,9 @@ region = us-west-2
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			if diags.HasError() {
+				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
 			if a, e := awsConfig.Region, testCase.ExpectedRegion; a != e {
@@ -1528,9 +1515,9 @@ max_attempts = 10
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			if diags.HasError() {
+				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
 			retryer := awsConfig.Retryer()
@@ -1888,9 +1875,9 @@ use_fips_endpoint = true
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			if diags.HasError() {
+				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
 			useFIPSState, _, err := awsconfig.ResolveUseFIPSEndpoint(ctx, awsConfig.ConfigSources)
@@ -2020,9 +2007,9 @@ func TestEC2MetadataServiceClientEnableState(t *testing.T) {
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			if diags.HasError() {
+				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
 			ec2MetadataServiceClientEnableState, _, err := awsconfig.ResolveEC2IMDSClientEnableState(awsConfig.ConfigSources)
@@ -2042,6 +2029,7 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 		EnvironmentVariables               map[string]string
 		SharedConfigurationFile            string
 		ExpectedEC2MetadataServiceEndpoint string
+		ValidateDiags                      test.DiagsValidator
 	}{
 		"no configuration": {
 			Config: &Config{
@@ -2079,6 +2067,10 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 				"AWS_METADATA_URL": "https://127.0.0.1:1234",
 			},
 			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewWarningDiagnostic(
+				"Deprecated Environment Variable",
+				`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`,
+			)),
 		},
 		"envvar overrides deprecated envvar": {
 			Config: &Config{
@@ -2090,6 +2082,11 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 				"AWS_EC2_METADATA_SERVICE_ENDPOINT": "https://127.0.0.1:1234",
 			},
 			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewWarningDiagnostic(
+				"Deprecated Environment Variable",
+				`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`+"\n"+
+					`"AWS_EC2_METADATA_SERVICE_ENDPOINT" is set to "https://127.0.0.1:1234" and "AWS_METADATA_URL" is set to "https://127.1.1.1:1111". Ignoring "AWS_METADATA_URL".`,
+			)),
 		},
 
 		"shared configuration file": {
@@ -2154,11 +2151,19 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 ec2_metadata_service_endpoint = https://127.1.1.1:1111
 `,
 			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewWarningDiagnostic(
+				"Deprecated Environment Variable",
+				`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`,
+			)),
 		},
 	}
 
 	for testName, testCase := range testCases {
 		testCase := testCase
+
+		if testCase.ValidateDiags == nil {
+			testCase.ValidateDiags = test.ExpectNoDiags
+		}
 
 		t.Run(testName, func(t *testing.T) {
 			oldEnv := servicemocks.InitSessionTestEnv()
@@ -2188,10 +2193,9 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
-			}
+			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+
+			testCase.ValidateDiags(t, diags)
 
 			ec2MetadataServiceEndpoint, _, err := awsconfig.ResolveEC2IMDSEndpointConfig(awsConfig.ConfigSources)
 			if err != nil {
@@ -2310,9 +2314,9 @@ ec2_metadata_service_endpoint_mode = IPv4
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			if diags.HasError() {
+				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
 			ec2MetadataServiceEndpointMode, _, err := awsconfig.ResolveEC2IMDSEndpointModeConfig(awsConfig.ConfigSources)
@@ -2498,9 +2502,9 @@ ca_bundle = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
-			if err != nil {
-				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
+			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			if diags.HasError() {
+				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
 			type transportGetter interface {
@@ -2522,7 +2526,7 @@ func TestAssumeRole(t *testing.T) {
 		Config                   *Config
 		SharedConfigurationFile  string
 		ExpectedCredentialsValue aws.Credentials
-		ExpectedError            func(err error) bool
+		ValidateDiags            test.DiagsValidator
 		MockStsEndpoints         []*servicemocks.MockEndpoint
 	}{
 		"config": {
@@ -2622,14 +2626,21 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				SecretKey:  servicemocks.MockStaticSecretKey,
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
-			ExpectedError: func(err error) bool {
-				return strings.Contains(err.Error(), "role ARN not set")
-			},
+			ValidateDiags: test.ExpectDiagValidator(`"role ARN not set" error`, func(d diag.Diagnostic) bool {
+				return d.Equal(diag.NewErrorDiagnostic(
+					"Cannot assume IAM Role",
+					"IAM Role ARN not set",
+				))
+			}),
 		},
 	}
 
 	for testName, testCase := range testCases {
 		testCase := testCase
+
+		if testCase.ValidateDiags == nil {
+			testCase.ValidateDiags = test.ExpectNoDiags
+		}
 
 		t.Run(testName, func(t *testing.T) {
 			oldEnv := servicemocks.InitSessionTestEnv()
@@ -2667,18 +2678,10 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
 
-			if err != nil {
-				if testCase.ExpectedError == nil {
-					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
-				}
-
-				if !testCase.ExpectedError(err) {
-					t.Fatalf("unexpected GetAwsConfig() '%[1]T' error: %[1]s", err)
-				}
-
-				t.Logf("received expected '%[1]T' error: %[1]s", err)
+			testCase.ValidateDiags(t, diags)
+			if diags.HasError() {
 				return
 			}
 
@@ -2705,7 +2708,7 @@ func TestAssumeRoleWithWebIdentity(t *testing.T) {
 		SharedConfigurationFile         string
 		SetSharedConfigurationFile      bool
 		ExpectedCredentialsValue        aws.Credentials
-		ExpectedError                   func(err error) bool
+		ValidateDiags                   test.DiagsValidator
 		MockStsEndpoints                []*servicemocks.MockEndpoint
 	}{
 		"config with inline token": {
@@ -2885,9 +2888,10 @@ web_identity_token_file = no-such-file
 				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ExpectedError: func(err error) bool {
-				return strings.Contains(err.Error(), "role ARN not set")
-			},
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
+				"Assume Role With Web Identity",
+				"Role ARN was not set",
+			)),
 		},
 
 		"invalid no token": {
@@ -2897,14 +2901,19 @@ web_identity_token_file = no-such-file
 				},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ExpectedError: func(err error) bool {
-				return strings.Contains(err.Error(), "one of WebIdentityToken, WebIdentityTokenFile must be set")
-			},
+			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
+				"Assume Role With Web Identity",
+				"One of WebIdentityToken, WebIdentityTokenFile must be set",
+			)),
 		},
 	}
 
 	for testName, testCase := range testCases {
 		testCase := testCase
+
+		if testCase.ValidateDiags == nil {
+			testCase.ValidateDiags = test.ExpectNoDiags
+		}
 
 		t.Run(testName, func(t *testing.T) {
 			oldEnv := servicemocks.InitSessionTestEnv()
@@ -2983,18 +2992,10 @@ web_identity_token_file = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
 
-			if err != nil {
-				if testCase.ExpectedError == nil {
-					t.Fatalf("expected no error, got '%[1]T' error: %[1]s", err)
-				}
-
-				if !testCase.ExpectedError(err) {
-					t.Fatalf("unexpected GetAwsConfig() '%[1]T' error: %[1]s", err)
-				}
-
-				t.Logf("received expected '%[1]T' error: %[1]s", err)
+			testCase.ValidateDiags(t, diags)
+			if diags.HasError() {
 				return
 			}
 
@@ -3022,6 +3023,7 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 		expectedPartition string
 		expectError       bool
 		mockStsEndpoints  []*servicemocks.MockEndpoint
+		ValidateDiags     test.DiagsValidator
 	}{
 		{
 			desc: "StandardProvider_Config",
@@ -3079,28 +3081,23 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	for _, testCase := range testCases {
 		tc := testCase
 
+		if testCase.ValidateDiags == nil {
+			testCase.ValidateDiags = test.ExpectNoDiags
+		}
+
 		t.Run(tc.desc, func(t *testing.T) {
 			ts := servicemocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
 			defer ts.Close()
 			tc.config.StsEndpoint = ts.URL
 
-			ctx, awsConfig, err := GetAwsConfig(context.Background(), tc.config)
-			if err != nil {
-				t.Fatalf("expected no error from GetAwsConfig(), got: %s", err)
+			ctx, awsConfig, diags := GetAwsConfig(context.Background(), tc.config)
+			if diags.HasError() {
+				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
-			acctID, part, err := GetAwsAccountIDAndPartition(ctx, awsConfig, tc.config)
-			if err != nil {
-				if !tc.expectError {
-					t.Fatalf("expected no error, got: %s", err)
-				}
 
-				if !IsNoValidCredentialSourcesError(err) {
-					t.Fatalf("expected no valid credential sources error, got: %s", err)
-				}
+			acctID, part, diags := GetAwsAccountIDAndPartition(ctx, awsConfig, tc.config)
 
-				t.Logf("received expected error: %s", err)
-				return
-			}
+			testCase.ValidateDiags(t, diags)
 
 			if acctID != tc.expectedAcctID {
 				t.Errorf("expected account ID (%s), got: %s", tc.expectedAcctID, acctID)
@@ -3358,10 +3355,11 @@ func TestRetryHandlers(t *testing.T) {
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
 			}
-			ctx, awsConfig, err := GetAwsConfig(context.Background(), config)
-			if err != nil {
-				t.Fatalf("unexpected error from GetAwsConfig(): %s", err)
+			ctx, awsConfig, diags := GetAwsConfig(context.Background(), config)
+			if diags.HasError() {
+				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
+
 			if awsConfig.Retryer == nil {
 				t.Fatal("No Retryer configured on awsConfig")
 			}
@@ -3434,9 +3432,9 @@ func TestLogger(t *testing.T) {
 
 	expectedName := fmt.Sprintf("provider.%s", loggerName)
 
-	ctx, awsConfig, err := GetAwsConfig(ctx, config)
-	if err != nil {
-		t.Fatalf("GetAwsConfig: unexpected '%[1]T': %[1]s", err)
+	ctx, awsConfig, diags := GetAwsConfig(ctx, config)
+	if diags.HasError() {
+		t.Fatalf("error in GetAwsConfig(): %v", diags)
 	}
 
 	lines, err := tflogtest.MultilineJSONDecode(&buf)
@@ -3450,8 +3448,8 @@ func TestLogger(t *testing.T) {
 		}
 	}
 
-	_, _, err = GetAwsAccountIDAndPartition(ctx, awsConfig, config)
-	if err != nil {
+	_, _, diags = GetAwsAccountIDAndPartition(ctx, awsConfig, config)
+	if diags.HasError() {
 		t.Fatalf("GetAwsAccountIDAndPartition: unexpected '%[1]T': %[1]s", err)
 	}
 

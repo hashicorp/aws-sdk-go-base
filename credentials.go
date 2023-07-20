@@ -5,7 +5,6 @@ package awsbase
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 )
 
@@ -22,12 +22,14 @@ const (
 	configSourceEnvironmentVariable = "envvar"
 )
 
-func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, string, error) {
+func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, string, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	logger := logging.RetrieveLogger(ctx)
 
 	loadOptions, err := commonLoadOptions(ctx, c)
 	if err != nil {
-		return nil, "", err
+		return nil, "", diags.AddSimpleError(err)
 	}
 	loadOptions = append(
 		loadOptions,
@@ -39,7 +41,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 
 	envConfig, err := config.NewEnvConfig()
 	if err != nil {
-		return nil, "", err
+		return nil, "", diags.AddSimpleError(err)
 	}
 
 	if c.Profile != "" && os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
@@ -65,7 +67,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		})
 		sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
 		if err != nil {
-			return nil, "", err
+			return nil, "", diags.AddSimpleError(err)
 		}
 		if len(sharedCredentialsFiles) != 0 {
 			f := make([]string, len(sharedCredentialsFiles))
@@ -88,7 +90,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 
 		sharedConfigFiles, err := c.ResolveSharedConfigFiles()
 		if err != nil {
-			return nil, "", err
+			return nil, "", diags.AddSimpleError(err)
 		}
 		if len(sharedConfigFiles) != 0 {
 			f := make([]string, len(sharedConfigFiles))
@@ -121,7 +123,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 			}
 		})
 		if err != nil {
-			return nil, "", err
+			return nil, "", diags.AddSimpleError(err)
 		}
 	}
 	// We need to validate both the configured and envvar named profiles for validity,
@@ -167,21 +169,22 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	logger.Debug(ctx, "Loading configuration")
 	cfg, err := config.LoadDefaultConfig(ctx, loadOptions...)
 	if err != nil {
-		return nil, "", fmt.Errorf("loading configuration: %w", err)
+		return nil, "", diags.AddSimpleError(err)
 	}
 
 	// This can probably be configured directly in commonLoadOptions() once
 	// https://github.com/aws/aws-sdk-go-v2/pull/1682 is merged
 	if c.AssumeRoleWithWebIdentity != nil {
 		if c.AssumeRoleWithWebIdentity.RoleARN == "" {
-			return nil, "", errors.New("Assume Role With Web Identity: role ARN not set")
+			return nil, "", diags.AddError("Assume Role With Web Identity", "Role ARN was not set")
 		}
 		if c.AssumeRoleWithWebIdentity.WebIdentityToken == "" && c.AssumeRoleWithWebIdentity.WebIdentityTokenFile == "" {
-			return nil, "", errors.New("Assume Role With Web Identity: one of WebIdentityToken, WebIdentityTokenFile must be set")
+			return nil, "", diags.AddError("Assume Role With Web Identity", "One of WebIdentityToken, WebIdentityTokenFile must be set")
 		}
-		provider, err := webIdentityCredentialsProvider(ctx, cfg, c)
-		if err != nil {
-			return nil, "", err
+		provider, d := webIdentityCredentialsProvider(ctx, cfg, c)
+		diags = diags.Append(d...)
+		if diags.HasError() {
+			return nil, "", diags
 		}
 		cfg.Credentials = provider
 	}
@@ -194,22 +197,28 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 
 AWS Error: %w`, err)
 		}
-		return nil, "", c.NewNoValidCredentialSourcesError(err)
+		return nil, "", diags.Append(c.NewNoValidCredentialSourcesError(err))
 	}
 
 	if c.AssumeRole == nil {
-		return cfg.Credentials, creds.Source, nil
+		return cfg.Credentials, creds.Source, diags
 	}
 
 	logger.Info(ctx, "Retrieved initial credentials", map[string]any{
 		"tf_aws.credentials_source": creds.Source,
 	})
-	provider, err := assumeRoleCredentialsProvider(ctx, cfg, c)
+	provider, d := assumeRoleCredentialsProvider(ctx, cfg, c)
+	diags = diags.Append(d...)
+	if diags.HasError() {
+		return nil, "", diags
+	}
 
-	return provider, creds.Source, err
+	return provider, creds.Source, diags
 }
 
-func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
+func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	logger := logging.RetrieveLogger(ctx)
 
 	ar := c.AssumeRoleWithWebIdentity
@@ -234,20 +243,24 @@ func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c
 		}
 	})
 
-	_, err := appCreds.Retrieve(ctx)
-	if err != nil {
-		return nil, c.NewCannotAssumeRoleWithWebIdentityError(err)
+	if _, err := appCreds.Retrieve(ctx); err != nil {
+		return nil, diags.Append(c.NewCannotAssumeRoleWithWebIdentityError(err))
 	}
-	return aws.NewCredentialsCache(appCreds), nil
+	return aws.NewCredentialsCache(appCreds), diags
 }
 
-func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, error) {
+func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c *Config) (aws.CredentialsProvider, diag.Diagnostics) {
+	var diags diag.Diagnostics
+
 	logger := logging.RetrieveLogger(ctx)
 
 	ar := c.AssumeRole
 
 	if ar.RoleARN == "" {
-		return nil, errors.New("Assume Role: role ARN not set")
+		return nil, diags.AddError(
+			"Cannot assume IAM Role",
+			"IAM Role ARN not set",
+		)
 	}
 
 	logger.Info(ctx, "Assuming IAM Role", map[string]any{
@@ -299,7 +312,7 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 	})
 	_, err := appCreds.Retrieve(ctx)
 	if err != nil {
-		return nil, c.NewCannotAssumeRoleError(err)
+		return nil, diags.Append(c.NewCannotAssumeRoleError(err))
 	}
 	return aws.NewCredentialsCache(appCreds), nil
 }
