@@ -13,6 +13,7 @@ updates:
     groups:
       aws-sdk-go:
         patterns:
+          - "github.com/aws/aws-sdk-go-v2"
           - "github.com/aws/aws-sdk-go-v2/*"
     ignore:
       - dependency-name: "golang.org/x/tools"
