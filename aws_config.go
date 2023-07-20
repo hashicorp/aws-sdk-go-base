@@ -259,7 +259,7 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	}
 
 	if len(c.UserAgent) > 0 {
-		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(c.UserAgent.BuildUserAgentString()))
+		apiOptions = append(apiOptions, withUserAgentAppender(c.UserAgent))
 	}
 
 	apiOptions = append(apiOptions, func(stack *middleware.Stack) error {

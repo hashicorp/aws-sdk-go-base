@@ -12,8 +12,8 @@ import (
 )
 
 func awsSdkGoUserAgent() string {
-	// See https://github.com/aws/aws-sdk-go-v2/blob/994cb2c7c1c822dc628949e7ae2941b9c856ccb3/aws/middleware/user_agent_test.go#L18
-	return fmt.Sprintf("%s/%s os/%s lang/go/%s md/GOOS/%s md/GOARCH/%s", aws.SDKName, aws.SDKVersion, getNormalizedOSName(), strings.TrimPrefix(runtime.Version(), "go"), runtime.GOOS, runtime.GOARCH)
+	// See https://github.com/aws/aws-sdk-go-v2/blob/4051ca807a0308bc9f169ca308262b328c2692a3/aws/middleware/user_agent_test.go#L18C1-L18C1
+	return fmt.Sprintf("%s/%s os/%s lang/go#%s md/GOOS#%s md/GOARCH#%s", aws.SDKName, aws.SDKVersion, getNormalizedOSName(), strings.TrimPrefix(runtime.Version(), "go"), runtime.GOOS, runtime.GOARCH)
 }
 
 // Copied from https://github.com/aws/aws-sdk-go-v2/blob/main/aws/middleware/osname.go
