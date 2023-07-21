@@ -17,20 +17,20 @@ func TestMaskAWSSensitiveValues(t *testing.T) {
 
 	tests := map[string]testCase{
 		"mask_simple": {
-			input:    "4skd4lTSLVBMG/asedterGLKSNMSAlsxiLGfjt=ssD",
-			expected: "4skd**********************************=ssD",
+			input:    "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8",
+			expected: "MfP3********************************N8U8",
 		},
 		"mask_complex_json": {
 			input: `
 {
-	"AWSSecretKey": "4skd4lTSLVBMG/asedterGLKSNMSAlsxiLGfjt=ssD",
+	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
 	"BucketName": "test-bucket",
 	"AWSKeyId": "AIDACKCEVSQ6C2EXAMPLE",
 }
 `,
 			expected: `
 {
-	"AWSSecretKey": "4skd**********************************=ssD",
+	"AWSSecretKey": "LEfH********************************jOte",
 	"BucketName": "test-bucket",
 	"AWSKeyId": "AIDA*************MPLE",
 }
@@ -42,12 +42,12 @@ func TestMaskAWSSensitiveValues(t *testing.T) {
 		},
 		"mask_xml": {
 			input: `
-<AWSSecretKey>4skd4lTSLVBMG/asedterGLKSNMSAlsxiLGfjt=ssD</AWSSecretKey>
+<AWSSecretKey>8/AiP0ofCD/YOAqXWrungQt/Y4BkTj1UOjZ0MqBs</AWSSecretKey>
 <BucketName>test-bucket</BucketName>
 <AWSKeyId>AIDACKCEVSQ6C2EXAMPLE</AWSKeyId>
 `,
 			expected: `
-<AWSSecretKey>4skd**********************************=ssD</AWSSecretKey>
+<AWSSecretKey>8/Ai********************************MqBs</AWSSecretKey>
 <BucketName>test-bucket</BucketName>
 <AWSKeyId>AIDA*************MPLE</AWSKeyId>
 `,
