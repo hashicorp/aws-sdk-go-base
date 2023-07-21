@@ -36,6 +36,38 @@ func TestMaskAWSSensitiveValues(t *testing.T) {
 }
 `,
 		},
+		"mask_multiple_json": {
+			input: `
+{
+	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
+	"BucketName": "test-bucket-1",
+	"AWSKeyId": "AIDACKCEVSQ6C2EXAMPLE",
+},
+{
+	"Key": "ABCDEFGH!JKLMNOPQRSTUVWXYZ012345678901234567890123456789",
+},
+{
+	"AWSSecretKey": "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8",
+	"BucketName": "test-bucket-2",
+	"AWSKeyId": "AKIA5PX2H2S3LHEXAMPLE",
+}
+`,
+			expected: `
+{
+	"AWSSecretKey": "LEfH********************************jOte",
+	"BucketName": "test-bucket-1",
+	"AWSKeyId": "AIDA*************MPLE",
+},
+{
+	"Key": "ABCDEFGH!JKLMNOPQRSTUVWXYZ012345678901234567890123456789",
+},
+{
+	"AWSSecretKey": "MfP3********************************N8U8",
+	"BucketName": "test-bucket-2",
+	"AWSKeyId": "AKIA*************MPLE",
+}
+`,
+		},
 		"no_mask": {
 			input:    "<BucketName>test-bucket</BucketName>",
 			expected: "<BucketName>test-bucket</BucketName>",
