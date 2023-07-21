@@ -52,7 +52,7 @@ func MaskAWSSecretKeys(in string) string {
 		secretKeyLen = 40
 	)
 	len := len(in)
-	out := make([]byte, len, len)
+	out := make([]byte, len)
 	base64Characters := 0
 
 	for i := 0; i < len; i++ {
