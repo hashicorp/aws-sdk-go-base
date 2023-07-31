@@ -4,10 +4,10 @@ go 1.19
 
 require (
 	github.com/aws/aws-sdk-go v1.44.313
-	github.com/aws/aws-sdk-go-v2 v1.19.1
+	github.com/aws/aws-sdk-go-v2 v1.20.0
 	github.com/aws/aws-sdk-go-v2/config v1.18.30
 	github.com/aws/aws-sdk-go-v2/credentials v1.13.29
-	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.6
+	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.7
 	github.com/aws/aws-sdk-go-v2/service/sts v1.20.1
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.32
@@ -24,7 +24,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.9.30 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.12.14 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.14.14 // indirect
-	github.com/aws/smithy-go v1.13.5 // indirect
+	github.com/aws/smithy-go v1.14.0 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/hashicorp/errwrap v1.1.0 // indirect
 	github.com/hashicorp/go-hclog v1.5.0 // indirect
