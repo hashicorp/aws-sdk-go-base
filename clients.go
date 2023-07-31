@@ -20,7 +20,7 @@ func iamClient(ctx context.Context, awsConfig aws.Config, c *Config) *iam.Client
 			logger.Info(ctx, "IAM client: setting custom endpoint", map[string]any{
 				"tf_aws.iam_client.endpoint": c.IamEndpoint,
 			})
-			opts.EndpointResolver = iam.EndpointResolverFromURL(c.IamEndpoint)
+			opts.EndpointResolver = iam.EndpointResolverFromURL(c.IamEndpoint) //nolint:staticcheck // The replacement is not documented yet (2023/07/31)
 		}
 	})
 }
@@ -39,7 +39,7 @@ func stsClient(ctx context.Context, awsConfig aws.Config, c *Config) *sts.Client
 			logger.Info(ctx, "STS client: setting custom endpoint", map[string]any{
 				"tf_aws.sts_client.endpoint": c.StsEndpoint,
 			})
-			opts.EndpointResolver = sts.EndpointResolverFromURL(c.StsEndpoint)
+			opts.EndpointResolver = sts.EndpointResolverFromURL(c.StsEndpoint) //nolint:staticcheck // The replacement is not documented yet (2023/07/31)
 		}
 	})
 }

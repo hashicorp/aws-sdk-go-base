@@ -3,6 +3,8 @@
 
 package diag
 
+import "fmt"
+
 var _ DiagnosticWithErr = NativeErrorDiagnostic{}
 
 // NativeErrorDiagnostic is a diagnostic with error severity which wraps a Go error.
@@ -47,4 +49,8 @@ func (d NativeErrorDiagnostic) Equal(other Diagnostic) bool {
 	}
 
 	return ed.Summary() == d.Summary() && ed.Detail() == d.Detail()
+}
+
+func (d NativeErrorDiagnostic) GoString() string {
+	return fmt.Sprintf("NativeErrorDiagnostic: err: %s", d.err.Error())
 }
