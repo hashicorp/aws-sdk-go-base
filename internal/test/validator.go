@@ -39,7 +39,6 @@ func ExpectDiagValidator(msg string, dv DiagValidator) DiagsValidator {
 
 		expectDiagsCount(t, diags, 1)
 	}
-
 }
 
 func ExpectWarningDiagValidator(expected diag.Diagnostic) DiagsValidator {
