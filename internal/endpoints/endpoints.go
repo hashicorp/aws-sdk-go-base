@@ -54,7 +54,7 @@ func (p partition) Partition() Partition {
 var partitions = []partition{
 	{
 		id:          "aws",
-		regionRegex: regexp.MustCompile(`^(us|eu|ap|sa|ca|me|af)\-\w+\-\d+$`),
+		regionRegex: regexp.MustCompile(`^(us|eu|ap|sa|ca|me|af|il)\-\w+\-\d+$`),
 		regions: []string{
 			"af-south-1",     // Africa (Cape Town).
 			"ap-east-1",      // Asia Pacific (Hong Kong).
@@ -76,6 +76,7 @@ var partitions = []partition{
 			"eu-west-1",      // Europe (Ireland).
 			"eu-west-2",      // Europe (London).
 			"eu-west-3",      // Europe (Paris).
+			"il-central-1",   // Israel (Tel Aviv).
 			"me-central-1",   // Middle East (UAE).
 			"me-south-1",     // Middle East (Bahrain).
 			"sa-east-1",      // South America (Sao Paulo).
