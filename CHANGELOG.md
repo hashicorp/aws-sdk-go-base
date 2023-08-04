@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.33 (2023-08-04)
+
 BREAKING CHANGES
 
 * Public functions return `diag.Diagnostics` instead of `error` ([#553](https://github.com/hashicorp/aws-sdk-go-base/pull/553))
