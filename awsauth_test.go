@@ -30,26 +30,15 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			Description:          "EC2 Metadata over iam:GetUser when using EC2 Instance Profile",
 			AuthProviderName:     ec2rolecreds.ProviderName,
 			EC2MetadataEndpoints: append(servicemocks.Ec2metadata_securityCredentialsEndpoints, servicemocks.Ec2metadata_instanceIdEndpoint, servicemocks.Ec2metadata_iamInfoEndpoint),
-
-			IAMEndpoints: []*servicemocks.MockEndpoint{
-				{
-					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &servicemocks.MockResponse{StatusCode: http.StatusOK, Body: servicemocks.IamResponse_GetUser_valid, ContentType: "text/xml"},
-				},
-			},
-			ExpectedAccountID: servicemocks.Ec2metadata_iamInfoEndpoint_expectedAccountID,
-			ExpectedPartition: servicemocks.Ec2metadata_iamInfoEndpoint_expectedPartition,
+			IAMEndpoints:         []*servicemocks.MockEndpoint{},
+			ExpectedAccountID:    servicemocks.Ec2metadata_iamInfoEndpoint_expectedAccountID,
+			ExpectedPartition:    servicemocks.Ec2metadata_iamInfoEndpoint_expectedPartition,
 		},
 		{
 			Description:          "Mimic the metadata service mocked by Hologram (https://github.com/AdRoll/hologram)",
 			AuthProviderName:     ec2rolecreds.ProviderName,
 			EC2MetadataEndpoints: servicemocks.Ec2metadata_securityCredentialsEndpoints,
-			IAMEndpoints: []*servicemocks.MockEndpoint{
-				{
-					Request:  &servicemocks.MockRequest{Method: "POST", Uri: "/", Body: "Action=GetUser&Version=2010-05-08"},
-					Response: &servicemocks.MockResponse{StatusCode: http.StatusForbidden, Body: servicemocks.IamResponse_GetUser_unauthorized, ContentType: "text/xml"},
-				},
-			},
+			IAMEndpoints:         []*servicemocks.MockEndpoint{},
 			STSEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
@@ -123,10 +112,10 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			awsTs := servicemocks.AwsMetadataApiMock(testCase.EC2MetadataEndpoints)
 			defer awsTs()
 
-			closeIam, iamConfig, _ := mockdata.GetMockedAwsApiSession("IAM", testCase.IAMEndpoints)
+			closeIam, iamConfig, _ := mockdata.GetMockedAwsApiSession("IAM", &testCase.IAMEndpoints)
 			defer closeIam()
 
-			closeSts, stsConfig, _ := mockdata.GetMockedAwsApiSession("STS", testCase.STSEndpoints)
+			closeSts, stsConfig, _ := mockdata.GetMockedAwsApiSession("STS", &testCase.STSEndpoints)
 			defer closeSts()
 
 			iamConn := iam.NewFromConfig(iamConfig)
@@ -144,6 +133,15 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 			}
 			if partition != testCase.ExpectedPartition {
 				t.Fatalf("Parsed partition doesn't match with expected (%q != %q)", partition, testCase.ExpectedPartition)
+			}
+
+			numMockIamEndpoints := len(testCase.IAMEndpoints)
+			if numMockIamEndpoints > 0 {
+				t.Fatalf("expected all mock IAM endpoints exhausted, remaining: %d", numMockIamEndpoints)
+			}
+			numMockStsEndpoints := len(testCase.STSEndpoints)
+			if numMockStsEndpoints > 0 {
+				t.Fatalf("expected all mock STS endpoints exhausted, remaining: %d", numMockStsEndpoints)
 			}
 		})
 	}
@@ -224,7 +222,7 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 		t.Run(testCase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			closeIam, config, _ := mockdata.GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
+			closeIam, config, _ := mockdata.GetMockedAwsApiSession("IAM", &testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
@@ -241,6 +239,11 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 			}
 			if partition != testCase.ExpectedPartition {
 				t.Fatalf("Parsed partition doesn't match with expected (%q != %q)", partition, testCase.ExpectedPartition)
+			}
+
+			numMockIamEndpoints := len(testCase.MockEndpoints)
+			if numMockIamEndpoints > 0 {
+				t.Fatalf("expected all mock IAM endpoints exhausted, remaining: %d", numMockIamEndpoints)
 			}
 		})
 	}
@@ -283,7 +286,7 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 		t.Run(testCase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			closeIam, config, _ := mockdata.GetMockedAwsApiSession("IAM", testCase.MockEndpoints)
+			closeIam, config, _ := mockdata.GetMockedAwsApiSession("IAM", &testCase.MockEndpoints)
 			defer closeIam()
 
 			iamClient := iam.NewFromConfig(config)
@@ -300,6 +303,11 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 			}
 			if partition != testCase.ExpectedPartition {
 				t.Fatalf("Parsed partition doesn't match with expected (%q != %q)", partition, testCase.ExpectedPartition)
+			}
+
+			numMockIamEndpoints := len(testCase.MockEndpoints)
+			if numMockIamEndpoints > 0 {
+				t.Fatalf("expected all mock IAM endpoints exhausted, remaining: %d", numMockIamEndpoints)
 			}
 		})
 	}
@@ -378,7 +386,7 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 		t.Run(testCase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			closeSts, config, _ := mockdata.GetMockedAwsApiSession("STS", testCase.MockEndpoints)
+			closeSts, config, _ := mockdata.GetMockedAwsApiSession("STS", &testCase.MockEndpoints)
 			defer closeSts()
 
 			stsClient := sts.NewFromConfig(config)
@@ -395,6 +403,11 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 			}
 			if partition != testCase.ExpectedPartition {
 				t.Fatalf("Parsed partition doesn't match with expected (%q != %q)", partition, testCase.ExpectedPartition)
+			}
+
+			numMockIamEndpoints := len(testCase.MockEndpoints)
+			if numMockIamEndpoints > 0 {
+				t.Fatalf("expected all mock IAM endpoints exhausted, remaining: %d", numMockIamEndpoints)
 			}
 		})
 	}
