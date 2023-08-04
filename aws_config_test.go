@@ -34,6 +34,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
+	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-log/tflogtest"
 )
 
@@ -3411,9 +3412,10 @@ func (r *withNoDelay) RetryDelay(attempt int, err error) (time.Duration, error) 
 	return 0 * time.Second, nil
 }
 
-func TestLogger(t *testing.T) {
+func TestLogger_TfLog(t *testing.T) {
+	ctx := context.Background()
 	var buf bytes.Buffer
-	ctx := tflogtest.RootLogger(context.Background(), &buf)
+	ctx = tflogtest.RootLogger(ctx, &buf)
 
 	oldEnv := servicemocks.InitSessionTestEnv()
 	defer servicemocks.PopEnv(oldEnv)
@@ -3442,6 +3444,9 @@ func TestLogger(t *testing.T) {
 		t.Fatalf("GetAwsConfig: decoding log lines: %s", err)
 	}
 
+	if len(lines) == 0 {
+		t.Fatalf("expected log entries, had none")
+	}
 	for i, line := range lines {
 		if a, e := line["@module"], expectedName; a != e {
 			t.Errorf("GetAwsConfig: line %d: expected module %q, got %q", i+1, e, a)
@@ -3458,9 +3463,58 @@ func TestLogger(t *testing.T) {
 		t.Fatalf("GetAwsAccountIDAndPartition: decoding log lines: %s", err)
 	}
 
+	if len(lines) == 0 {
+		t.Fatalf("expected log entries, had none")
+	}
 	for i, line := range lines {
 		if a, e := line["@module"], expectedName; a != e {
 			t.Errorf("GetAwsAccountIDAndPartition: line %d: expected module %q, got %q", i+1, e, a)
 		}
+	}
+}
+
+func TestLoggerDefaultMasking_TfLog(t *testing.T) {
+	ctx := context.Background()
+	var buf bytes.Buffer
+	ctx = tflogtest.RootLogger(ctx, &buf)
+
+	oldEnv := servicemocks.InitSessionTestEnv()
+	defer servicemocks.PopEnv(oldEnv)
+
+	config := &Config{
+		AccessKey: servicemocks.MockStaticAccessKey,
+		Region:    "us-east-1",
+		SecretKey: servicemocks.MockStaticSecretKey,
+	}
+
+	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
+		servicemocks.MockStsGetCallerIdentityValidEndpoint,
+	})
+	defer ts.Close()
+	config.StsEndpoint = ts.URL
+
+	ctx, _, diags := GetAwsConfig(ctx, config)
+	if diags.HasError() {
+		t.Fatalf("error in GetAwsConfig(): %v", diags)
+	}
+
+	buf.Reset()
+
+	tflog.Info(ctx, "message", map[string]any{
+		"id": "AKIAI44QH8DHBEXAMPLE",
+	})
+
+	lines, err := tflogtest.MultilineJSONDecode(&buf)
+	if err != nil {
+		t.Fatalf("decoding log lines: %s", err)
+	}
+
+	if l := len(lines); l != 1 {
+		t.Fatalf("expected 1 log entry, got %d", l)
+	}
+
+	line := lines[0]
+	if a, e := line["id"], "***"; a != e {
+		t.Errorf("expected %q, got %q", e, a)
 	}
 }
