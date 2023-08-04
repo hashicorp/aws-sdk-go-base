@@ -83,7 +83,7 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 	var diags diag.Diagnostics
 
 	// var loggerFactory tfLoggerFactory
-	ctx, logger := logging.New(ctx, loggerName)
+	ctx, logger := logging.NewTfLogger(ctx, loggerName)
 	ctx = logging.RegisterLogger(ctx, logger)
 
 	options, err := getSessionOptions(ctx, awsC, c)
