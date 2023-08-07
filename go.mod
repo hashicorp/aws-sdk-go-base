@@ -9,7 +9,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.7
 	github.com/aws/aws-sdk-go-v2/service/iam v1.22.1
 	github.com/aws/aws-sdk-go-v2/service/sts v1.21.1
-	github.com/aws/smithy-go v1.14.0
+	github.com/aws/smithy-go v1.14.1
 	github.com/google/go-cmp v0.5.9
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/terraform-plugin-log v0.9.0
