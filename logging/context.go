@@ -16,5 +16,9 @@ func RegisterLogger(ctx context.Context, logger Logger) context.Context {
 }
 
 func RetrieveLogger(ctx context.Context) Logger {
-	return ctx.Value(loggerKey).(Logger)
+	logger, ok := ctx.Value(loggerKey).(Logger)
+	if !ok {
+		return NullLogger{}
+	}
+	return logger
 }
