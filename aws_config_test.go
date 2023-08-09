@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"os"
@@ -31,9 +32,11 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
+	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"github.com/hashicorp/aws-sdk-go-base/v2/mockdata"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
+	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-log/tflogtest"
 )
@@ -3420,8 +3423,11 @@ func TestLogger_TfLog(t *testing.T) {
 	oldEnv := servicemocks.InitSessionTestEnv()
 	defer servicemocks.PopEnv(oldEnv)
 
+	ctx, logger := logging.NewTfLogger(ctx)
+
 	config := &Config{
 		AccessKey: servicemocks.MockStaticAccessKey,
+		Logger:    logger,
 		Region:    "us-east-1",
 		SecretKey: servicemocks.MockStaticSecretKey,
 	}
@@ -3517,4 +3523,91 @@ func TestLoggerDefaultMasking_TfLog(t *testing.T) {
 	if a, e := line["id"], "***"; a != e {
 		t.Errorf("expected %q, got %q", e, a)
 	}
+}
+
+func TestLogger_HcLog(t *testing.T) {
+	ctx := context.Background()
+
+	rootName := "hc-log-test"
+	expectedName := rootName + "." + loggerName
+
+	var buf bytes.Buffer
+	hclogger := configureHcLogger(rootName, &buf)
+
+	oldEnv := servicemocks.InitSessionTestEnv()
+	defer servicemocks.PopEnv(oldEnv)
+
+	ctx, logger := logging.NewHcLogger(ctx, hclogger)
+
+	config := &Config{
+		AccessKey: servicemocks.MockStaticAccessKey,
+		Logger:    logger,
+		Region:    "us-east-1",
+		SecretKey: servicemocks.MockStaticSecretKey,
+	}
+
+	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
+		servicemocks.MockStsGetCallerIdentityValidEndpoint,
+	})
+	defer ts.Close()
+	config.StsEndpoint = ts.URL
+
+	ctx, awsConfig, diags := GetAwsConfig(ctx, config)
+	if diags.HasError() {
+		t.Fatalf("error in GetAwsConfig(): %v", diags)
+	}
+
+	lines, err := tflogtest.MultilineJSONDecode(&buf)
+	if err != nil {
+		t.Fatalf("GetAwsConfig: decoding log lines: %s", err)
+	}
+
+	if len(lines) == 0 {
+		t.Fatalf("expected log entries, had none")
+	}
+	for i, line := range lines {
+		if a, e := line["@module"], expectedName; a != e {
+			t.Errorf("GetAwsConfig: line %d: expected module %q, got %q", i+1, e, a)
+		}
+	}
+
+	_, _, diags = GetAwsAccountIDAndPartition(ctx, awsConfig, config)
+	if diags.HasError() {
+		t.Fatalf("GetAwsAccountIDAndPartition: unexpected '%[1]T': %[1]s", err)
+	}
+
+	lines, err = tflogtest.MultilineJSONDecode(&buf)
+	if err != nil {
+		t.Fatalf("GetAwsAccountIDAndPartition: decoding log lines: %s", err)
+	}
+
+	if len(lines) == 0 {
+		t.Fatalf("expected log entries, had none")
+	}
+	for i, line := range lines {
+		if a, e := line["@module"], expectedName; a != e {
+			t.Errorf("GetAwsAccountIDAndPartition: line %d: expected module %q, got %q", i+1, e, a)
+		}
+	}
+}
+
+// configureHcLogger configures the default logger with settings suitable for testing:
+//
+//   - Log level set to TRACE
+//   - Written to the io.Writer passed in, such as a bytes.Buffer
+//   - Log entries are in JSON format, and can be decoded using multilineJSONDecode
+//   - Caller information is not included
+//   - Timestamp is not included
+func configureHcLogger(name string, output io.Writer) hclog.Logger {
+	logger := hclog.NewInterceptLogger(&hclog.LoggerOptions{
+		Name:              name,
+		Level:             hclog.Trace,
+		Output:            output,
+		IndependentLevels: true,
+		JSONFormat:        true,
+		IncludeLocation:   false,
+		DisableTime:       true,
+	})
+
+	return logger
 }
