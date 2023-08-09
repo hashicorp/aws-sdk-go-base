@@ -38,9 +38,12 @@ func configCommonLogging(ctx context.Context) context.Context {
 
 func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, diag.Diagnostics) {
 	var diags diag.Diagnostics
+
+	ctx, tflogger := logging.NewTfLogger(ctx)
+	ctx = logging.RegisterLogger(ctx, tflogger)
 	ctx = configCommonLogging(ctx)
 
-	baseCtx, logger := logging.NewTfLogger(ctx, loggerName)
+	baseCtx, logger := tflogger.SubLogger(ctx, loggerName)
 	baseCtx = logging.RegisterLogger(baseCtx, logger)
 
 	logger.Trace(baseCtx, "Resolving AWS configuration")
@@ -210,7 +213,8 @@ func (r *networkErrorShortcutter) RetryDelay(attempt int, err error) (time.Durat
 func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *Config) (string, string, diag.Diagnostics) {
 	var diags diag.Diagnostics
 	ctx = configCommonLogging(ctx)
-	ctx, logger := logging.NewTfLogger(ctx, loggerName)
+	ctx, tflogger := logging.NewTfLogger(ctx)
+	ctx, logger := tflogger.SubLogger(ctx, loggerName)
 	ctx = logging.RegisterLogger(ctx, logger)
 
 	if !c.SkipCredsValidation {

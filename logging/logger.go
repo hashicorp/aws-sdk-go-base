@@ -14,4 +14,6 @@ type Logger interface {
 	Trace(ctx context.Context, msg string, fields ...map[string]any)
 
 	SetField(ctx context.Context, key string, value any) context.Context
+
+	SubLogger(ctx context.Context, name string) (context.Context, Logger)
 }

@@ -2564,6 +2564,7 @@ func TestSessionRetryHandlers(t *testing.T) {
 			request, _ := iamconn.GetUserRequest(&iam.GetUserInput{})
 			request.RetryCount = testcase.RetryCount
 			request.Error = testcase.Error
+			request.SetContext(ctx)
 
 			// Prevent the retryer from using the default retry delay
 			retryer := request.Retryer.(client.DefaultRetryer)

@@ -9,16 +9,20 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
 
-func NewTfLogger(ctx context.Context, name string) (context.Context, TfLogger) {
+type TfLogger string
+
+var _ Logger = TfLogger("")
+
+func NewTfLogger(ctx context.Context) (context.Context, TfLogger) {
+	return ctx, TfLogger("")
+}
+
+func (l TfLogger) SubLogger(ctx context.Context, name string) (context.Context, Logger) {
 	ctx = tflog.NewSubsystem(ctx, name, tflog.WithRootFields())
 	logger := TfLogger(name)
 
 	return ctx, logger
 }
-
-type TfLogger string
-
-var _ Logger = TfLogger("")
 
 func (l TfLogger) Warn(ctx context.Context, msg string, fields ...map[string]any) {
 	if l == "" {
