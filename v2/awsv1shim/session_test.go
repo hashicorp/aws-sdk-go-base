@@ -1681,9 +1681,7 @@ use_fips_endpoint = true
 			}
 
 			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
-
 			diags = diags.Append(ds...)
-
 			if diags.HasError() {
 				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
 			}
@@ -2643,5 +2641,131 @@ func TestLogger(t *testing.T) {
 		if a, e := line["@module"], expectedName; a != e {
 			t.Errorf("GetSession: line %d: expected module %q, got %q", i+1, e, a)
 		}
+	}
+}
+
+func TestS3UsEast1RegionalEndpoint(t *testing.T) {
+	testCases := map[string]struct {
+		Config                            *awsbase.Config
+		EnvironmentVariables              map[string]string
+		SharedConfigurationFile           string
+		ExpectedS3UsEast1RegionalEndpoint endpoints.S3UsEast1RegionalEndpoint
+	}{
+		"no configuration": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedS3UsEast1RegionalEndpoint: endpoints.LegacyS3UsEast1Endpoint,
+		},
+
+		"AWS_S3_US_EAST_1_REGIONAL_ENDPOINT legacy": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_S3_US_EAST_1_REGIONAL_ENDPOINT": "legacy",
+			},
+			ExpectedS3UsEast1RegionalEndpoint: endpoints.LegacyS3UsEast1Endpoint,
+		},
+
+		"AWS_S3_US_EAST_1_REGIONAL_ENDPOINT regional": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_S3_US_EAST_1_REGIONAL_ENDPOINT": "regional",
+			},
+			ExpectedS3UsEast1RegionalEndpoint: endpoints.RegionalS3UsEast1Endpoint,
+		},
+
+		"shared configuration file legacy": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+[default]
+s3_us_east_1_regional_endpoint = legacy
+`,
+			ExpectedS3UsEast1RegionalEndpoint: endpoints.LegacyS3UsEast1Endpoint,
+		},
+
+		"shared configuration file regional": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SharedConfigurationFile: `
+[default]
+s3_us_east_1_regional_endpoint = regional
+`,
+			ExpectedS3UsEast1RegionalEndpoint: endpoints.RegionalS3UsEast1Endpoint,
+		},
+
+		"AWS_RETRY_MODE overrides shared configuration": {
+			Config: &awsbase.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				"AWS_S3_US_EAST_1_REGIONAL_ENDPOINT": "regional",
+			},
+			SharedConfigurationFile: `
+[default]
+s3_us_east_1_regional_endpoint = legacy
+`,
+			ExpectedS3UsEast1RegionalEndpoint: endpoints.RegionalS3UsEast1Endpoint,
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testCase.EnvironmentVariables {
+				os.Setenv(k, v)
+			}
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			ctx, awsConfig, diags := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			if diags.HasError() {
+				t.Fatalf("error in GetAwsConfig(): %v", diags)
+			}
+
+			actualSession, ds := GetSession(ctx, &awsConfig, testCase.Config)
+			diags = diags.Append(ds...)
+			if diags.HasError() {
+				t.Fatalf("expected no errors from GetSession(), got : %v", diags)
+			}
+
+			if a, e := actualSession.Config.S3UsEast1RegionalEndpoint, testCase.ExpectedS3UsEast1RegionalEndpoint; a != e {
+				t.Errorf(`expected S3UsEast1RegionalEndpoin "%s", got: "%s"`, e.String(), a.String())
+			}
+		})
 	}
 }
