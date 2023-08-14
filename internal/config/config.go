@@ -48,6 +48,7 @@ type Config struct {
 	Token                          string
 	UseDualStackEndpoint           bool
 	UseFIPSEndpoint                bool
+	UseLegacyWorkflow              bool
 	UserAgent                      UserAgentProducts
 }
 
