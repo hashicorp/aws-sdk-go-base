@@ -52,6 +52,8 @@ func getSessionOptions(ctx context.Context, awsC *awsv2.Config, c *awsbase.Confi
 			UseFIPSEndpoint:      convertFIPSEndpointState(useFIPSEndpoint),
 			UseDualStackEndpoint: convertDualStackEndpointState(useDualStackEndpoint),
 		},
+		SharedConfigState: session.SharedConfigEnable,
+		SharedConfigFiles: append(c.SharedCredentialsFiles, c.SharedConfigFiles...),
 	}
 
 	if !c.SuppressDebugLog {
