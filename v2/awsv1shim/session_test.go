@@ -36,6 +36,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
+	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 	"github.com/hashicorp/aws-sdk-go-base/v2/useragent"
 	"github.com/hashicorp/terraform-plugin-log/tflogtest"
@@ -2564,6 +2565,7 @@ func TestSessionRetryHandlers(t *testing.T) {
 			request, _ := iamconn.GetUserRequest(&iam.GetUserInput{})
 			request.RetryCount = testcase.RetryCount
 			request.Error = testcase.Error
+			request.SetContext(ctx)
 
 			// Prevent the retryer from using the default retry delay
 			retryer := request.Retryer.(client.DefaultRetryer)
@@ -2599,8 +2601,11 @@ func TestLogger(t *testing.T) {
 	oldEnv := servicemocks.InitSessionTestEnv()
 	defer servicemocks.PopEnv(oldEnv)
 
+	ctx, logger := logging.NewTfLogger(ctx)
+
 	config := &awsbase.Config{
 		AccessKey: servicemocks.MockStaticAccessKey,
+		Logger:    logger,
 		Region:    "us-east-1",
 		SecretKey: servicemocks.MockStaticSecretKey,
 	}

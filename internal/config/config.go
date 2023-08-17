@@ -16,6 +16,7 @@ import (
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
+	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 )
 
 type Config struct {
@@ -33,6 +34,7 @@ type Config struct {
 	HTTPProxy                      string
 	IamEndpoint                    string
 	Insecure                       bool
+	Logger                         logging.Logger
 	MaxRetries                     int
 	Profile                        string
 	Region                         string

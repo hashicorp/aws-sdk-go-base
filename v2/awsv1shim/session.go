@@ -82,8 +82,11 @@ const loggerName string = "aws-base-v1"
 func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*session.Session, diag.Diagnostics) {
 	var diags diag.Diagnostics
 
-	// var loggerFactory tfLoggerFactory
-	ctx, logger := logging.New(ctx, loggerName)
+	var logger logging.Logger = logging.NullLogger{}
+	if c.Logger != nil {
+		logger = c.Logger
+	}
+	ctx, logger = logger.SubLogger(ctx, loggerName)
 	ctx = logging.RegisterLogger(ctx, logger)
 
 	options, err := getSessionOptions(ctx, awsC, c)
