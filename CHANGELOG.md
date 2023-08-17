@@ -1,6 +1,12 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.34 (2023-08-17)
+
+BREAKING CHANGES
+
+* Now requires a `logging.Logger` implementation to enable logging ([#605](https://github.com/hashicorp/aws-sdk-go-base/pull/605))
+
 # v2.0.0-beta.33 (2023-08-04)
 
 BREAKING CHANGES
