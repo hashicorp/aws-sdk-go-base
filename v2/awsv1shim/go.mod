@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.13.8
 	github.com/aws/aws-sdk-go-v2/service/sts v1.21.2
 	github.com/google/go-cmp v0.5.9
-	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.33
+	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.34
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	go.opentelemetry.io/otel v1.16.0
@@ -36,7 +36,7 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
 	golang.org/x/exp v0.0.0-20230510235704-dd950f8aeaea // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 

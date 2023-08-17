@@ -33,5 +33,5 @@ require (
 	github.com/mitchellh/go-testing-interface v1.14.1 // indirect
 	github.com/stretchr/testify v1.8.4 // indirect
 	go.opentelemetry.io/otel/trace v1.16.0 // indirect
-	golang.org/x/sys v0.8.0 // indirect
+	golang.org/x/sys v0.11.0 // indirect
 )
