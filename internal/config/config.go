@@ -21,6 +21,7 @@ import (
 
 type Config struct {
 	AccessKey                      string
+	AllowedAccountIds              []string
 	APNInfo                        *APNInfo
 	AssumeRole                     *AssumeRole
 	AssumeRoleWithWebIdentity      *AssumeRoleWithWebIdentity
@@ -30,6 +31,7 @@ type Config struct {
 	EC2MetadataServiceEnableState  imds.ClientEnableState
 	EC2MetadataServiceEndpoint     string
 	EC2MetadataServiceEndpointMode string
+	ForbiddenAccountIds            []string
 	HTTPClient                     *http.Client
 	HTTPProxy                      string
 	IamEndpoint                    string
@@ -130,6 +132,31 @@ func (c Config) ResolveSharedCredentialsFiles() ([]string, error) {
 		return []string{}, fmt.Errorf("expanding shared credentials files: %w", err)
 	}
 	return v, nil
+}
+
+// VerifyAccountIDAllowed verifies an account ID is not explicitly forbidden
+// or omitted from an allow list, if configured.
+func (c Config) VerifyAccountIDAllowed(accountID string) error {
+	if len(c.ForbiddenAccountIds) > 0 {
+		for _, forbiddenAccountID := range c.ForbiddenAccountIds {
+			if accountID == forbiddenAccountID {
+				return fmt.Errorf("AWS account ID not allowed: %s", accountID)
+			}
+		}
+	}
+	if len(c.AllowedAccountIds) > 0 {
+		found := false
+		for _, allowedAccountID := range c.AllowedAccountIds {
+			if accountID == allowedAccountID {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("AWS account ID not allowed: %s", accountID)
+		}
+	}
+	return nil
 }
 
 type AssumeRoleWithWebIdentity struct {
