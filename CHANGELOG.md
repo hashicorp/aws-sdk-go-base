@@ -1,6 +1,13 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.35 (2023-09-05)
+
+ENHANCEMENTS
+
+* Adds `AllowedAccountIds` and `ForbiddenAccountIds` fields and a `VerifyAccountIDAllowed` method to `Config` ([#638](https://github.com/hashicorp/aws-sdk-go-base/pull/638))
+* Adds `tfawserr.ErrHTTPStatusCodeEquals` ([#642](https://github.com/hashicorp/aws-sdk-go-base/pull/642))
+
 # v2.0.0-beta.34 (2023-08-17)
 
 BREAKING CHANGES

@@ -136,6 +136,9 @@ func (c Config) ResolveSharedCredentialsFiles() ([]string, error) {
 
 // VerifyAccountIDAllowed verifies an account ID is not explicitly forbidden
 // or omitted from an allow list, if configured.
+//
+// If the AllowedAccountIds and ForbiddenAccountIds fields are both empty, this
+// function will return nil.
 func (c Config) VerifyAccountIDAllowed(accountID string) error {
 	if len(c.ForbiddenAccountIds) > 0 {
 		for _, forbiddenAccountID := range c.ForbiddenAccountIds {
