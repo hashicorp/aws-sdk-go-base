@@ -5,11 +5,13 @@ package tfawserr
 
 import (
 	"fmt"
+	"net/http"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	smithy "github.com/aws/smithy-go"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 )
 
 func TestErrCodeEquals(t *testing.T) {
@@ -217,6 +219,66 @@ func TestErrMessageContains(t *testing.T) {
 
 		t.Run(name, func(t *testing.T) {
 			got := ErrMessageContains(testCase.Err, testCase.Code, testCase.Message)
+
+			if got != testCase.Expected {
+				t.Errorf("got %t, expected %t", got, testCase.Expected)
+			}
+		})
+	}
+}
+
+func TestErrHTTPStatusCodeEquals(t *testing.T) {
+	testCases := map[string]struct {
+		Err      error
+		Codes    []int
+		Expected bool
+	}{
+		"nil error": {
+			Err:      nil,
+			Expected: false,
+		},
+		"other error": {
+			Err:      fmt.Errorf("other error"),
+			Expected: false,
+		},
+		"Top-level smithyhttp.ResponseError matching first code": {
+			Err:      &smithyhttp.ResponseError{Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusNotFound}}},
+			Codes:    []int{http.StatusNotFound},
+			Expected: true,
+		},
+		"Top-level smithyhttp.ResponseError matching last code": {
+			Err:      &smithyhttp.ResponseError{Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusOK}}},
+			Codes:    []int{http.StatusNotFound, http.StatusOK},
+			Expected: true,
+		},
+		"Top-level smithyhttp.ResponseError no code": {
+			Err: &smithyhttp.ResponseError{Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusOK}}},
+		},
+		"Top-level smithyhttp.ResponseError non-matching codes": {
+			Err:   &smithyhttp.ResponseError{Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusOK}}},
+			Codes: []int{http.StatusNotFound, http.StatusNoContent},
+		},
+		"Wrapped smithyhttp.ResponseError matching first code": {
+			Err:      &smithy.OperationError{Err: &smithyhttp.ResponseError{Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusNotFound}}}},
+			Codes:    []int{http.StatusNotFound},
+			Expected: true,
+		},
+		"Wrapped smithyhttp.ResponseError matching last code": {
+			Err:      &smithy.OperationError{Err: &smithyhttp.ResponseError{Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusOK}}}},
+			Codes:    []int{http.StatusNotFound, http.StatusOK},
+			Expected: true,
+		},
+		"Wrapped smithyhttp.ResponseError non-matching codes": {
+			Err:   &smithy.OperationError{Err: &smithyhttp.ResponseError{Response: &smithyhttp.Response{Response: &http.Response{StatusCode: http.StatusOK}}}},
+			Codes: []int{http.StatusNotFound, http.StatusNoContent},
+		},
+	}
+
+	for name, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(name, func(t *testing.T) {
+			got := ErrHTTPStatusCodeEquals(testCase.Err, testCase.Codes...)
 
 			if got != testCase.Expected {
 				t.Errorf("got %t, expected %t", got, testCase.Expected)
