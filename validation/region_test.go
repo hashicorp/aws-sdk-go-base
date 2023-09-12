@@ -1,13 +1,13 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package awsbase
+package validation
 
 import (
 	"testing"
 )
 
-func TestValidateRegion(t *testing.T) {
+func TestSupportedRegion(t *testing.T) {
 	var testCases = []struct {
 		Region      string
 		ExpectError bool
@@ -38,7 +38,7 @@ func TestValidateRegion(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testCase.Region, func(t *testing.T) {
-			err := ValidateRegion(testCase.Region)
+			err := SupportedRegion(testCase.Region)
 			if err != nil && !testCase.ExpectError {
 				t.Fatalf("Expected no error, received error: %s", err)
 			}
