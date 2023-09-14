@@ -19,6 +19,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/request"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
 )
@@ -38,22 +39,35 @@ func (l debugLogger) Log(args ...interface{}) {
 	}
 	s := strings.Join(tokens, " ")
 	s = strings.ReplaceAll(s, "\r", "") // Works around https://github.com/jen20/teamcity-go-test/pull/2
-	log.Printf("missing_context: %s aws.sdk=aws-sdk-go", s)
+	log.Printf("missing_context: %s "+string(logging.AwsSdkKey)+"="+awsSdkGoV1Val, s)
 }
 
 func setAWSFields(ctx context.Context, r *request.Request) context.Context {
-	ctx = tflog.SetField(ctx, "aws.sdk", "aws-sdk-go")
-	ctx = tflog.SetField(ctx, "aws.service", r.ClientInfo.ServiceID)
-	ctx = tflog.SetField(ctx, "aws.operation", r.Operation.Name)
-
 	region := aws.StringValue(r.Config.Region)
-	ctx = tflog.SetField(ctx, "aws.region", region)
+
+	attributes := []attribute.KeyValue{
+		otelaws.SystemAttr(),
+		otelaws.ServiceAttr(r.ClientInfo.ServiceID),
+		otelaws.RegionAttr(region),
+		otelaws.OperationAttr(r.Operation.Name),
+		awsSDKv1Attr(),
+	}
+
+	for _, attribute := range attributes {
+		ctx = tflog.SetField(ctx, string(attribute.Key), attribute.Value.AsInterface())
+	}
 
 	if signingRegion := r.ClientInfo.SigningRegion; signingRegion != region {
 		ctx = tflog.SetField(ctx, "aws.signing_region", signingRegion)
 	}
 
 	return ctx
+}
+
+const awsSdkGoV1Val = "aws-sdk-go"
+
+func awsSDKv1Attr() attribute.KeyValue {
+	return logging.AwsSdkKey.String(awsSdkGoV1Val)
 }
 
 type durationKeyT string

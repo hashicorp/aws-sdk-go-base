@@ -21,6 +21,7 @@ import (
 	"github.com/aws/smithy-go/middleware"
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
 )
@@ -41,7 +42,7 @@ func (l debugLogger) Logf(classification smithylogging.Classification, format st
 		}
 	} else {
 		s = strings.ReplaceAll(s, "\r", "") // Works around https://github.com/jen20/teamcity-go-test/pull/2
-		log.Printf("[%s] missing_context: %s aws.sdk=aws-sdk-go-v2", classification, s)
+		log.Printf("[%s] missing_context: %s "+string(logging.AwsSdkKey)+"="+awsSdkGoV2Val, classification, s)
 	}
 }
 
@@ -49,6 +50,12 @@ func (l debugLogger) WithContext(ctx context.Context) smithylogging.Logger {
 	return &debugLogger{
 		ctx: ctx,
 	}
+}
+
+const awsSdkGoV2Val = "aws-sdk-go-v2"
+
+func awsSDKv2Attr() attribute.KeyValue {
+	return logging.AwsSdkKey.String(awsSdkGoV2Val)
 }
 
 // Replaces the built-in logging middleware from https://github.com/aws/smithy-go/blob/main/transport/http/middleware_http_logging.go
@@ -69,12 +76,19 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 ) {
 	logger := logging.RetrieveLogger(ctx)
 
-	ctx = logger.SetField(ctx, "aws.sdk", "aws-sdk-go-v2")
-	ctx = logger.SetField(ctx, "aws.service", awsmiddleware.GetServiceID(ctx))
-	ctx = logger.SetField(ctx, "aws.operation", awsmiddleware.GetOperationName(ctx))
-
 	region := awsmiddleware.GetRegion(ctx)
-	ctx = logger.SetField(ctx, "aws.region", region)
+
+	attributes := []attribute.KeyValue{
+		otelaws.SystemAttr(),
+		otelaws.ServiceAttr(awsmiddleware.GetServiceID(ctx)),
+		otelaws.RegionAttr(region),
+		otelaws.OperationAttr(awsmiddleware.GetOperationName(ctx)),
+		awsSDKv2Attr(),
+	}
+
+	for _, attribute := range attributes {
+		ctx = logger.SetField(ctx, string(attribute.Key), attribute.Value.AsInterface())
+	}
 
 	if signingRegion := awsmiddleware.GetSigningRegion(ctx); signingRegion != region {
 		ctx = logger.SetField(ctx, "aws.signing_region", signingRegion)
