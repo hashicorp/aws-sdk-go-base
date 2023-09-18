@@ -52,13 +52,12 @@ func setAWSFields(ctx context.Context, r *request.Request) context.Context {
 		otelaws.OperationAttr(r.Operation.Name),
 		awsSDKv1Attr(),
 	}
+	if signingRegion := r.ClientInfo.SigningRegion; signingRegion != region {
+		attributes = append(attributes, logging.SigningRegion(signingRegion))
+	}
 
 	for _, attribute := range attributes {
 		ctx = tflog.SetField(ctx, string(attribute.Key), attribute.Value.AsInterface())
-	}
-
-	if signingRegion := r.ClientInfo.SigningRegion; signingRegion != region {
-		ctx = tflog.SetField(ctx, "aws.signing_region", signingRegion)
 	}
 
 	return ctx

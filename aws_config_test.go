@@ -11,9 +11,11 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
@@ -39,6 +41,9 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 	"github.com/hashicorp/terraform-plugin-log/tflogtest"
+	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
+	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	"golang.org/x/exp/maps"
 )
 
 const (
@@ -3512,6 +3517,69 @@ func TestLogger_TfLog(t *testing.T) {
 		if a, e := line["@module"], expectedName; a != e {
 			t.Errorf("GetAwsConfig: line %d: expected module %q, got %q", i+1, e, a)
 		}
+	}
+	var requestLines []map[string]any
+	for _, line := range lines {
+		if line["@message"] == "HTTP Request Sent" {
+			requestLines = append(requestLines, line)
+		}
+	}
+	if len(requestLines) != 1 {
+		t.Fatalf("expected 1 request line, got %d", len(requestLines))
+	}
+	requestLine := requestLines[0]
+	maps.DeleteFunc(requestLine, func(k string, _ any) bool {
+		return strings.HasPrefix(k, "@")
+	})
+
+	for _, k := range []string{
+		string(semconv.HTTPUserAgentKey),
+		string(logging.RequestHeaderAttributeKey("Amz-Sdk-Invocation-Id")),
+		string(logging.RequestHeaderAttributeKey("Authorization")),
+		string(logging.RequestHeaderAttributeKey("X-Amz-Date")),
+	} {
+		_, ok := requestLine[k]
+		if !ok {
+			t.Errorf("expected a value for attribute %q", k)
+		}
+		delete(requestLine, k)
+	}
+
+	tsUrl, _ := url.Parse(ts.URL)
+	if tsUrl.Path == "" {
+		tsUrl.Path = "/"
+	}
+
+	port, err := strconv.ParseFloat(tsUrl.Port(), 32)
+	if err != nil {
+		t.Errorf("error parsing URL port %q: %s", tsUrl.Port(), err)
+	}
+
+	requestBody := "Action=GetCallerIdentity&Version=2011-06-15"
+
+	expected := map[string]any{
+		// AWS attributes
+		string(semconv.RPCSystemKey):  otelaws.AWSSystemVal,
+		string(semconv.RPCServiceKey): sts.ServiceID,
+		string(otelaws.RegionKey):     "us-east-1",
+		string(semconv.RPCMethodKey):  "GetCallerIdentity",
+		// Custom attributes
+		string(logging.AwsSdkKey):         awsSdkGoV2Val,
+		string(logging.CustomEndpointKey): true,
+		"http.request.body":               requestBody + "\n",
+		// HTTP attributes
+		string(semconv.HTTPMethodKey):                                "POST",
+		string(logging.RequestHeaderAttributeKey("Amz-Sdk-Request")): "attempt=1; max=3",
+		string(logging.RequestHeaderAttributeKey("Content-Type")):    "application/x-www-form-urlencoded",
+		string(semconv.HTTPRequestContentLengthKey):                  float64(len(requestBody)),
+		string(semconv.HTTPURLKey):                                   tsUrl.String(),
+		// Net attributes
+		string(semconv.NetPeerNameKey): tsUrl.Hostname(),
+		string(semconv.NetPeerPortKey): port,
+	}
+
+	if diff := cmp.Diff(requestLine, expected); diff != "" {
+		t.Fatalf("unexpected attributes: (- got, + expected)\n%s", diff)
 	}
 
 	_, _, diags = GetAwsAccountIDAndPartition(ctx, awsConfig, config)

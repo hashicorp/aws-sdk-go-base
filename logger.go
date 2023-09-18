@@ -85,17 +85,15 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 		otelaws.OperationAttr(awsmiddleware.GetOperationName(ctx)),
 		awsSDKv2Attr(),
 	}
+	if signingRegion := awsmiddleware.GetSigningRegion(ctx); signingRegion != region {
+		attributes = append(attributes, logging.SigningRegion(signingRegion))
+	}
+	if awsmiddleware.GetEndpointSource(ctx) == aws.EndpointSourceCustom {
+		attributes = append(attributes, logging.CustomEndpoint(true))
+	}
 
 	for _, attribute := range attributes {
 		ctx = logger.SetField(ctx, string(attribute.Key), attribute.Value.AsInterface())
-	}
-
-	if signingRegion := awsmiddleware.GetSigningRegion(ctx); signingRegion != region {
-		ctx = logger.SetField(ctx, "aws.signing_region", signingRegion)
-	}
-
-	if awsmiddleware.GetEndpointSource(ctx) == aws.EndpointSourceCustom {
-		ctx = logger.SetField(ctx, "aws.custom_endpoint_source", true)
 	}
 
 	smithyRequest, ok := in.Request.(*smithyhttp.Request)
