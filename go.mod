@@ -42,4 +42,5 @@ require (
 	go.opentelemetry.io/otel/metric v1.18.0 // indirect
 	go.opentelemetry.io/otel/trace v1.18.0 // indirect
 	golang.org/x/sys v0.12.0 // indirect
+	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
