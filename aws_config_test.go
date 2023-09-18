@@ -3519,9 +3519,12 @@ func TestLogger_TfLog(t *testing.T) {
 		}
 	}
 	var requestLines []map[string]any
+	var responseLines []map[string]any
 	for _, line := range lines {
 		if line["@message"] == "HTTP Request Sent" {
 			requestLines = append(requestLines, line)
+		} else if line["@message"] == "HTTP Response Received" {
+			responseLines = append(responseLines, line)
 		}
 	}
 	if len(requestLines) != 1 {
@@ -3540,7 +3543,7 @@ func TestLogger_TfLog(t *testing.T) {
 	} {
 		_, ok := requestLine[k]
 		if !ok {
-			t.Errorf("expected a value for attribute %q", k)
+			t.Errorf("expected a value for request attribute %q", k)
 		}
 		delete(requestLine, k)
 	}
@@ -3557,7 +3560,7 @@ func TestLogger_TfLog(t *testing.T) {
 
 	requestBody := "Action=GetCallerIdentity&Version=2011-06-15"
 
-	expected := map[string]any{
+	expectedRequest := map[string]any{
 		// AWS attributes
 		string(semconv.RPCSystemKey):  otelaws.AWSSystemVal,
 		string(semconv.RPCServiceKey): sts.ServiceID,
@@ -3578,8 +3581,47 @@ func TestLogger_TfLog(t *testing.T) {
 		string(semconv.NetPeerPortKey): port,
 	}
 
-	if diff := cmp.Diff(requestLine, expected); diff != "" {
-		t.Fatalf("unexpected attributes: (- got, + expected)\n%s", diff)
+	if diff := cmp.Diff(requestLine, expectedRequest); diff != "" {
+		t.Fatalf("unexpected request attributes: (- got, + expected)\n%s", diff)
+	}
+
+	if len(responseLines) != 1 {
+		t.Fatalf("expected 1 response line, got %d", len(responseLines))
+	}
+	responseLine := responseLines[0]
+	maps.DeleteFunc(responseLine, func(k string, _ any) bool {
+		return strings.HasPrefix(k, "@")
+	})
+
+	for _, k := range []string{
+		string("http.duration"),
+		string("http.response.body"),
+		string(logging.ResponseHeaderAttributeKey("Date")),
+		string(semconv.HTTPResponseContentLengthKey),
+	} {
+		_, ok := responseLine[k]
+		if !ok {
+			t.Errorf("expected a value for response attribute %q", k)
+		}
+		delete(responseLine, k)
+	}
+
+	expectedResponse := map[string]any{
+		// AWS attributes
+		string(semconv.RPCSystemKey):  otelaws.AWSSystemVal,
+		string(semconv.RPCServiceKey): sts.ServiceID,
+		string(otelaws.RegionKey):     "us-east-1",
+		string(semconv.RPCMethodKey):  "GetCallerIdentity",
+		// Custom attributes
+		string(logging.AwsSdkKey):         awsSdkGoV2Val,
+		string(logging.CustomEndpointKey): true,
+		// HTTP attributes
+		string(semconv.HTTPStatusCodeKey):                          float64(http.StatusOK),
+		string(logging.ResponseHeaderAttributeKey("Content-Type")): "text/plain; charset=utf-8",
+	}
+
+	if diff := cmp.Diff(responseLine, expectedResponse); diff != "" {
+		t.Fatalf("unexpected response attributes: (- got, + expected)\n%s", diff)
 	}
 
 	_, _, diags = GetAwsAccountIDAndPartition(ctx, awsConfig, config)

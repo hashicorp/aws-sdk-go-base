@@ -201,6 +201,14 @@ func DecomposeResponseHeaders(resp *http.Response) []attribute.KeyValue {
 	return results
 }
 
+func ResponseHeaderAttributeKey(k string) attribute.Key {
+	return attribute.Key(responseHeaderAttributeName(k))
+}
+
+func responseHeaderAttributeName(k string) string {
+	return fmt.Sprintf("http.response.header.%s", normalizeHeaderName(k))
+}
+
 // cleanUpHeaderAttributes converts header attributes with a single element to a string
 func cleanUpHeaderAttributes(attrs []attribute.KeyValue) []attribute.KeyValue {
 	return slices.ApplyToAll(attrs, func(attr attribute.KeyValue) attribute.KeyValue {
