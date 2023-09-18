@@ -3598,6 +3598,7 @@ func TestLogger_TfLog(t *testing.T) {
 		string("http.response.body"),
 		string(logging.ResponseHeaderAttributeKey("Date")),
 		string(semconv.HTTPResponseContentLengthKey),
+		string(logging.ResponseHeaderAttributeKey("X-Amzn-Requestid")),
 	} {
 		_, ok := responseLine[k]
 		if !ok {
@@ -3617,7 +3618,7 @@ func TestLogger_TfLog(t *testing.T) {
 		string(logging.CustomEndpointKey): true,
 		// HTTP attributes
 		string(semconv.HTTPStatusCodeKey):                          float64(http.StatusOK),
-		string(logging.ResponseHeaderAttributeKey("Content-Type")): "text/plain; charset=utf-8",
+		string(logging.ResponseHeaderAttributeKey("Content-Type")): "text/xml",
 	}
 
 	if diff := cmp.Diff(responseLine, expectedResponse); diff != "" {
