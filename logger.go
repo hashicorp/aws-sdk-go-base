@@ -103,7 +103,7 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 
 	rc := smithyRequest.Build(ctx)
 
-	requestFields, err := logging.DecomposeHTTPRequest(rc)
+	requestFields, err := logging.DecomposeHTTPRequest(ctx, rc)
 	if err != nil {
 		return out, metadata, fmt.Errorf("decomposing request: %w", err)
 	}
