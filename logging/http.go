@@ -79,7 +79,7 @@ func decomposeRequestHeaders(req *http.Request) []attribute.KeyValue {
 
 	securityToken := header.Values("X-Amz-Security-Token")
 	if len(securityToken) > 0 {
-		results = append(results, requestHeaderAttribute("X-Amz-Security-Token").String("*****"))
+		results = append(results, RequestHeaderAttributeKey("X-Amz-Security-Token").String("*****"))
 	}
 	header.Del("X-Amz-Security-Token")
 
@@ -114,7 +114,7 @@ func decomposeRequestBody(req *http.Request) (kv attribute.KeyValue, err error) 
 	return attribute.String("http.request.body", body), nil
 }
 
-func requestHeaderAttribute(k string) attribute.Key {
+func RequestHeaderAttributeKey(k string) attribute.Key {
 	return attribute.Key(requestHeaderAttributeName(k))
 }
 
@@ -142,7 +142,7 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 		return attribute.KeyValue{}, false
 	}
 
-	key := requestHeaderAttribute("Authorization")
+	key := RequestHeaderAttributeKey("Authorization")
 	if strings.HasPrefix(scheme, "AWS4-") {
 		components := regexp.MustCompile(`,\s+`).Split(params, -1)
 		var builder strings.Builder
@@ -199,6 +199,14 @@ func DecomposeResponseHeaders(resp *http.Response) []attribute.KeyValue {
 	results = cleanUpHeaderAttributes(results)
 
 	return results
+}
+
+func ResponseHeaderAttributeKey(k string) attribute.Key {
+	return attribute.Key(responseHeaderAttributeName(k))
+}
+
+func responseHeaderAttributeName(k string) string {
+	return fmt.Sprintf("http.response.header.%s", normalizeHeaderName(k))
 }
 
 // cleanUpHeaderAttributes converts header attributes with a single element to a string
