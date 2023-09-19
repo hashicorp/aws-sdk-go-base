@@ -127,7 +127,7 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 			return out, metadata, fmt.Errorf("unknown response type: %T", out.RawResponse)
 		}
 
-		responseFields, err := decomposeHTTPResponse(smithyResponse.Response, elapsed)
+		responseFields, err := decomposeHTTPResponse(ctx, smithyResponse.Response, elapsed)
 		if err != nil {
 			return out, metadata, fmt.Errorf("decomposing response: %w", err)
 		}
@@ -137,7 +137,7 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 	return out, metadata, err
 }
 
-func decomposeHTTPResponse(resp *http.Response, elapsed time.Duration) (map[string]any, error) {
+func decomposeHTTPResponse(ctx context.Context, resp *http.Response, elapsed time.Duration) (map[string]any, error) {
 	var attributes []attribute.KeyValue
 
 	attributes = append(attributes, attribute.Int64("http.duration", elapsed.Milliseconds()))
@@ -146,11 +146,11 @@ func decomposeHTTPResponse(resp *http.Response, elapsed time.Duration) (map[stri
 
 	attributes = append(attributes, logging.DecomposeResponseHeaders(resp)...)
 
-	bodyAttribute, err := decomposeResponseBody(resp)
+	bodyLogger := responseBodyLogger(ctx)
+	err := bodyLogger.Log(ctx, resp, &attributes)
 	if err != nil {
 		return nil, err
 	}
-	attributes = append(attributes, bodyAttribute)
 
 	result := make(map[string]any, len(attributes))
 	for _, attribute := range attributes {
@@ -160,10 +160,24 @@ func decomposeHTTPResponse(resp *http.Response, elapsed time.Duration) (map[stri
 	return result, nil
 }
 
-func decomposeResponseBody(resp *http.Response) (kv attribute.KeyValue, err error) {
+func responseBodyLogger(ctx context.Context) logging.ResponseBodyLogger {
+	if awsmiddleware.GetServiceID(ctx) == "S3" {
+		if op := awsmiddleware.GetOperationName(ctx); op == "GetObject" {
+			return &logging.S3ObjectResponseBodyLogger{}
+		}
+	}
+
+	return &defaultResponseBodyLogger{}
+}
+
+var _ logging.ResponseBodyLogger = &defaultResponseBodyLogger{}
+
+type defaultResponseBodyLogger struct{}
+
+func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response, attrs *[]attribute.KeyValue) error {
 	content, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return kv, err
+		return err
 	}
 
 	// Restore the body reader
@@ -173,8 +187,10 @@ func decomposeResponseBody(resp *http.Response) (kv attribute.KeyValue, err erro
 
 	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
 	if err != nil {
-		return kv, err
+		return err
 	}
 
-	return attribute.String("http.response.body", body), nil
+	*attrs = append(*attrs, attribute.String("http.response.body", body))
+
+	return nil
 }

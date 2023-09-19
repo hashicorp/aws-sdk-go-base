@@ -97,10 +97,14 @@ type RequestBodyLogger interface {
 	Log(ctx context.Context, req *http.Request, attrs *[]attribute.KeyValue) error
 }
 
+type ResponseBodyLogger interface {
+	Log(ctx context.Context, resp *http.Response, attrs *[]attribute.KeyValue) error
+}
+
 func requestBodyLogger(ctx context.Context) RequestBodyLogger {
 	if awsmiddleware.GetServiceID(ctx) == "S3" {
 		if op := awsmiddleware.GetOperationName(ctx); op == "PutObject" || op == "UploadPart" {
-			return &s3ObjectBodyLogger{}
+			return &s3ObjectRequestBodyLogger{}
 		}
 	}
 
@@ -137,24 +141,46 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 	return nil
 }
 
-var _ RequestBodyLogger = &s3ObjectBodyLogger{}
+var _ RequestBodyLogger = &s3ObjectRequestBodyLogger{}
 
-type s3ObjectBodyLogger struct{}
+type s3ObjectRequestBodyLogger struct{}
 
-func (l *s3ObjectBodyLogger) Log(ctx context.Context, req *http.Request, attrs *[]attribute.KeyValue) error {
+func (l *s3ObjectRequestBodyLogger) Log(ctx context.Context, req *http.Request, attrs *[]attribute.KeyValue) error {
 	length := outgoingLength(req)
+	contentType := req.Header.Get("Content-Type")
 
-	body := fmt.Sprintf("[Payload: %s", formatByteSize(length))
+	body := s3BodyRedacted(length, contentType)
 
-	if contentType := req.Header.Get("Content-Type"); contentType != "" {
+	*attrs = append(*attrs, attribute.String("http.request.body", body))
+
+	return nil
+}
+
+var _ ResponseBodyLogger = &S3ObjectResponseBodyLogger{}
+
+type S3ObjectResponseBodyLogger struct{}
+
+func (l *S3ObjectResponseBodyLogger) Log(ctx context.Context, resp *http.Response, attrs *[]attribute.KeyValue) error {
+	length := resp.ContentLength
+	contentType := resp.Header.Get("Content-Type")
+
+	body := s3BodyRedacted(length, contentType)
+
+	*attrs = append(*attrs, attribute.String("http.response.body", body))
+
+	return nil
+}
+
+func s3BodyRedacted(length int64, contentType string) string {
+	body := fmt.Sprintf("[Redacted: %s", formatByteSize(length))
+
+	if contentType != "" {
 		body += fmt.Sprintf(", Type: %s", contentType)
 	}
 
 	body += "]"
 
-	*attrs = append(*attrs, attribute.String("http.request.body", body))
-
-	return nil
+	return body
 }
 
 const byteSizeStep = 1024.0
