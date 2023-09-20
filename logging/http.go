@@ -6,6 +6,7 @@ package logging
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -16,10 +17,12 @@ import (
 	"strconv"
 	"strings"
 
+	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/slices"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/semconv/v1.17.0/httpconv"
 	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	"golang.org/x/text/message"
 )
 
 const (
@@ -28,7 +31,7 @@ const (
 	MaxResponseBodyLen = 4096
 )
 
-func DecomposeHTTPRequest(req *http.Request) (map[string]any, error) {
+func DecomposeHTTPRequest(ctx context.Context, req *http.Request) (map[string]any, error) {
 	var attributes []attribute.KeyValue
 
 	attributes = append(attributes, httpconv.ClientRequest(req)...)
@@ -39,11 +42,11 @@ func DecomposeHTTPRequest(req *http.Request) (map[string]any, error) {
 
 	attributes = append(attributes, decomposeRequestHeaders(req)...)
 
-	bodyAttribute, err := decomposeRequestBody(req)
+	bodyLogger := requestBodyLogger(ctx)
+	err := bodyLogger.Log(ctx, req, &attributes)
 	if err != nil {
 		return nil, err
 	}
-	attributes = append(attributes, bodyAttribute)
 
 	result := make(map[string]any, len(attributes))
 	for _, attribute := range attributes {
@@ -90,28 +93,126 @@ func decomposeRequestHeaders(req *http.Request) []attribute.KeyValue {
 	return results
 }
 
-func decomposeRequestBody(req *http.Request) (kv attribute.KeyValue, err error) {
+type RequestBodyLogger interface {
+	Log(ctx context.Context, req *http.Request, attrs *[]attribute.KeyValue) error
+}
+
+type ResponseBodyLogger interface {
+	Log(ctx context.Context, resp *http.Response, attrs *[]attribute.KeyValue) error
+}
+
+func requestBodyLogger(ctx context.Context) RequestBodyLogger {
+	if awsmiddleware.GetServiceID(ctx) == "S3" {
+		if op := awsmiddleware.GetOperationName(ctx); op == "PutObject" || op == "UploadPart" {
+			return &s3ObjectRequestBodyLogger{}
+		}
+	}
+
+	return &defaultRequestBodyLogger{}
+}
+
+var _ RequestBodyLogger = &defaultRequestBodyLogger{}
+
+type defaultRequestBodyLogger struct{}
+
+func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, attrs *[]attribute.KeyValue) error {
 	reqBytes, err := httputil.DumpRequestOut(req, true)
 	if err != nil {
-		return kv, err
+		return err
 	}
 
 	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(reqBytes)))
 
 	if _, err = reader.ReadLine(); err != nil {
-		return kv, err
+		return err
 	}
 
 	if _, err = reader.ReadMIMEHeader(); err != nil {
-		return kv, err
+		return err
 	}
 
 	body, err := ReadTruncatedBody(reader, maxRequestBodyLen)
 	if err != nil {
-		return kv, err
+		return err
 	}
 
-	return attribute.String("http.request.body", body), nil
+	*attrs = append(*attrs, attribute.String("http.request.body", body))
+
+	return nil
+}
+
+var _ RequestBodyLogger = &s3ObjectRequestBodyLogger{}
+
+type s3ObjectRequestBodyLogger struct{}
+
+func (l *s3ObjectRequestBodyLogger) Log(ctx context.Context, req *http.Request, attrs *[]attribute.KeyValue) error {
+	length := outgoingLength(req)
+	contentType := req.Header.Get("Content-Type")
+
+	body := s3BodyRedacted(length, contentType)
+
+	*attrs = append(*attrs, attribute.String("http.request.body", body))
+
+	return nil
+}
+
+var _ ResponseBodyLogger = &S3ObjectResponseBodyLogger{}
+
+type S3ObjectResponseBodyLogger struct{}
+
+func (l *S3ObjectResponseBodyLogger) Log(ctx context.Context, resp *http.Response, attrs *[]attribute.KeyValue) error {
+	length := resp.ContentLength
+	contentType := resp.Header.Get("Content-Type")
+
+	body := s3BodyRedacted(length, contentType)
+
+	*attrs = append(*attrs, attribute.String("http.response.body", body))
+
+	return nil
+}
+
+func s3BodyRedacted(length int64, contentType string) string {
+	body := fmt.Sprintf("[Redacted: %s", formatByteSize(length))
+
+	if contentType != "" {
+		body += fmt.Sprintf(", Type: %s", contentType)
+	}
+
+	body += "]"
+
+	return body
+}
+
+const byteSizeStep = 1024.0
+
+func formatByteSize(size int64) string {
+	p := message.NewPrinter(message.MatchLanguage("en"))
+
+	if size <= 1024*1.5 {
+		return p.Sprintf("%d bytes", size)
+	}
+
+	sizef := float64(size) / byteSizeStep
+	var unit string
+	for _, unit = range []string{"KB", "MB", "GB"} {
+		if sizef < byteSizeStep {
+			break
+		}
+		sizef /= byteSizeStep
+	}
+	return p.Sprintf("%.1f %s (%d bytes)", sizef, unit, size)
+}
+
+// outgoingLength is a copy of the unexported
+// (*http.Request).outgoingLength method.
+func outgoingLength(req *http.Request) int64 {
+	if req.Body == nil || req.Body == http.NoBody {
+		return 0
+	}
+	if req.ContentLength != 0 {
+		return req.ContentLength
+	}
+	return -1
 }
 
 func RequestHeaderAttributeKey(k string) attribute.Key {

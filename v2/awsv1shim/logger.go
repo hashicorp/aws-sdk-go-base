@@ -89,7 +89,7 @@ func logRequest(r *request.Request) {
 
 	bodySeekable := aws.IsReaderSeekable(r.Body)
 
-	requestFields, err := logging.DecomposeHTTPRequest(r.HTTPRequest)
+	requestFields, err := logging.DecomposeHTTPRequest(ctx, r.HTTPRequest)
 	if err != nil {
 		tflog.Error(ctx, fmt.Sprintf("decomposing request: %s", err))
 		return
