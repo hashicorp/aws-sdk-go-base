@@ -302,9 +302,14 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	}
 
 	if !c.SuppressDebugLog {
-		apiOptions = append(apiOptions, func(stack *middleware.Stack) error {
-			return stack.Deserialize.Add(&requestResponseLogger{}, middleware.After)
-		})
+		apiOptions = append(apiOptions,
+			func(stack *middleware.Stack) error {
+				return stack.Initialize.Add(&logAttributeExtractor{}, middleware.After)
+			},
+			func(stack *middleware.Stack) error {
+				return stack.Deserialize.Add(&requestResponseLogger{}, middleware.After)
+			},
+		)
 	}
 
 	loadOptions := []func(*config.LoadOptions) error{
