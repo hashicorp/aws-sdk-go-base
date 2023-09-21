@@ -1,7 +1,7 @@
 // Copyright (c) HashiCorp, Inc.
 // SPDX-License-Identifier: MPL-2.0
 
-package awsbase
+package validation
 
 import (
 	"fmt"
@@ -17,8 +17,8 @@ func (e *InvalidRegionError) Error() string {
 	return fmt.Sprintf("Invalid AWS Region: %s", e.region)
 }
 
-// ValidateRegion checks if the given region is a valid AWS region.
-func ValidateRegion(region string) error {
+// SupportedRegion checks if the given region is a valid AWS region.
+func SupportedRegion(region string) error {
 	for _, partition := range endpoints.Partitions() {
 		for _, partitionRegion := range partition.Regions() {
 			if region == partitionRegion {

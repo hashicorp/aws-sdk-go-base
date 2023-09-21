@@ -1,6 +1,16 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.36 (2023-09-21)
+
+BREAKING CHANGES
+
+* The `ValidateRegion` function has been moved to the `validation` package and renamed to `SupportedRegion` ([#650](https://github.com/hashicorp/aws-sdk-go-base/pull/650))
+
+ENHANCEMENTS
+
+* Adds `JSONNoDuplicateKeys` function to the `validation` package ([#650](https://github.com/hashicorp/aws-sdk-go-base/pull/650))
+
 # v2.0.0-beta.35 (2023-09-05)
 
 ENHANCEMENTS
