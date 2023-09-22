@@ -1,7 +1,7 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
-# v2.0.0-beta.36 (2023-09-21)
+# v2.0.0-beta.36 (2023-09-22)
 
 BREAKING CHANGES
 
@@ -10,6 +10,7 @@ BREAKING CHANGES
 ENHANCEMENTS
 
 * Adds `JSONNoDuplicateKeys` function to the `validation` package ([#650](https://github.com/hashicorp/aws-sdk-go-base/pull/650))
+* logging: S3 object bodies are no longer logged. Body size is logged instead.
 
 # v2.0.0-beta.35 (2023-09-05)
 
