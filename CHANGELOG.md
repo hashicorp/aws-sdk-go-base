@@ -1,7 +1,7 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
-# v2.0.0-beta.36 (2023-09-21)
+# v2.0.0-beta.36 (2023-09-22)
 
 BREAKING CHANGES
 
