@@ -1,6 +1,12 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.37 (2023-10-11)
+
+NOTES
+
+* Updates dependencies, including an update to `aws-sdk-go-v2` which fixes an [issue](https://github.com/aws/aws-sdk-go-v2/issues/2166) with FIPS endpoint resolution in GovCloud regions.
+
 # v2.0.0-beta.36 (2023-09-22)
 
 BREAKING CHANGES
