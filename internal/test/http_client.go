@@ -59,8 +59,8 @@ func HTTPClientConfigurationTest_insecureHTTPS(t *testing.T, transport *http.Tra
 }
 
 type proxyCase struct {
-	url         string
-	expectProxy bool
+	url           string
+	expectedProxy string
 }
 
 func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
@@ -75,28 +75,28 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			config: config.Config{},
 			urls: []proxyCase{
 				{
-					url:         "http://example.com",
-					expectProxy: false,
+					url:           "http://example.com",
+					expectedProxy: "",
 				},
 				{
-					url:         "https://example.com",
-					expectProxy: false,
+					url:           "https://example.com",
+					expectedProxy: "",
 				},
 			},
 		},
 
 		"proxy config": {
 			config: config.Config{
-				HTTPProxy: "http://the-proxy.test:1234",
+				HTTPProxy: "http://http-proxy.test:1234",
 			},
 			urls: []proxyCase{
 				{
-					url:         "http://example.com",
-					expectProxy: true,
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
 				},
 				{
-					url:         "https://example.com",
-					expectProxy: true,
+					url:           "https://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
 				},
 			},
 		},
@@ -104,16 +104,16 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 		"HTTP_PROXY envvar": {
 			config: config.Config{},
 			environmentVariables: map[string]string{
-				"HTTP_PROXY": "http://the-proxy.test:1234",
+				"HTTP_PROXY": "http://http-proxy.test:1234",
 			},
 			urls: []proxyCase{
 				{
-					url:         "http://example.com",
-					expectProxy: true,
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
 				},
 				{
-					url:         "https://example.com",
-					expectProxy: false,
+					url:           "https://example.com",
+					expectedProxy: "",
 				},
 			},
 		},
@@ -121,43 +121,43 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 		"HTTPS_PROXY envvar": {
 			config: config.Config{},
 			environmentVariables: map[string]string{
-				"HTTPS_PROXY": "http://the-proxy.test:1234",
+				"HTTPS_PROXY": "http://https-proxy.test:1234",
 			},
 			urls: []proxyCase{
 				{
-					url:         "http://example.com",
-					expectProxy: false,
+					url:           "http://example.com",
+					expectedProxy: "",
 				},
 				{
-					url:         "https://example.com",
-					expectProxy: true,
+					url:           "https://example.com",
+					expectedProxy: "http://https-proxy.test:1234",
 				},
 			},
 		},
 
 		"proxy config NO_PROXY envvar": {
 			config: config.Config{
-				HTTPProxy: "http://the-proxy.test:1234",
+				HTTPProxy: "http://http-proxy.test:1234",
 			},
 			environmentVariables: map[string]string{
 				"NO_PROXY": "http://dont-proxy.test",
 			},
 			urls: []proxyCase{
 				{
-					url:         "http://example.com",
-					expectProxy: true,
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
 				},
 				{
-					url:         "http://dont-proxy.test",
-					expectProxy: true,
+					url:           "http://dont-proxy.test",
+					expectedProxy: "http://http-proxy.test:1234",
 				},
 				{
-					url:         "https://example.com",
-					expectProxy: true,
+					url:           "https://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
 				},
 				{
-					url:         "https://dont-proxy.test",
-					expectProxy: true,
+					url:           "https://dont-proxy.test",
+					expectedProxy: "http://http-proxy.test:1234",
 				},
 			},
 		},
@@ -165,26 +165,26 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 		"HTTP_PROXY envvar HTTPS_PROXY envvar NO_PROXY envvar": {
 			config: config.Config{},
 			environmentVariables: map[string]string{
-				"HTTP_PROXY":  "http://the-proxy.test:1234",
-				"HTTPS_PROXY": "http://the-proxy.test:1234",
+				"HTTP_PROXY":  "http://http-proxy.test:1234",
+				"HTTPS_PROXY": "http://https-proxy.test:1234",
 				"NO_PROXY":    "dont-proxy.test",
 			},
 			urls: []proxyCase{
 				{
-					url:         "http://example.com",
-					expectProxy: true,
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
 				},
 				{
-					url:         "http://dont-proxy.test",
-					expectProxy: false,
+					url:           "http://dont-proxy.test",
+					expectedProxy: "",
 				},
 				{
-					url:         "https://example.com",
-					expectProxy: true,
+					url:           "https://example.com",
+					expectedProxy: "http://https-proxy.test:1234",
 				},
 				{
-					url:         "https://dont-proxy.test",
-					expectProxy: false,
+					url:           "https://dont-proxy.test",
+					expectedProxy: "",
 				},
 			},
 		},
@@ -210,9 +210,11 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				if err != nil {
 					t.Fatalf("unexpected error: %s", err)
 				}
-				if url.expectProxy {
+				if url.expectedProxy != "" {
 					if pUrl == nil {
 						t.Errorf("expected proxy for %q, got none", url.url)
+					} else if pUrl.String() != url.expectedProxy {
+						t.Errorf("expected proxy %q for %q, got %q", url.expectedProxy, url.url, pUrl.String())
 					}
 				} else {
 					if pUrl != nil {
