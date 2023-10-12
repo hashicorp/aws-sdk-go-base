@@ -86,7 +86,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"proxy config": {
+		"HTTPProxy config": {
 			config: config.Config{
 				HTTPProxy: "http://http-proxy.test:1234",
 			},
@@ -98,6 +98,39 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				{
 					url:           "https://example.com",
 					expectedProxy: "http://http-proxy.test:1234",
+				},
+			},
+		},
+
+		"HTTPSProxy config": {
+			config: config.Config{
+				HTTPSProxy: "http://https-proxy.test:1234",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "http://https-proxy.test:1234",
+				},
+			},
+		},
+
+		"HTTPProxy config HTTPSProxy config": {
+			config: config.Config{
+				HTTPProxy:  "http://http-proxy.test:1234",
+				HTTPSProxy: "http://https-proxy.test:1234",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "http://https-proxy.test:1234",
 				},
 			},
 		},
@@ -170,7 +203,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"proxy config HTTPS_PROXY envvar": {
+		"HTTPProxy config HTTPS_PROXY envvar": {
 			config: config.Config{
 				HTTPProxy: "http://http-proxy.test:1234",
 			},
@@ -189,7 +222,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"proxy config https_proxy envvar": {
+		"HTTPProxy config https_proxy envvar": {
 			config: config.Config{
 				HTTPProxy: "http://http-proxy.test:1234",
 			},
@@ -208,7 +241,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"proxy config NO_PROXY envvar": {
+		"HTTPProxy config NO_PROXY envvar": {
 			config: config.Config{
 				HTTPProxy: "http://http-proxy.test:1234",
 			},
@@ -235,7 +268,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"proxy config no_proxy envvar": {
+		"HTTPProxy config no_proxy envvar": {
 			config: config.Config{
 				HTTPProxy: "http://http-proxy.test:1234",
 			},
@@ -289,7 +322,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"proxy config overrides HTTP_PROXY envvar": {
+		"HTTPProxy config overrides HTTP_PROXY envvar": {
 			config: config.Config{
 				HTTPProxy: "http://config-proxy.test:1234",
 			},
@@ -300,6 +333,25 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				{
 					url:           "http://example.com",
 					expectedProxy: "http://config-proxy.test:1234",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "http://config-proxy.test:1234",
+				},
+			},
+		},
+
+		"HTTPSProxy config overrides HTTPS_PROXY envvar": {
+			config: config.Config{
+				HTTPSProxy: "http://config-proxy.test:1234",
+			},
+			environmentVariables: map[string]string{
+				"HTTPS_PROXY": "http://envvar-proxy.test:1234",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "",
 				},
 				{
 					url:           "https://example.com",

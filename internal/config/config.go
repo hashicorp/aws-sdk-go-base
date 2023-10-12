@@ -35,6 +35,7 @@ type Config struct {
 	ForbiddenAccountIds            []string
 	HTTPClient                     *http.Client
 	HTTPProxy                      string
+	HTTPSProxy                     string
 	IamEndpoint                    string
 	Insecure                       bool
 	Logger                         logging.Logger
@@ -88,11 +89,18 @@ func (c Config) CustomCABundleReader() (*bytes.Reader, error) {
 // The returned options function is called on both AWS SDKv1 and v2 default HTTP clients.
 func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 	var err error
-	var proxyUrl *url.URL
+	var httpProxyUrl *url.URL
 	if c.HTTPProxy != "" {
-		proxyUrl, err = url.Parse(c.HTTPProxy)
+		httpProxyUrl, err = url.Parse(c.HTTPProxy)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing HTTP proxy URL: %w", err)
+		}
+	}
+	var httpsProxyUrl *url.URL
+	if c.HTTPSProxy != "" {
+		httpsProxyUrl, err = url.Parse(c.HTTPSProxy)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing HTTPS proxy URL: %w", err)
 		}
 	}
 
@@ -112,11 +120,14 @@ func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 		}
 
 		proxyConfig := httpproxy.FromEnvironment()
-		if proxyUrl != nil {
-			proxyConfig.HTTPProxy = proxyUrl.String()
+		if httpProxyUrl != nil {
+			proxyConfig.HTTPProxy = httpProxyUrl.String()
 			if proxyConfig.HTTPSProxy == "" {
-				proxyConfig.HTTPSProxy = proxyUrl.String()
+				proxyConfig.HTTPSProxy = httpProxyUrl.String()
 			}
+		}
+		if httpsProxyUrl != nil {
+			proxyConfig.HTTPSProxy = httpsProxyUrl.String()
 		}
 		tr.Proxy = func(req *http.Request) (*url.URL, error) {
 			return proxyConfig.ProxyFunc()(req.URL)
