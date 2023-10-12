@@ -188,6 +188,25 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				},
 			},
 		},
+
+		"proxy config overrides HTTP_PROXY envvar": {
+			config: config.Config{
+				HTTPProxy: "http://config-proxy.test:1234",
+			},
+			environmentVariables: map[string]string{
+				"HTTP_PROXY": "http://envvar-proxy.test:1234",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://config-proxy.test:1234",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "http://config-proxy.test:1234",
+				},
+			},
+		},
 	}
 
 	for name, testcase := range testcases {
