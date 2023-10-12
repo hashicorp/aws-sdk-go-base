@@ -135,6 +135,32 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
+		"HTTPProxy config HTTPSProxy config NoProxy config": {
+			config: config.Config{
+				HTTPProxy:  "http://http-proxy.test:1234",
+				HTTPSProxy: "http://https-proxy.test:1234",
+				NoProxy:    "dont-proxy.test",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "http://dont-proxy.test",
+					expectedProxy: "",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "http://https-proxy.test:1234",
+				},
+				{
+					url:           "https://dont-proxy.test",
+					expectedProxy: "",
+				},
+			},
+		},
+
 		"HTTP_PROXY envvar": {
 			config: config.Config{},
 			environmentVariables: map[string]string{

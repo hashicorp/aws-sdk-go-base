@@ -40,6 +40,7 @@ type Config struct {
 	Insecure                       bool
 	Logger                         logging.Logger
 	MaxRetries                     int
+	NoProxy                        string
 	Profile                        string
 	Region                         string
 	RetryMode                      aws.RetryMode
@@ -128,6 +129,9 @@ func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 		}
 		if httpsProxyUrl != nil {
 			proxyConfig.HTTPSProxy = httpsProxyUrl.String()
+		}
+		if c.NoProxy != "" {
+			proxyConfig.NoProxy = c.NoProxy
 		}
 		tr.Proxy = func(req *http.Request) (*url.URL, error) {
 			return proxyConfig.ProxyFunc()(req.URL)
