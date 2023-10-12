@@ -111,20 +111,15 @@ func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 			tr.TLSClientConfig.InsecureSkipVerify = true
 		}
 
+		proxyConfig := httpproxy.FromEnvironment()
 		if proxyUrl != nil {
-			proxyConfig := httpproxy.FromEnvironment()
 			proxyConfig.HTTPProxy = proxyUrl.String()
 			if proxyConfig.HTTPSProxy == "" {
 				proxyConfig.HTTPSProxy = proxyUrl.String()
 			}
-			tr.Proxy = func(req *http.Request) (*url.URL, error) {
-				return proxyConfig.ProxyFunc()(req.URL)
-			}
-		} else {
-			proxyConfig := httpproxy.FromEnvironment()
-			tr.Proxy = func(req *http.Request) (*url.URL, error) {
-				return proxyConfig.ProxyFunc()(req.URL)
-			}
+		}
+		tr.Proxy = func(req *http.Request) (*url.URL, error) {
+			return proxyConfig.ProxyFunc()(req.URL)
 		}
 	}
 
