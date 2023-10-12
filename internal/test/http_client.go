@@ -66,6 +66,7 @@ type proxyCase struct {
 func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 	t.Helper()
 
+	// Go supports both the upper- and lower-case versions of the proxy environment variables
 	testcases := map[string]struct {
 		config               config.Config
 		environmentVariables map[string]string
@@ -118,10 +119,44 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
+		"http_proxy envvar": {
+			config: config.Config{},
+			environmentVariables: map[string]string{
+				"http_proxy": "http://http-proxy.test:1234",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "",
+				},
+			},
+		},
+
 		"HTTPS_PROXY envvar": {
 			config: config.Config{},
 			environmentVariables: map[string]string{
 				"HTTPS_PROXY": "http://https-proxy.test:1234",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "http://https-proxy.test:1234",
+				},
+			},
+		},
+
+		"https_proxy envvar": {
+			config: config.Config{},
+			environmentVariables: map[string]string{
+				"https_proxy": "http://https-proxy.test:1234",
 			},
 			urls: []proxyCase{
 				{
@@ -154,12 +189,58 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
+		"proxy config https_proxy envvar": {
+			config: config.Config{
+				HTTPProxy: "http://http-proxy.test:1234",
+			},
+			environmentVariables: map[string]string{
+				"https_proxy": "http://https-proxy.test:1234",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "http://https-proxy.test:1234",
+				},
+			},
+		},
+
 		"proxy config NO_PROXY envvar": {
 			config: config.Config{
 				HTTPProxy: "http://http-proxy.test:1234",
 			},
 			environmentVariables: map[string]string{
 				"NO_PROXY": "dont-proxy.test",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "http://dont-proxy.test",
+					expectedProxy: "",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "https://dont-proxy.test",
+					expectedProxy: "",
+				},
+			},
+		},
+
+		"proxy config no_proxy envvar": {
+			config: config.Config{
+				HTTPProxy: "http://http-proxy.test:1234",
+			},
+			environmentVariables: map[string]string{
+				"no_proxy": "dont-proxy.test",
 			},
 			urls: []proxyCase{
 				{
