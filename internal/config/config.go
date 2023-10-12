@@ -17,6 +17,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
+	"golang.org/x/net/http/httpproxy"
 )
 
 type Config struct {
@@ -112,6 +113,11 @@ func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 
 		if proxyUrl != nil {
 			tr.Proxy = http.ProxyURL(proxyUrl)
+		} else {
+			proxyConfig := httpproxy.FromEnvironment()
+			tr.Proxy = func(req *http.Request) (*url.URL, error) {
+				return proxyConfig.ProxyFunc()(req.URL)
+			}
 		}
 	}
 
