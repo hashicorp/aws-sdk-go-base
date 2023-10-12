@@ -140,7 +140,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				HTTPProxy: "http://http-proxy.test:1234",
 			},
 			environmentVariables: map[string]string{
-				"NO_PROXY": "http://dont-proxy.test",
+				"NO_PROXY": "dont-proxy.test",
 			},
 			urls: []proxyCase{
 				{
@@ -149,7 +149,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				},
 				{
 					url:           "http://dont-proxy.test",
-					expectedProxy: "http://http-proxy.test:1234",
+					expectedProxy: "",
 				},
 				{
 					url:           "https://example.com",
@@ -157,7 +157,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				},
 				{
 					url:           "https://dont-proxy.test",
-					expectedProxy: "http://http-proxy.test:1234",
+					expectedProxy: "",
 				},
 			},
 		},

@@ -112,7 +112,12 @@ func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 		}
 
 		if proxyUrl != nil {
-			tr.Proxy = http.ProxyURL(proxyUrl)
+			proxyConfig := httpproxy.FromEnvironment()
+			proxyConfig.HTTPProxy = proxyUrl.String()
+			proxyConfig.HTTPSProxy = proxyUrl.String()
+			tr.Proxy = func(req *http.Request) (*url.URL, error) {
+				return proxyConfig.ProxyFunc()(req.URL)
+			}
 		} else {
 			proxyConfig := httpproxy.FromEnvironment()
 			tr.Proxy = func(req *http.Request) (*url.URL, error) {
