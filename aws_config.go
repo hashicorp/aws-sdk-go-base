@@ -249,8 +249,8 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 		}
 
 		return "", "", diags.AddSimpleError(fmt.Errorf(
-			"AWS account ID not previously found and failed retrieving via all available methods. "+
-				"See https://www.terraform.io/docs/providers/aws/index.html#skip_requesting_account_id for workaround and implications. "+
+			"AWS account ID not previously found and failed retrieving via all available methods.\n\n"+
+				"See https://www.terraform.io/docs/providers/aws/index.html#skip_requesting_account_id for workaround and implications.\n"+
 				"Errors: %w", err))
 	}
 
