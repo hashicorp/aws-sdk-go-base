@@ -1239,7 +1239,7 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 	}
 }
 
-var errCancelOperation = fmt.Errorf("Test: Cancelling request")
+var errCancelOperation = errors.New("Test: Cancelling request")
 
 // cancelRequestMiddleware creates a Smithy middleware that intercepts the request before sending and cancels it
 func cancelRequestMiddleware(t *testing.T, id string, f func(t *testing.T, request *smithyhttp.Request)) middleware.FinalizeMiddleware {
