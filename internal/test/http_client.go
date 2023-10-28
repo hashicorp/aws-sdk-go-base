@@ -86,9 +86,10 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"HTTPProxy config": {
+		"HTTPProxy config Legacy": {
 			config: config.Config{
-				HTTPProxy: "http://http-proxy.test:1234",
+				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxyMode: config.HTTPProxyModeLegacy,
 			},
 			urls: []proxyCase{
 				{
@@ -98,6 +99,23 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				{
 					url:           "https://example.com",
 					expectedProxy: "http://http-proxy.test:1234",
+				},
+			},
+		},
+
+		"HTTPProxy config Separate": {
+			config: config.Config{
+				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxyMode: config.HTTPProxyModeSeparate,
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "",
 				},
 			},
 		},
@@ -267,9 +285,10 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"HTTPProxy config NO_PROXY envvar": {
+		"HTTPProxy config NO_PROXY envvar Legacy": {
 			config: config.Config{
-				HTTPProxy: "http://http-proxy.test:1234",
+				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxyMode: config.HTTPProxyModeLegacy,
 			},
 			environmentVariables: map[string]string{
 				"NO_PROXY": "dont-proxy.test",
@@ -294,9 +313,38 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"HTTPProxy config no_proxy envvar": {
+		"HTTPProxy config NO_PROXY envvar Separate": {
 			config: config.Config{
-				HTTPProxy: "http://http-proxy.test:1234",
+				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxyMode: config.HTTPProxyModeSeparate,
+			},
+			environmentVariables: map[string]string{
+				"NO_PROXY": "dont-proxy.test",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "http://dont-proxy.test",
+					expectedProxy: "",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "",
+				},
+				{
+					url:           "https://dont-proxy.test",
+					expectedProxy: "",
+				},
+			},
+		},
+
+		"HTTPProxy config no_proxy envvar Legacy": {
+			config: config.Config{
+				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxyMode: config.HTTPProxyModeLegacy,
 			},
 			environmentVariables: map[string]string{
 				"no_proxy": "dont-proxy.test",
@@ -313,6 +361,34 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				{
 					url:           "https://example.com",
 					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "https://dont-proxy.test",
+					expectedProxy: "",
+				},
+			},
+		},
+
+		"HTTPProxy config no_proxy envvar Separate": {
+			config: config.Config{
+				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxyMode: config.HTTPProxyModeSeparate,
+			},
+			environmentVariables: map[string]string{
+				"no_proxy": "dont-proxy.test",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "http://dont-proxy.test",
+					expectedProxy: "",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "",
 				},
 				{
 					url:           "https://dont-proxy.test",
@@ -348,9 +424,10 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
-		"HTTPProxy config overrides HTTP_PROXY envvar": {
+		"HTTPProxy config overrides HTTP_PROXY envvar Legacy": {
 			config: config.Config{
-				HTTPProxy: "http://config-proxy.test:1234",
+				HTTPProxy:     "http://config-proxy.test:1234",
+				HTTPProxyMode: config.HTTPProxyModeLegacy,
 			},
 			environmentVariables: map[string]string{
 				"HTTP_PROXY": "http://envvar-proxy.test:1234",
@@ -363,6 +440,26 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 				{
 					url:           "https://example.com",
 					expectedProxy: "http://config-proxy.test:1234",
+				},
+			},
+		},
+
+		"HTTPProxy config overrides HTTP_PROXY envvar Separate": {
+			config: config.Config{
+				HTTPProxy:     "http://config-proxy.test:1234",
+				HTTPProxyMode: config.HTTPProxyModeSeparate,
+			},
+			environmentVariables: map[string]string{
+				"HTTP_PROXY": "http://envvar-proxy.test:1234",
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://config-proxy.test:1234",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "",
 				},
 			},
 		},

@@ -20,6 +20,13 @@ import (
 	"golang.org/x/net/http/httpproxy"
 )
 
+type ProxyMode int
+
+const (
+	HTTPProxyModeLegacy ProxyMode = iota
+	HTTPProxyModeSeparate
+)
+
 type Config struct {
 	AccessKey                      string
 	AllowedAccountIds              []string
@@ -42,6 +49,7 @@ type Config struct {
 	MaxRetries                     int
 	NoProxy                        string
 	Profile                        string
+	HTTPProxyMode                  ProxyMode
 	Region                         string
 	RetryMode                      aws.RetryMode
 	SecretKey                      string
@@ -94,14 +102,14 @@ func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 	if c.HTTPProxy != "" {
 		httpProxyUrl, err = url.Parse(c.HTTPProxy)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing HTTP proxy URL: %w", err)
+			return nil, fmt.Errorf("parsing HTTP proxy URL: %w", err)
 		}
 	}
 	var httpsProxyUrl *url.URL
 	if c.HTTPSProxy != "" {
 		httpsProxyUrl, err = url.Parse(c.HTTPSProxy)
 		if err != nil {
-			return nil, fmt.Errorf("error parsing HTTPS proxy URL: %w", err)
+			return nil, fmt.Errorf("parsing HTTPS proxy URL: %w", err)
 		}
 	}
 
@@ -123,7 +131,7 @@ func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 		proxyConfig := httpproxy.FromEnvironment()
 		if httpProxyUrl != nil {
 			proxyConfig.HTTPProxy = httpProxyUrl.String()
-			if proxyConfig.HTTPSProxy == "" {
+			if c.HTTPProxyMode == HTTPProxyModeLegacy && proxyConfig.HTTPSProxy == "" {
 				proxyConfig.HTTPSProxy = httpProxyUrl.String()
 			}
 		}
