@@ -75,6 +75,11 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 		}
 	}
 
+	c.ValidateProxySettings(&diags)
+	if diags.HasError() {
+		return ctx, aws.Config{}, diags
+	}
+
 	logger.Debug(baseCtx, "Resolving credentials provider")
 	credentialsProvider, initialSource, d := getCredentialsProvider(baseCtx, c)
 	if d.HasError() {

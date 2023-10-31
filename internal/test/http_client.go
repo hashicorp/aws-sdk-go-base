@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/config"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
@@ -86,9 +87,25 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
+		"HTTPProxy config empty string": {
+			config: config.Config{
+				HTTPProxy: aws.String(""),
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "",
+				},
+			},
+		},
+
 		"HTTPProxy config Legacy": {
 			config: config.Config{
-				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxy:     aws.String("http://http-proxy.test:1234"),
 				HTTPProxyMode: config.HTTPProxyModeLegacy,
 			},
 			urls: []proxyCase{
@@ -105,7 +122,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config Separate": {
 			config: config.Config{
-				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxy:     aws.String("http://http-proxy.test:1234"),
 				HTTPProxyMode: config.HTTPProxyModeSeparate,
 			},
 			urls: []proxyCase{
@@ -122,7 +139,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPSProxy config": {
 			config: config.Config{
-				HTTPSProxy: "http://https-proxy.test:1234",
+				HTTPSProxy: aws.String("http://https-proxy.test:1234"),
 			},
 			urls: []proxyCase{
 				{
@@ -138,8 +155,8 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config HTTPSProxy config": {
 			config: config.Config{
-				HTTPProxy:  "http://http-proxy.test:1234",
-				HTTPSProxy: "http://https-proxy.test:1234",
+				HTTPProxy:  aws.String("http://http-proxy.test:1234"),
+				HTTPSProxy: aws.String("http://https-proxy.test:1234"),
 			},
 			urls: []proxyCase{
 				{
@@ -153,10 +170,45 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 			},
 		},
 
+		"HTTPProxy config HTTPSProxy config empty string Legacy": {
+			config: config.Config{
+				HTTPProxy:     aws.String("http://http-proxy.test:1234"),
+				HTTPSProxy:    aws.String(""),
+				HTTPProxyMode: config.HTTPProxyModeLegacy,
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "http://http-proxy.test:1234",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "",
+				},
+			},
+		},
+
+		"HTTPSProxy config HTTPProxy config empty string": {
+			config: config.Config{
+				HTTPProxy:  aws.String(""),
+				HTTPSProxy: aws.String("http://https-proxy.test:1234"),
+			},
+			urls: []proxyCase{
+				{
+					url:           "http://example.com",
+					expectedProxy: "",
+				},
+				{
+					url:           "https://example.com",
+					expectedProxy: "http://https-proxy.test:1234",
+				},
+			},
+		},
+
 		"HTTPProxy config HTTPSProxy config NoProxy config": {
 			config: config.Config{
-				HTTPProxy:  "http://http-proxy.test:1234",
-				HTTPSProxy: "http://https-proxy.test:1234",
+				HTTPProxy:  aws.String("http://http-proxy.test:1234"),
+				HTTPSProxy: aws.String("http://https-proxy.test:1234"),
 				NoProxy:    "dont-proxy.test",
 			},
 			urls: []proxyCase{
@@ -249,7 +301,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config HTTPS_PROXY envvar": {
 			config: config.Config{
-				HTTPProxy: "http://http-proxy.test:1234",
+				HTTPProxy: aws.String("http://http-proxy.test:1234"),
 			},
 			environmentVariables: map[string]string{
 				"HTTPS_PROXY": "http://https-proxy.test:1234",
@@ -268,7 +320,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config https_proxy envvar": {
 			config: config.Config{
-				HTTPProxy: "http://http-proxy.test:1234",
+				HTTPProxy: aws.String("http://http-proxy.test:1234"),
 			},
 			environmentVariables: map[string]string{
 				"https_proxy": "http://https-proxy.test:1234",
@@ -287,7 +339,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config NO_PROXY envvar Legacy": {
 			config: config.Config{
-				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxy:     aws.String("http://http-proxy.test:1234"),
 				HTTPProxyMode: config.HTTPProxyModeLegacy,
 			},
 			environmentVariables: map[string]string{
@@ -315,7 +367,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config NO_PROXY envvar Separate": {
 			config: config.Config{
-				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxy:     aws.String("http://http-proxy.test:1234"),
 				HTTPProxyMode: config.HTTPProxyModeSeparate,
 			},
 			environmentVariables: map[string]string{
@@ -343,7 +395,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config no_proxy envvar Legacy": {
 			config: config.Config{
-				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxy:     aws.String("http://http-proxy.test:1234"),
 				HTTPProxyMode: config.HTTPProxyModeLegacy,
 			},
 			environmentVariables: map[string]string{
@@ -371,7 +423,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config no_proxy envvar Separate": {
 			config: config.Config{
-				HTTPProxy:     "http://http-proxy.test:1234",
+				HTTPProxy:     aws.String("http://http-proxy.test:1234"),
 				HTTPProxyMode: config.HTTPProxyModeSeparate,
 			},
 			environmentVariables: map[string]string{
@@ -426,7 +478,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config overrides HTTP_PROXY envvar Legacy": {
 			config: config.Config{
-				HTTPProxy:     "http://config-proxy.test:1234",
+				HTTPProxy:     aws.String("http://config-proxy.test:1234"),
 				HTTPProxyMode: config.HTTPProxyModeLegacy,
 			},
 			environmentVariables: map[string]string{
@@ -446,7 +498,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPProxy config overrides HTTP_PROXY envvar Separate": {
 			config: config.Config{
-				HTTPProxy:     "http://config-proxy.test:1234",
+				HTTPProxy:     aws.String("http://config-proxy.test:1234"),
 				HTTPProxyMode: config.HTTPProxyModeSeparate,
 			},
 			environmentVariables: map[string]string{
@@ -466,7 +518,7 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 
 		"HTTPSProxy config overrides HTTPS_PROXY envvar": {
 			config: config.Config{
-				HTTPSProxy: "http://config-proxy.test:1234",
+				HTTPSProxy: aws.String("http://config-proxy.test:1234"),
 			},
 			environmentVariables: map[string]string{
 				"HTTPS_PROXY": "http://envvar-proxy.test:1234",

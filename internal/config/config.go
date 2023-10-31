@@ -15,6 +15,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"golang.org/x/net/http/httpproxy"
@@ -41,8 +42,8 @@ type Config struct {
 	EC2MetadataServiceEndpointMode string
 	ForbiddenAccountIds            []string
 	HTTPClient                     *http.Client
-	HTTPProxy                      string
-	HTTPSProxy                     string
+	HTTPProxy                      *string
+	HTTPSProxy                     *string
 	IamEndpoint                    string
 	Insecure                       bool
 	Logger                         logging.Logger
@@ -99,15 +100,15 @@ func (c Config) CustomCABundleReader() (*bytes.Reader, error) {
 func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 	var err error
 	var httpProxyUrl *url.URL
-	if c.HTTPProxy != "" {
-		httpProxyUrl, err = url.Parse(c.HTTPProxy)
+	if c.HTTPProxy != nil {
+		httpProxyUrl, err = url.Parse(aws.ToString(c.HTTPProxy))
 		if err != nil {
 			return nil, fmt.Errorf("parsing HTTP proxy URL: %w", err)
 		}
 	}
 	var httpsProxyUrl *url.URL
-	if c.HTTPSProxy != "" {
-		httpsProxyUrl, err = url.Parse(c.HTTPSProxy)
+	if c.HTTPSProxy != nil {
+		httpsProxyUrl, err = url.Parse(aws.ToString(c.HTTPSProxy))
 		if err != nil {
 			return nil, fmt.Errorf("parsing HTTPS proxy URL: %w", err)
 		}
@@ -147,6 +148,46 @@ func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 	}
 
 	return opts, nil
+}
+
+func (c Config) ValidateProxySettings(diags *diag.Diagnostics) {
+	if c.HTTPProxy != nil {
+		if _, err := url.Parse(aws.ToString(c.HTTPProxy)); err != nil {
+			*diags = diags.AddError(
+				"Invalid HTTP Proxy",
+				fmt.Sprintf("Unable to parse URL: %s", err),
+			)
+		}
+	}
+
+	if c.HTTPSProxy != nil {
+		if _, err := url.Parse(aws.ToString(c.HTTPSProxy)); err != nil {
+			*diags = diags.AddError(
+				"Invalid HTTPS Proxy",
+				fmt.Sprintf("Unable to parse URL: %s", err),
+			)
+		}
+	}
+
+	if c.HTTPProxy != nil && c.HTTPSProxy == nil && os.Getenv("HTTPS_PROXY") == "" && os.Getenv("https_proxy") == "" {
+		if c.HTTPProxyMode == HTTPProxyModeLegacy {
+			*diags = diags.AddWarning(
+				"Missing HTTPS Proxy",
+				fmt.Sprintf(
+					"An HTTP proxy was set but no HTTPS proxy was. Using HTTP proxy %q for HTTPS requests. This behavior may change in future versions.\n\n"+
+						"To specify no proxy for HTTPS, set the HTTPS to an empty string",
+					aws.ToString(c.HTTPProxy),
+				),
+			)
+		} else {
+			*diags = diags.AddWarning(
+				"Missing HTTPS Proxy",
+				"An HTTP proxy was set but no HTTPS proxy was.\n\n"+
+					"To specify no proxy for HTTPS, set the HTTPS to an empty string",
+			)
+		}
+	}
+
 }
 
 func (c Config) ResolveSharedConfigFiles() ([]string, error) {

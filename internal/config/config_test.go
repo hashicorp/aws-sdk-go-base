@@ -4,7 +4,14 @@
 package config
 
 import (
+	"fmt"
+	"net/url"
 	"testing"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/google/go-cmp/cmp"
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
+	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
 func TestConfig_VerifyAccountIDAllowed(t *testing.T) {
@@ -68,6 +75,143 @@ func TestConfig_VerifyAccountIDAllowed(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.config.VerifyAccountIDAllowed(tt.accountID); (err != nil) != tt.wantErr {
 				t.Errorf("Config.VerifyAccountIDAllowed() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func foo(_ *url.URL, err error) error {
+	return err
+}
+
+func TestValidateProxyConfig(t *testing.T) {
+	testcases := map[string]struct {
+		config               Config
+		environmentVariables map[string]string
+		expectedDiags        diag.Diagnostics
+	}{
+		"no config": {},
+
+		"invalid HTTP proxy": {
+			config: Config{
+				HTTPProxy:  aws.String(" http://invalid.test"), // explicit URL parse failure
+				HTTPSProxy: aws.String("http://valid.test"),
+			},
+			expectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid HTTP Proxy",
+					fmt.Sprintf("Unable to parse URL: %s", foo(url.Parse(" http://invalid.test"))), //nolint:staticcheck
+				),
+			},
+		},
+
+		"invalid HTTPS proxy": {
+			config: Config{
+				HTTPProxy:  aws.String("http://valid.test"),
+				HTTPSProxy: aws.String(" http://invalid.test"), // explicit URL parse failure
+			},
+			expectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid HTTPS Proxy",
+					fmt.Sprintf("Unable to parse URL: %s", foo(url.Parse(" http://invalid.test"))), //nolint:staticcheck
+				),
+			},
+		},
+
+		"invalid both proxies": {
+			config: Config{
+				HTTPProxy:  aws.String(" http://invalid.test"), // explicit URL parse failure
+				HTTPSProxy: aws.String(" http://invalid.test"), // explicit URL parse failure
+			},
+			expectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Invalid HTTP Proxy",
+					fmt.Sprintf("Unable to parse URL: %s", foo(url.Parse(" http://invalid.test"))), //nolint:staticcheck
+				),
+				diag.NewErrorDiagnostic(
+					"Invalid HTTPS Proxy",
+					fmt.Sprintf("Unable to parse URL: %s", foo(url.Parse(" http://invalid.test"))), //nolint:staticcheck
+				),
+			},
+		},
+
+		"HTTP proxy without HTTPS proxy Legacy": {
+			config: Config{
+				HTTPProxy:     aws.String("http://valid.test"),
+				HTTPProxyMode: HTTPProxyModeLegacy,
+			},
+			expectedDiags: diag.Diagnostics{
+				diag.NewWarningDiagnostic(
+					"Missing HTTPS Proxy",
+					fmt.Sprintf(
+						"An HTTP proxy was set but no HTTPS proxy was. Using HTTP proxy %q for HTTPS requests. This behavior may change in future versions.\n\n"+
+							"To specify no proxy for HTTPS, set the HTTPS to an empty string",
+						"http://valid.test"),
+				),
+			},
+		},
+
+		"HTTP proxy with empty string HTTPS proxy Legacy": {
+			config: Config{
+				HTTPProxy:     aws.String("http://valid.test"),
+				HTTPSProxy:    aws.String(""),
+				HTTPProxyMode: HTTPProxyModeLegacy,
+			},
+			expectedDiags: diag.Diagnostics{},
+		},
+
+		"HTTP proxy config with HTTPS_PROXY envvar": {
+			config: Config{
+				HTTPProxy: aws.String("http://valid.test"),
+			},
+			environmentVariables: map[string]string{
+				"HTTPS_PROXY": "http://envvar-proxy.test:1234",
+			},
+			expectedDiags: diag.Diagnostics{},
+		},
+
+		"HTTP proxy config with https_proxy envvar": {
+			config: Config{
+				HTTPProxy: aws.String("http://valid.test"),
+			},
+			environmentVariables: map[string]string{
+				"https_proxy": "http://envvar-proxy.test:1234",
+			},
+			expectedDiags: diag.Diagnostics{},
+		},
+
+		"HTTP proxy without HTTPS proxy Separate": {
+			config: Config{
+				HTTPProxy:     aws.String("http://valid.test"),
+				HTTPProxyMode: HTTPProxyModeSeparate,
+			},
+			expectedDiags: diag.Diagnostics{
+				diag.NewWarningDiagnostic(
+					"Missing HTTPS Proxy",
+					"An HTTP proxy was set but no HTTPS proxy was.\n\n"+
+						"To specify no proxy for HTTPS, set the HTTPS to an empty string",
+				),
+			},
+		},
+	}
+
+	for name, testcase := range testcases {
+		testcase := testcase
+
+		t.Run(name, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			for k, v := range testcase.environmentVariables {
+				t.Setenv(k, v)
+			}
+
+			var diags diag.Diagnostics
+
+			testcase.config.ValidateProxySettings(&diags)
+
+			if diff := cmp.Diff(diags, testcase.expectedDiags); diff != "" {
+				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
 			}
 		})
 	}
