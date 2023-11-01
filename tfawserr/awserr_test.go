@@ -94,6 +94,58 @@ func TestErrCodeEquals(t *testing.T) {
 	}
 }
 
+func TestErrCodeContains(t *testing.T) {
+	testCases := map[string]struct {
+		Err      error
+		Code     string
+		Expected bool
+	}{
+		"nil error": {
+			Err:      nil,
+			Expected: false,
+		},
+		"other error": {
+			Err:      fmt.Errorf("other error"),
+			Expected: false,
+		},
+		"Top-level smithy.GenericAPIError contains": {
+			Err:      &smithy.GenericAPIError{Code: "TestCoder", Message: "TestMessage"},
+			Code:     "TestCode",
+			Expected: true,
+		},
+		"Top-level smithy.GenericAPIError does not contain": {
+			Err:  &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
+			Code: "NotMatching",
+		},
+		"Wrapped smithy.GenericAPIError contains": {
+			Err:      fmt.Errorf("test: %w", &smithy.GenericAPIError{Code: "ATestCode", Message: "TestMessage"}),
+			Code:     "TestCode",
+			Expected: true,
+		},
+		"Wrapped smithy.GenericAPIError does not contain": {
+			Err:  fmt.Errorf("test: %w", &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"}),
+			Code: "AlsoNotMatching",
+		},
+		"Top-level sts ExpiredTokenException contains": {
+			Err:      &types.ExpiredTokenException{ErrorCodeOverride: aws.String("ATestCoder"), Message: aws.String("TestMessage")},
+			Code:     "TestCode",
+			Expected: true,
+		},
+	}
+
+	for name, testCase := range testCases {
+		testCase := testCase
+
+		t.Run(name, func(t *testing.T) {
+			got := ErrCodeContains(testCase.Err, testCase.Code)
+
+			if got != testCase.Expected {
+				t.Errorf("got %t, expected %t", got, testCase.Expected)
+			}
+		})
+	}
+}
+
 func TestErrMessageContains(t *testing.T) {
 	testCases := map[string]struct {
 		Err      error
