@@ -3185,7 +3185,107 @@ sso_registration_scopes = sso:account:access
 	}
 }
 
-func ssoTestSetup(t *testing.T, ssoSessionName string) (err error) {
+func TestLegacySSO(t *testing.T) {
+	const ssoStartUrl = "https://d-123456789a.awsapps.com/start"
+
+	testCases := map[string]struct {
+		Config                     *Config
+		SharedConfigurationFile    string
+		SetSharedConfigurationFile bool
+		ExpectedCredentialsValue   aws.Credentials
+		ValidateDiags              test.DiagsValidator
+		MockStsEndpoints           []*servicemocks.MockEndpoint
+	}{
+		"shared configuration file": {
+			Config: &Config{},
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+sso_start_url = %s
+sso_region = us-east-1
+sso_account_id = 123456789012
+sso_role_name = testRole
+region = us-east-1
+`, ssoStartUrl),
+			SetSharedConfigurationFile: true,
+			ExpectedCredentialsValue:   mockdata.MockSsoCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		if testCase.ValidateDiags == nil {
+			testCase.ValidateDiags = test.ExpectNoDiags
+		}
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			err := ssoTestSetup(t, ssoStartUrl)
+			if err != nil {
+				t.Fatalf("setup: %s", err)
+			}
+
+			closeSso, ssoEndpoint := servicemocks.SsoCredentialsApiMock()
+			defer closeSso()
+			testCase.Config.SsoEndpoint = ssoEndpoint
+
+			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			defer closeSts()
+			testCase.Config.StsEndpoint = stsEndpoint
+
+			tempdir, err := os.MkdirTemp("", "temp")
+			if err != nil {
+				t.Fatalf("error creating temp dir: %s", err)
+			}
+			defer os.Remove(tempdir)
+			os.Setenv("TMPDIR", tempdir)
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+
+			testCase.ValidateDiags(t, diags)
+			if diags.HasError() {
+				return
+			}
+
+			credentialsValue, err := awsConfig.Credentials.Retrieve(ctx)
+
+			if err != nil {
+				t.Fatalf("unexpected credentials Retrieve() error: %s", err)
+			}
+
+			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(aws.Credentials{}, "Expires")); diff != "" {
+				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
+			}
+		})
+	}
+}
+
+func ssoTestSetup(t *testing.T, ssoKey string) (err error) {
 	t.Helper()
 
 	dir := t.TempDir()
@@ -3197,7 +3297,7 @@ func ssoTestSetup(t *testing.T, ssoSessionName string) (err error) {
 	}
 
 	hash := sha1.New()
-	if _, err := hash.Write([]byte(ssoSessionName)); err != nil {
+	if _, err := hash.Write([]byte(ssoKey)); err != nil {
 		t.Fatalf("computing hash: %s", err)
 	}
 
