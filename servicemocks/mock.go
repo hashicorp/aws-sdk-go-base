@@ -203,6 +203,10 @@ const (
 </GetCallerIdentityResponse>`
 
 	MockWebIdentityToken = `WebIdentityToken`
+
+	MockSsoAccessKeyID     = "SSO_AKID"
+	MockSsoSecretAccessKey = "SSO_SECRET_KEY"
+	MockSsoSessionToken    = "SSO_SESSION_TOKEN"
 )
 
 var (
@@ -478,6 +482,27 @@ func EcsCredentialsApiMock() func() {
 	os.Setenv("AWS_CONTAINER_CREDENTIALS_FULL_URI", ts.URL+"/creds")
 	return ts.Close
 }
+
+func SsoCredentialsApiMock() (func(), string) {
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(fmt.Sprintf( //nolint:errcheck
+			ssoCredentialsResponse,
+			time.Now().
+				Add(15*time.Minute). //nolint:gomnd
+				UnixNano()/int64(time.Millisecond))))
+	}))
+
+	return ts.Close, ts.URL
+}
+
+const ssoCredentialsResponse = `{
+	"roleCredentials": {
+	  "accessKeyId": "SSO_AKID",
+	  "secretAccessKey": "SSO_SECRET_KEY",
+	  "sessionToken": "SSO_SESSION_TOKEN",
+	  "expiration": %d
+	}
+}`
 
 // MockStsAssumeRoleValidEndpointWithOptions returns a valid STS AssumeRole response with configurable request options.
 func MockStsAssumeRoleValidEndpointWithOptions(options map[string]string) *MockEndpoint {

@@ -6,6 +6,8 @@ package awsbase
 import (
 	"bytes"
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -49,6 +52,8 @@ import (
 const (
 	// Shockingly, this is not defined in the SDK
 	sharedConfigCredentialsProvider = "SharedConfigCredentials"
+
+	windows = "windows"
 )
 
 func TestGetAwsConfig(t *testing.T) {
@@ -3075,6 +3080,163 @@ web_identity_token_file = no-such-file
 		})
 	}
 }
+
+func TestSSO(t *testing.T) {
+	const ssoSessionName = "test-sso-session"
+
+	testCases := map[string]struct {
+		Config                     *Config
+		SharedConfigurationFile    string
+		SetSharedConfigurationFile bool
+		ExpectedCredentialsValue   aws.Credentials
+		ValidateDiags              test.DiagsValidator
+		MockStsEndpoints           []*servicemocks.MockEndpoint
+	}{
+		"shared configuration file": {
+			Config: &Config{},
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+sso_session = %s
+sso_account_id = 123456789012
+sso_role_name = testRole
+region = us-east-1
+
+[sso-session test-sso-session]
+sso_region = us-east-1
+sso_start_url = https://d-123456789a.awsapps.com/start
+sso_registration_scopes = sso:account:access
+`, ssoSessionName),
+			SetSharedConfigurationFile: true,
+			ExpectedCredentialsValue:   mockdata.MockSsoCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
+			},
+		},
+	}
+
+	for testName, testCase := range testCases {
+		testCase := testCase
+
+		if testCase.ValidateDiags == nil {
+			testCase.ValidateDiags = test.ExpectNoDiags
+		}
+
+		t.Run(testName, func(t *testing.T) {
+			oldEnv := servicemocks.InitSessionTestEnv()
+			defer servicemocks.PopEnv(oldEnv)
+
+			err := ssoTestSetup(t, ssoSessionName)
+			if err != nil {
+				t.Fatalf("setup: %s", err)
+			}
+
+			closeSso, ssoEndpoint := servicemocks.SsoCredentialsApiMock()
+			defer closeSso()
+			testCase.Config.SsoEndpoint = ssoEndpoint
+
+			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
+			defer closeSts()
+			testCase.Config.StsEndpoint = stsEndpoint
+
+			tempdir, err := os.MkdirTemp("", "temp")
+			if err != nil {
+				t.Fatalf("error creating temp dir: %s", err)
+			}
+			defer os.Remove(tempdir)
+			os.Setenv("TMPDIR", tempdir)
+
+			if testCase.SharedConfigurationFile != "" {
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				testCase.Config.SharedConfigFiles = []string{file.Name()}
+			}
+
+			testCase.Config.SkipCredsValidation = true
+
+			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+
+			testCase.ValidateDiags(t, diags)
+			if diags.HasError() {
+				return
+			}
+
+			credentialsValue, err := awsConfig.Credentials.Retrieve(ctx)
+
+			if err != nil {
+				t.Fatalf("unexpected credentials Retrieve() error: %s", err)
+			}
+
+			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(aws.Credentials{}, "Expires")); diff != "" {
+				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
+			}
+		})
+	}
+}
+
+func ssoTestSetup(t *testing.T, ssoSessionName string) (err error) {
+	t.Helper()
+
+	dir := t.TempDir()
+
+	cacheDir := filepath.Join(dir, ".aws", "sso", "cache")
+	err = os.MkdirAll(cacheDir, 0750)
+	if err != nil {
+		return err
+	}
+
+	hash := sha1.New()
+	if _, err := hash.Write([]byte(ssoSessionName)); err != nil {
+		t.Fatalf("computing hash: %s", err)
+	}
+
+	cacheFilename := strings.ToLower(hex.EncodeToString(hash.Sum(nil))) + ".json"
+
+	tokenFile, err := os.Create(filepath.Join(cacheDir, cacheFilename))
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		closeErr := tokenFile.Close()
+		if err == nil {
+			err = closeErr
+		} else if closeErr != nil {
+			err = fmt.Errorf("close error: %v, original error: %w", closeErr, err)
+		}
+	}()
+
+	_, err = tokenFile.WriteString(fmt.Sprintf(ssoTokenCacheFile, time.Now().
+		Add(15*time.Minute).
+		Format(time.RFC3339)))
+	if err != nil {
+		return err
+	}
+
+	if runtime.GOOS == windows {
+		t.Setenv("USERPROFILE", dir)
+	} else {
+		t.Setenv("HOME", dir)
+	}
+
+	return nil
+}
+
+const ssoTokenCacheFile = `{
+	"accessToken": "ssoAccessToken",
+	"expiresAt": "%s"
+  }`
 
 func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	oldEnv := servicemocks.InitSessionTestEnv()

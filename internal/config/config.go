@@ -46,6 +46,7 @@ type Config struct {
 	SharedConfigFiles              []string
 	SkipCredsValidation            bool
 	SkipRequestingAccountId        bool
+	SsoEndpoint                    string
 	StsEndpoint                    string
 	StsRegion                      string
 	SuppressDebugLog               bool

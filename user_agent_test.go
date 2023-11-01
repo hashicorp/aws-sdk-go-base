@@ -23,8 +23,8 @@ func getNormalizedOSName() (os string) {
 		os = "android"
 	case "linux":
 		os = "linux"
-	case "windows":
-		os = "windows"
+	case windows:
+		os = windows
 	case "darwin":
 		os = "macos"
 	case "ios":
