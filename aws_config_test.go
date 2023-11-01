@@ -3285,6 +3285,7 @@ region = us-east-1
 	}
 }
 
+// Copied and adapted from https://github.com/aws/aws-sdk-go-v2/blob/ee5e3f05637540596cc7aab1359742000a8d533a/config/resolve_credentials_test.go#L127
 func ssoTestSetup(t *testing.T, ssoKey string) (err error) {
 	t.Helper()
 
