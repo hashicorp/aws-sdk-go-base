@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.38 (2023-11-01)
+
 ENHANCEMENTS
 
 * Improves the readability of an error message returned from `GetAwsAccountIDAndPartition` ([#713](https://github.com/hashicorp/aws-sdk-go-base/pull/713))
