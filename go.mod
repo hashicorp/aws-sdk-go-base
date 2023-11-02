@@ -12,7 +12,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.40.2
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.24.7
 	github.com/aws/aws-sdk-go-v2/service/sts v1.23.2
-	github.com/aws/smithy-go v1.15.0
+	github.com/aws/smithy-go v1.16.0
 	github.com/google/go-cmp v0.6.0
 	github.com/hashicorp/go-hclog v1.5.0
 	github.com/hashicorp/go-multierror v1.1.1
