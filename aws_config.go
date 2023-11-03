@@ -312,6 +312,11 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 		)
 	}
 
+	envConfig, err := config.NewEnvConfig()
+	if err != nil {
+		return nil, err
+	}
+
 	loadOptions := []func(*config.LoadOptions) error{
 		config.WithRegion(c.Region),
 		config.WithHTTPClient(httpClient),
@@ -337,6 +342,24 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 			config.WithSharedCredentialsFiles(sharedCredentialsFiles),
 		)
 	}
+	if len(sharedCredentialsFiles) != 0 {
+		f := make([]string, len(sharedCredentialsFiles))
+		for i, v := range sharedCredentialsFiles {
+			f[i] = fmt.Sprintf(`"%s"`, v)
+		}
+		logger.Debug(ctx, "Using shared credentials files", map[string]any{
+			"tf_aws.shared_credentials_files":        f,
+			"tf_aws.shared_credentials_files.source": configSourceProviderConfig,
+		})
+	} else {
+		if envConfig.SharedCredentialsFile != "" {
+			sharedCredentialsFiles = []string{envConfig.SharedCredentialsFile}
+			logger.Debug(ctx, "Using shared credentials files", map[string]any{
+				"tf_aws.shared_credentials_files":        sharedCredentialsFiles,
+				"tf_aws.shared_credentials_files.source": configSourceEnvironmentVariable,
+			})
+		}
+	}
 
 	sharedConfigFiles, err := c.ResolveSharedConfigFiles()
 	if err != nil {
@@ -347,6 +370,24 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 			loadOptions,
 			config.WithSharedConfigFiles(sharedConfigFiles),
 		)
+	}
+	if len(sharedConfigFiles) != 0 {
+		f := make([]string, len(sharedConfigFiles))
+		for i, v := range sharedConfigFiles {
+			f[i] = fmt.Sprintf(`"%s"`, v)
+		}
+		logger.Debug(ctx, "Using shared configuration files", map[string]any{
+			"tf_aws.shared_config_files":        f,
+			"tf_aws.shared_config_files.source": configSourceProviderConfig,
+		})
+	} else {
+		if envConfig.SharedConfigFile != "" {
+			sharedConfigFiles = []string{envConfig.SharedConfigFile}
+			logger.Debug(ctx, "Using shared configuration files", map[string]any{
+				"tf_aws.shared_config_files":        sharedConfigFiles,
+				"tf_aws.shared_config_files.source": configSourceEnvironmentVariable,
+			})
+		}
 	}
 
 	if c.CustomCABundle != "" {

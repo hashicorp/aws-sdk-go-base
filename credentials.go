@@ -78,46 +78,10 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		if err != nil {
 			return nil, "", diags.AddSimpleError(err)
 		}
-		if len(sharedCredentialsFiles) != 0 {
-			f := make([]string, len(sharedCredentialsFiles))
-			for i, v := range sharedCredentialsFiles {
-				f[i] = fmt.Sprintf(`"%s"`, v)
-			}
-			logger.Debug(ctx, "Using shared credentials files", map[string]any{
-				"tf_aws.shared_credentials_files":        f,
-				"tf_aws.shared_credentials_files.source": configSourceProviderConfig,
-			})
-		} else {
-			if envConfig.SharedCredentialsFile != "" {
-				sharedCredentialsFiles = []string{envConfig.SharedCredentialsFile}
-				logger.Debug(ctx, "Using shared credentials files", map[string]any{
-					"tf_aws.shared_credentials_files":        sharedCredentialsFiles,
-					"tf_aws.shared_credentials_files.source": configSourceEnvironmentVariable,
-				})
-			}
-		}
 
 		sharedConfigFiles, err := c.ResolveSharedConfigFiles()
 		if err != nil {
 			return nil, "", diags.AddSimpleError(err)
-		}
-		if len(sharedConfigFiles) != 0 {
-			f := make([]string, len(sharedConfigFiles))
-			for i, v := range sharedConfigFiles {
-				f[i] = fmt.Sprintf(`"%s"`, v)
-			}
-			logger.Debug(ctx, "Using shared configuration files", map[string]any{
-				"tf_aws.shared_config_files":        f,
-				"tf_aws.shared_config_files.source": configSourceProviderConfig,
-			})
-		} else {
-			if envConfig.SharedConfigFile != "" {
-				sharedConfigFiles = []string{envConfig.SharedConfigFile}
-				logger.Debug(ctx, "Using shared configuration files", map[string]any{
-					"tf_aws.shared_config_files":        sharedConfigFiles,
-					"tf_aws.shared_config_files.source": configSourceEnvironmentVariable,
-				})
-			}
 		}
 
 		logger.Debug(ctx, "Loading profile", map[string]any{
