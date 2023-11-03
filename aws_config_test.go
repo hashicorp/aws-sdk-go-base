@@ -3073,7 +3073,7 @@ func TestSSO(t *testing.T) {
 		SharedConfigurationFile    string
 		SetSharedConfigurationFile bool
 		ExpectedCredentialsValue   aws.Credentials
-		ValidateDiags              test.DiagsValidator
+		ExpectedDiags              diag.Diagnostics
 	}{
 		"shared configuration file": {
 			Config: &Config{},
@@ -3097,12 +3097,10 @@ sso_registration_scopes = sso:account:access
 	for testName, testCase := range testCases {
 		testCase := testCase
 
-		if testCase.ValidateDiags == nil {
-			testCase.ValidateDiags = test.ExpectNoDiags
-		}
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
+
+			ctx := context.TODO()
 
 			err := servicemocks.SsoTestSetup(t, ssoSessionName)
 			if err != nil {
@@ -3140,9 +3138,11 @@ sso_registration_scopes = sso:account:access
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := GetAwsConfig(ctx, testCase.Config)
 
-			testCase.ValidateDiags(t, diags)
+			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
+				t.Errorf("unexpected diagnostics difference: %s", diff)
+			}
 			if diags.HasError() {
 				return
 			}
@@ -3168,7 +3168,7 @@ func TestLegacySSO(t *testing.T) {
 		SharedConfigurationFile    string
 		SetSharedConfigurationFile bool
 		ExpectedCredentialsValue   aws.Credentials
-		ValidateDiags              test.DiagsValidator
+		ExpectedDiags              diag.Diagnostics
 	}{
 		"shared configuration file": {
 			Config: &Config{},
@@ -3188,12 +3188,10 @@ region = us-east-1
 	for testName, testCase := range testCases {
 		testCase := testCase
 
-		if testCase.ValidateDiags == nil {
-			testCase.ValidateDiags = test.ExpectNoDiags
-		}
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
+
+			ctx := context.TODO()
 
 			err := servicemocks.SsoTestSetup(t, ssoStartUrl)
 			if err != nil {
@@ -3231,9 +3229,11 @@ region = us-east-1
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := GetAwsConfig(ctx, testCase.Config)
 
-			testCase.ValidateDiags(t, diags)
+			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
+				t.Errorf("unexpected diagnostics difference: %s", diff)
+			}
 			if diags.HasError() {
 				return
 			}
