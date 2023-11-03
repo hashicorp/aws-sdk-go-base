@@ -6,8 +6,6 @@ package awsbase
 import (
 	"bytes"
 	"context"
-	"crypto/sha1"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"io"
@@ -17,7 +15,6 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
-	"runtime"
 	"strconv"
 	"strings"
 	"testing"
@@ -52,8 +49,6 @@ import (
 const (
 	// Shockingly, this is not defined in the SDK
 	sharedConfigCredentialsProvider = "SharedConfigCredentials"
-
-	windows = "windows"
 )
 
 func TestGetAwsConfig(t *testing.T) {
@@ -3090,7 +3085,6 @@ func TestSSO(t *testing.T) {
 		SetSharedConfigurationFile bool
 		ExpectedCredentialsValue   aws.Credentials
 		ValidateDiags              test.DiagsValidator
-		MockStsEndpoints           []*servicemocks.MockEndpoint
 	}{
 		"shared configuration file": {
 			Config: &Config{},
@@ -3108,9 +3102,6 @@ sso_registration_scopes = sso:account:access
 `, ssoSessionName),
 			SetSharedConfigurationFile: true,
 			ExpectedCredentialsValue:   mockdata.MockSsoCredentials,
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-			},
 		},
 	}
 
@@ -3125,7 +3116,7 @@ sso_registration_scopes = sso:account:access
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
-			err := ssoTestSetup(t, ssoSessionName)
+			err := servicemocks.SsoTestSetup(t, ssoSessionName)
 			if err != nil {
 				t.Fatalf("setup: %s", err)
 			}
@@ -3133,10 +3124,6 @@ sso_registration_scopes = sso:account:access
 			closeSso, ssoEndpoint := servicemocks.SsoCredentialsApiMock()
 			defer closeSso()
 			testCase.Config.SsoEndpoint = ssoEndpoint
-
-			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
-			defer closeSts()
-			testCase.Config.StsEndpoint = stsEndpoint
 
 			tempdir, err := os.MkdirTemp("", "temp")
 			if err != nil {
@@ -3194,7 +3181,6 @@ func TestLegacySSO(t *testing.T) {
 		SetSharedConfigurationFile bool
 		ExpectedCredentialsValue   aws.Credentials
 		ValidateDiags              test.DiagsValidator
-		MockStsEndpoints           []*servicemocks.MockEndpoint
 	}{
 		"shared configuration file": {
 			Config: &Config{},
@@ -3208,9 +3194,6 @@ region = us-east-1
 `, ssoStartUrl),
 			SetSharedConfigurationFile: true,
 			ExpectedCredentialsValue:   mockdata.MockSsoCredentials,
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsAssumeRoleWithWebIdentityValidEndpoint,
-			},
 		},
 	}
 
@@ -3225,7 +3208,7 @@ region = us-east-1
 			oldEnv := servicemocks.InitSessionTestEnv()
 			defer servicemocks.PopEnv(oldEnv)
 
-			err := ssoTestSetup(t, ssoStartUrl)
+			err := servicemocks.SsoTestSetup(t, ssoStartUrl)
 			if err != nil {
 				t.Fatalf("setup: %s", err)
 			}
@@ -3233,10 +3216,6 @@ region = us-east-1
 			closeSso, ssoEndpoint := servicemocks.SsoCredentialsApiMock()
 			defer closeSso()
 			testCase.Config.SsoEndpoint = ssoEndpoint
-
-			closeSts, _, stsEndpoint := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
-			defer closeSts()
-			testCase.Config.StsEndpoint = stsEndpoint
 
 			tempdir, err := os.MkdirTemp("", "temp")
 			if err != nil {
@@ -3284,60 +3263,6 @@ region = us-east-1
 		})
 	}
 }
-
-// Copied and adapted from https://github.com/aws/aws-sdk-go-v2/blob/ee5e3f05637540596cc7aab1359742000a8d533a/config/resolve_credentials_test.go#L127
-func ssoTestSetup(t *testing.T, ssoKey string) (err error) {
-	t.Helper()
-
-	dir := t.TempDir()
-
-	cacheDir := filepath.Join(dir, ".aws", "sso", "cache")
-	err = os.MkdirAll(cacheDir, 0750)
-	if err != nil {
-		return err
-	}
-
-	hash := sha1.New()
-	if _, err := hash.Write([]byte(ssoKey)); err != nil {
-		t.Fatalf("computing hash: %s", err)
-	}
-
-	cacheFilename := strings.ToLower(hex.EncodeToString(hash.Sum(nil))) + ".json"
-
-	tokenFile, err := os.Create(filepath.Join(cacheDir, cacheFilename))
-	if err != nil {
-		return err
-	}
-
-	defer func() {
-		closeErr := tokenFile.Close()
-		if err == nil {
-			err = closeErr
-		} else if closeErr != nil {
-			err = fmt.Errorf("close error: %v, original error: %w", closeErr, err)
-		}
-	}()
-
-	_, err = tokenFile.WriteString(fmt.Sprintf(ssoTokenCacheFile, time.Now().
-		Add(15*time.Minute).
-		Format(time.RFC3339)))
-	if err != nil {
-		return err
-	}
-
-	if runtime.GOOS == windows {
-		t.Setenv("USERPROFILE", dir)
-	} else {
-		t.Setenv("HOME", dir)
-	}
-
-	return nil
-}
-
-const ssoTokenCacheFile = `{
-	"accessToken": "ssoAccessToken",
-	"expiresAt": "%s"
-  }`
 
 func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	oldEnv := servicemocks.InitSessionTestEnv()

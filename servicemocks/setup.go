@@ -4,11 +4,17 @@
 package servicemocks
 
 import (
+	"crypto/sha1"
+	"encoding/hex"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
+	"time"
 )
 
 func InitSessionTestEnv() (oldEnv []string) {
@@ -155,3 +161,57 @@ func getEnv() *currentEnv {
 type currentEnv struct {
 	Key, Secret, Token, Profile, CredsFilename, Home string
 }
+
+// Copied and adapted from https://github.com/aws/aws-sdk-go-v2/blob/ee5e3f05637540596cc7aab1359742000a8d533a/config/resolve_credentials_test.go#L127
+func SsoTestSetup(t *testing.T, ssoKey string) (err error) {
+	t.Helper()
+
+	dir := t.TempDir()
+
+	cacheDir := filepath.Join(dir, ".aws", "sso", "cache")
+	err = os.MkdirAll(cacheDir, 0750)
+	if err != nil {
+		return err
+	}
+
+	hash := sha1.New()
+	if _, err := hash.Write([]byte(ssoKey)); err != nil {
+		t.Fatalf("computing hash: %s", err)
+	}
+
+	cacheFilename := strings.ToLower(hex.EncodeToString(hash.Sum(nil))) + ".json"
+
+	tokenFile, err := os.Create(filepath.Join(cacheDir, cacheFilename))
+	if err != nil {
+		return err
+	}
+
+	defer func() {
+		closeErr := tokenFile.Close()
+		if err == nil {
+			err = closeErr
+		} else if closeErr != nil {
+			err = fmt.Errorf("close error: %v, original error: %w", closeErr, err)
+		}
+	}()
+
+	_, err = tokenFile.WriteString(fmt.Sprintf(ssoTokenCacheFile, time.Now().
+		Add(15*time.Minute). //nolint:gomnd
+		Format(time.RFC3339)))
+	if err != nil {
+		return err
+	}
+
+	if runtime.GOOS == "windows" {
+		t.Setenv("USERPROFILE", dir)
+	} else {
+		t.Setenv("HOME", dir)
+	}
+
+	return nil
+}
+
+const ssoTokenCacheFile = `{
+	"accessToken": "ssoAccessToken",
+	"expiresAt": "%s"
+}`

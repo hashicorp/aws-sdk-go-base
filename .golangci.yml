@@ -32,3 +32,4 @@ linters-settings:
         ignored-functions:
           - strings.SplitN
           - strings.SplitAfterN
+          - os.MkdirAll
