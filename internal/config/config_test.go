@@ -151,7 +151,14 @@ func TestValidateProxyConfig(t *testing.T) {
 			},
 		},
 
-		"HTTP proxy with empty string HTTPS proxy Legacy": {
+		"HTTP proxy empty string": {
+			config: Config{
+				HTTPProxy: aws.String(""),
+			},
+			expectedDiags: diag.Diagnostics{},
+		},
+
+		"HTTP proxy with HTTPS proxy empty string Legacy": {
 			config: Config{
 				HTTPProxy:     aws.String("http://valid.test"),
 				HTTPSProxy:    aws.String(""),

@@ -169,7 +169,7 @@ func (c Config) ValidateProxySettings(diags *diag.Diagnostics) {
 		}
 	}
 
-	if c.HTTPProxy != nil && c.HTTPSProxy == nil && os.Getenv("HTTPS_PROXY") == "" && os.Getenv("https_proxy") == "" {
+	if c.HTTPProxy != nil && *c.HTTPProxy != "" && c.HTTPSProxy == nil && os.Getenv("HTTPS_PROXY") == "" && os.Getenv("https_proxy") == "" {
 		if c.HTTPProxyMode == HTTPProxyModeLegacy {
 			*diags = diags.AddWarning(
 				"Missing HTTPS Proxy",
