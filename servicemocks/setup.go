@@ -17,18 +17,19 @@ import (
 	"time"
 )
 
-func InitSessionTestEnv() (oldEnv []string) {
-	oldEnv = StashEnv()
-	os.Setenv("AWS_CONFIG_FILE", "file_not_exists")
-	os.Setenv("AWS_SHARED_CREDENTIALS_FILE", "file_not_exists")
-
-	return oldEnv
+func InitSessionTestEnv(t *testing.T) {
+	StashEnv(t)
+	t.Setenv("AWS_CONFIG_FILE", "file_not_exists")
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", "file_not_exists")
 }
 
-func StashEnv() []string {
+func StashEnv(t *testing.T) {
 	env := os.Environ()
 	os.Clearenv()
-	return env
+
+	t.Cleanup(func() {
+		PopEnv(env)
+	})
 }
 
 func PopEnv(env []string) {
@@ -52,13 +53,15 @@ func InvalidEC2MetadataEndpoint(t *testing.T) func() {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 
-	os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", ts.URL+"/latest")
+	t.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", ts.URL+"/latest")
 	return ts.Close
 }
 
 // UnsetEnv unsets environment variables for testing a "clean slate" with no
 // credentials in the environment
 func UnsetEnv(t *testing.T) func() {
+	t.Helper()
+
 	// Grab any existing AWS keys and preserve. In some tests we'll unset these, so
 	// we need to have them and restore them after
 	e := getEnv()
@@ -80,7 +83,7 @@ func UnsetEnv(t *testing.T) func() {
 	// The Shared Credentials Provider has a very reasonable fallback option of
 	// checking the user's home directory for credentials, which may create
 	// unexpected results for users running these tests
-	os.Setenv("HOME", "/dev/null")
+	t.Setenv("HOME", "/dev/null")
 
 	return func() {
 		// re-set all the envs we unset above
@@ -108,19 +111,19 @@ func UnsetEnv(t *testing.T) func() {
 func SetEnv(s string, t *testing.T) func() {
 	e := getEnv()
 	// Set all the envs to a dummy value
-	if err := os.Setenv("AWS_ACCESS_KEY_ID", s); err != nil {
+	if err := os.Setenv("AWS_ACCESS_KEY_ID", s); err != nil { //nolint:tenv
 		t.Fatalf("Error setting env var AWS_ACCESS_KEY_ID: %s", err)
 	}
-	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", s); err != nil {
+	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", s); err != nil { //nolint:tenv
 		t.Fatalf("Error setting env var AWS_SECRET_ACCESS_KEY: %s", err)
 	}
-	if err := os.Setenv("AWS_SESSION_TOKEN", s); err != nil {
+	if err := os.Setenv("AWS_SESSION_TOKEN", s); err != nil { //nolint:tenv
 		t.Fatalf("Error setting env var AWS_SESSION_TOKEN: %s", err)
 	}
-	if err := os.Setenv("AWS_PROFILE", s); err != nil {
+	if err := os.Setenv("AWS_PROFILE", s); err != nil { //nolint:tenv
 		t.Fatalf("Error setting env var AWS_PROFILE: %s", err)
 	}
-	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", s); err != nil {
+	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", s); err != nil { //nolint:tenv
 		t.Fatalf("Error setting env var AWS_SHARED_CREDENTIALS_FLE: %s", err)
 	}
 

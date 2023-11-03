@@ -191,8 +191,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		testCase := testCase
 
 		t.Run(name, func(t *testing.T) {
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			for k, v := range testCase.EnvironmentVariables {
 				os.Setenv(k, v)

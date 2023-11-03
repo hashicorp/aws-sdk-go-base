@@ -43,8 +43,7 @@ import (
 )
 
 func TestGetSessionOptions(t *testing.T) {
-	oldEnv := servicemocks.InitSessionTestEnv()
-	defer servicemocks.PopEnv(oldEnv)
+	servicemocks.InitSessionTestEnv(t)
 
 	testCases := []struct {
 		desc        string
@@ -1098,8 +1097,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		t.Run(testCase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			if testCase.EnableEc2MetadataServer {
 				closeEc2Metadata := servicemocks.AwsMetadataApiMock(append(
@@ -1130,9 +1128,9 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				}
 
 				if testCase.EnableWebIdentityEnvVars {
-					os.Setenv("AWS_ROLE_ARN", servicemocks.MockStsAssumeRoleWithWebIdentityArn)
-					os.Setenv("AWS_ROLE_SESSION_NAME", servicemocks.MockStsAssumeRoleWithWebIdentitySessionName)
-					os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
+					t.Setenv("AWS_ROLE_ARN", servicemocks.MockStsAssumeRoleWithWebIdentityArn)
+					t.Setenv("AWS_ROLE_SESSION_NAME", servicemocks.MockStsAssumeRoleWithWebIdentitySessionName)
+					t.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", file.Name())
 				} else if testCase.EnableWebIdentityConfig {
 					testCase.Config.AssumeRoleWithWebIdentity = &awsbase.AssumeRoleWithWebIdentity{
 						RoleARN:              servicemocks.MockStsAssumeRoleWithWebIdentityArn,
@@ -1190,7 +1188,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 			}
 
 			for k, v := range testCase.EnvironmentVariables {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			ctx, awsConfig, diags := awsbase.GetAwsConfig(ctx, testCase.Config)
@@ -1350,11 +1348,10 @@ max_attempts = 10
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			for k, v := range testCase.EnvironmentVariables {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			if testCase.SharedConfigurationFile != "" {
@@ -1473,11 +1470,10 @@ func TestRetryMode(t *testing.T) {
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			for k, v := range testCase.EnvironmentVariables {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			if testCase.SharedConfigurationFile != "" {
@@ -1636,11 +1632,10 @@ use_fips_endpoint = true
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			for k, v := range testCase.EnvironmentVariables {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			closeSts, mockStsSession, err := mockdata.GetMockedAwsApiSession("STS", []*servicemocks.MockEndpoint{
@@ -1807,11 +1802,10 @@ func TestCustomCABundle(t *testing.T) {
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			for k, v := range testCase.EnvironmentVariables {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			tempdir, err := os.MkdirTemp("", "temp")
@@ -1819,7 +1813,7 @@ func TestCustomCABundle(t *testing.T) {
 				t.Fatalf("error creating temp dir: %s", err)
 			}
 			defer os.Remove(tempdir)
-			os.Setenv("TMPDIR", tempdir)
+			t.Setenv("TMPDIR", tempdir)
 
 			pemFile, err := servicemocks.TempPEMFile()
 			defer os.Remove(pemFile)
@@ -1843,7 +1837,7 @@ func TestCustomCABundle(t *testing.T) {
 			}
 
 			if testCase.SetEnvironmentVariable {
-				os.Setenv("AWS_CA_BUNDLE", pemFile)
+				t.Setenv("AWS_CA_BUNDLE", pemFile)
 			}
 
 			if testCase.SetSharedConfigurationFile {
@@ -2046,8 +2040,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			closeSts, mockStsSession, err := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
 			defer closeSts()
@@ -2065,7 +2058,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				t.Fatalf("error creating temp dir: %s", err)
 			}
 			defer os.Remove(tempdir)
-			os.Setenv("TMPDIR", tempdir)
+			t.Setenv("TMPDIR", tempdir)
 
 			if testCase.SharedConfigurationFile != "" {
 				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
@@ -2335,11 +2328,10 @@ web_identity_token_file = no-such-file
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			for k, v := range testCase.EnvironmentVariables {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			closeSts, mockStsSession, err := mockdata.GetMockedAwsApiSession("STS", testCase.MockStsEndpoints)
@@ -2358,7 +2350,7 @@ web_identity_token_file = no-such-file
 				t.Fatalf("error creating temp dir: %s", err)
 			}
 			defer os.Remove(tempdir)
-			os.Setenv("TMPDIR", tempdir)
+			t.Setenv("TMPDIR", tempdir)
 
 			tokenFile, err := os.CreateTemp("", "aws-sdk-go-base-web-identity-token-file")
 			if err != nil {
@@ -2390,7 +2382,7 @@ web_identity_token_file = no-such-file
 			}
 
 			if testCase.SetEnvironmentVariable {
-				os.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", tokenFileName)
+				t.Setenv("AWS_WEB_IDENTITY_TOKEN_FILE", tokenFileName)
 			}
 
 			if testCase.SharedConfigurationFile != "" {
@@ -2539,8 +2531,7 @@ func TestSessionRetryHandlers(t *testing.T) {
 		t.Run(testcase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			config := &awsbase.Config{
 				AccessKey:           servicemocks.MockStaticAccessKey,
@@ -2596,8 +2587,7 @@ func TestLogger(t *testing.T) {
 	var buf bytes.Buffer
 	ctx := tflogtest.RootLogger(context.Background(), &buf)
 
-	oldEnv := servicemocks.InitSessionTestEnv()
-	defer servicemocks.PopEnv(oldEnv)
+	servicemocks.InitSessionTestEnv(t)
 
 	ctx, logger := logging.NewTfLogger(ctx)
 
@@ -2730,11 +2720,10 @@ s3_us_east_1_regional_endpoint = legacy
 		testCase := testCase
 
 		t.Run(testName, func(t *testing.T) {
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			for k, v := range testCase.EnvironmentVariables {
-				os.Setenv(k, v)
+				t.Setenv(k, v)
 			}
 
 			if testCase.SharedConfigurationFile != "" {
