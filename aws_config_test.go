@@ -30,6 +30,7 @@ import (
 	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	configtesting "github.com/hashicorp/aws-sdk-go-base/v2/configtesting"
 	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
@@ -3160,95 +3161,89 @@ sso_registration_scopes = sso:account:access
 	}
 }
 
+var _ configtesting.TestDriver = &testDriver{}
+
+type testDriver struct {
+	mode configtesting.TestMode
+}
+
+func (t *testDriver) Init(mode configtesting.TestMode) {
+	t.mode = mode
+}
+
+func (t testDriver) TestCase() configtesting.TestCaseDriver {
+	if t.mode == configtesting.TestModeInvalid {
+		panic("TestDriver not initialized")
+	}
+	return &testThingDoer{
+		mode: t.mode,
+	}
+}
+
+var _ configtesting.TestCaseDriver = &testThingDoer{}
+
+type testThingDoer struct {
+	mode   configtesting.TestMode
+	config configurer
+}
+
+func (d *testThingDoer) Configuration() configtesting.Configurer {
+	return &d.config
+}
+
+func (d testThingDoer) Setup(_ *testing.T) {
+	// Noop
+}
+
+// TODO: Make work with expected diffs
+func (d testThingDoer) Apply(ctx context.Context, t *testing.T) (context.Context, configtesting.Thing) {
+	t.Helper()
+
+	if d.mode == configtesting.TestModeLocal {
+		d.config.setSkipCredsValidation(true)
+	}
+
+	config := Config(d.config)
+	ctx, awsConfig, diags := GetAwsConfig(ctx, &config)
+
+	if diff := cmp.Diff(diags, diag.Diagnostics{}); diff != "" {
+		t.Errorf("unexpected diagnostics difference: %s", diff)
+	}
+
+	return ctx, thing(awsConfig)
+}
+
+var _ configtesting.Configurer = &configurer{}
+
+type configurer Config
+
+func (c *configurer) AddEndpoint(k, v string) {
+	switch k {
+	case "sso":
+		c.SsoEndpoint = v
+	default:
+		panic(fmt.Sprintf(`invalid endpoint "%s"`, k))
+	}
+}
+
+func (c *configurer) AddSharedConfigFile(f string) {
+	c.SharedConfigFiles = append(c.SharedConfigFiles, f)
+}
+
+func (c *configurer) setSkipCredsValidation(b bool) {
+	c.SkipCredsValidation = b
+}
+
+var _ configtesting.Thing = thing{}
+
+type thing aws.Config
+
+func (t thing) GetCredentials() aws.CredentialsProvider {
+	return t.Credentials
+}
+
 func TestLegacySSO(t *testing.T) {
-	const ssoStartUrl = "https://d-123456789a.awsapps.com/start"
-
-	testCases := map[string]struct {
-		Config                     *Config
-		SharedConfigurationFile    string
-		SetSharedConfigurationFile bool
-		ExpectedCredentialsValue   aws.Credentials
-		ExpectedDiags              diag.Diagnostics
-	}{
-		"shared configuration file": {
-			Config: &Config{},
-			SharedConfigurationFile: fmt.Sprintf(`
-[default]
-sso_start_url = %s
-sso_region = us-east-1
-sso_account_id = 123456789012
-sso_role_name = testRole
-region = us-east-1
-`, ssoStartUrl),
-			SetSharedConfigurationFile: true,
-			ExpectedCredentialsValue:   mockdata.MockSsoCredentials,
-		},
-	}
-
-	for testName, testCase := range testCases {
-		testCase := testCase
-
-		t.Run(testName, func(t *testing.T) {
-			servicemocks.InitSessionTestEnv(t)
-
-			ctx := context.TODO()
-
-			err := servicemocks.SsoTestSetup(t, ssoStartUrl)
-			if err != nil {
-				t.Fatalf("setup: %s", err)
-			}
-
-			closeSso, ssoEndpoint := servicemocks.SsoCredentialsApiMock()
-			defer closeSso()
-			testCase.Config.SsoEndpoint = ssoEndpoint
-
-			tempdir, err := os.MkdirTemp("", "temp")
-			if err != nil {
-				t.Fatalf("error creating temp dir: %s", err)
-			}
-			defer os.Remove(tempdir)
-			t.Setenv("TMPDIR", tempdir)
-
-			if testCase.SharedConfigurationFile != "" {
-				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
-
-				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
-				}
-
-				defer os.Remove(file.Name())
-
-				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
-
-				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
-				}
-
-				testCase.Config.SharedConfigFiles = []string{file.Name()}
-			}
-
-			testCase.Config.SkipCredsValidation = true
-
-			ctx, awsConfig, diags := GetAwsConfig(ctx, testCase.Config)
-
-			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
-				t.Errorf("unexpected diagnostics difference: %s", diff)
-			}
-			if diags.HasError() {
-				return
-			}
-
-			credentialsValue, err := awsConfig.Credentials.Retrieve(ctx)
-
-			if err != nil {
-				t.Fatalf("unexpected credentials Retrieve() error: %s", err)
-			}
-
-			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(aws.Credentials{}, "Expires")); diff != "" {
-				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
-			}
-		})
-	}
+	configtesting.LegacySSO(t, &testDriver{})
 }
 
 func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
