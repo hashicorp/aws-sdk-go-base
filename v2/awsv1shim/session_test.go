@@ -86,7 +86,6 @@ func TestGetSessionOptions(t *testing.T) {
 				t.Fatal("Expected error not returned by getSessionOptions()")
 			}
 		})
-
 	}
 }
 
