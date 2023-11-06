@@ -25,6 +25,7 @@ linters:
     - unused
     - typecheck
     - vet
+    - whitespace
 
 linters-settings:
   gomnd:

@@ -88,7 +88,6 @@ func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 
 	validateCredentialsProvider(ctx, creds, "Ec2MetadataAccessKey", "Ec2MetadataSecretKey", "Ec2MetadataSessionToken", ec2rolecreds.ProviderName, t)
 	testCredentialsProviderWrappedWithCache(creds, t)
-
 }
 
 func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {

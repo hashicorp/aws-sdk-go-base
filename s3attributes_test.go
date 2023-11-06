@@ -353,7 +353,6 @@ func assertAttributesMatch(t *testing.T, x, y []attribute.KeyValue) {
 	); diff != "" {
 		t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
 	}
-
 }
 
 func less[T ~string](x, y T) bool {
