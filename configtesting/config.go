@@ -44,6 +44,97 @@ type Thing interface {
 	GetCredentials() aws.CredentialsProvider
 }
 
+func SSO(t *testing.T, driver TestDriver) {
+	t.Helper()
+
+	driver.Init(TestModeLocal)
+
+	const ssoSessionName = "test-sso-session"
+
+	testCases := map[string]struct {
+		SharedConfigurationFile  string
+		ExpectedCredentialsValue aws.Credentials
+	}{
+		"shared configuration file": {
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+sso_session = %s
+sso_account_id = 123456789012
+sso_role_name = testRole
+region = us-east-1
+
+[sso-session test-sso-session]
+sso_region = us-east-1
+sso_start_url = https://d-123456789a.awsapps.com/start
+sso_registration_scopes = sso:account:access
+`, ssoSessionName),
+			ExpectedCredentialsValue: mockdata.MockSsoCredentials,
+		},
+	}
+
+	for name, tc := range testCases {
+		tc := tc
+
+		t.Run(name, func(t *testing.T) {
+			caseDriver := driver.TestCase()
+
+			servicemocks.InitSessionTestEnv(t)
+
+			ctx := context.TODO()
+
+			err := servicemocks.SsoTestSetup(t, ssoSessionName)
+			if err != nil {
+				t.Fatalf("setup: %s", err)
+			}
+
+			config := caseDriver.Configuration()
+
+			closeSso, ssoEndpoint := servicemocks.SsoCredentialsApiMock()
+			defer closeSso()
+			config.AddEndpoint("sso", ssoEndpoint)
+
+			tempdir, err := os.MkdirTemp("", "temp")
+			if err != nil {
+				t.Fatalf("error creating temp dir: %s", err)
+			}
+			defer os.Remove(tempdir)
+			t.Setenv("TMPDIR", tempdir)
+
+			if tc.SharedConfigurationFile != "" {
+				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
+
+				if err != nil {
+					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
+				}
+
+				defer os.Remove(file.Name())
+
+				err = os.WriteFile(file.Name(), []byte(tc.SharedConfigurationFile), 0600) //nolint:gomnd
+
+				if err != nil {
+					t.Fatalf("unexpected error writing shared configuration file: %s", err)
+				}
+
+				config.AddSharedConfigFile(file.Name())
+			}
+
+			caseDriver.Setup(t)
+
+			ctx, thing := caseDriver.Apply(ctx, t)
+
+			credentialsValue, err := thing.GetCredentials().Retrieve(ctx)
+
+			if err != nil {
+				t.Fatalf("retrieving credentials: %s", err)
+			}
+
+			if diff := cmp.Diff(credentialsValue, tc.ExpectedCredentialsValue, cmpopts.IgnoreFields(aws.Credentials{}, "Expires")); diff != "" {
+				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
+			}
+		})
+	}
+}
+
 func LegacySSO(t *testing.T, driver TestDriver) {
 	t.Helper()
 

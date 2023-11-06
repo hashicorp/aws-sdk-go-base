@@ -3066,101 +3066,6 @@ web_identity_token_file = no-such-file
 	}
 }
 
-func TestSSO(t *testing.T) {
-	const ssoSessionName = "test-sso-session"
-
-	testCases := map[string]struct {
-		Config                     *Config
-		SharedConfigurationFile    string
-		SetSharedConfigurationFile bool
-		ExpectedCredentialsValue   aws.Credentials
-		ExpectedDiags              diag.Diagnostics
-	}{
-		"shared configuration file": {
-			Config: &Config{},
-			SharedConfigurationFile: fmt.Sprintf(`
-[default]
-sso_session = %s
-sso_account_id = 123456789012
-sso_role_name = testRole
-region = us-east-1
-
-[sso-session test-sso-session]
-sso_region = us-east-1
-sso_start_url = https://d-123456789a.awsapps.com/start
-sso_registration_scopes = sso:account:access
-`, ssoSessionName),
-			SetSharedConfigurationFile: true,
-			ExpectedCredentialsValue:   mockdata.MockSsoCredentials,
-		},
-	}
-
-	for testName, testCase := range testCases {
-		testCase := testCase
-
-		t.Run(testName, func(t *testing.T) {
-			servicemocks.InitSessionTestEnv(t)
-
-			ctx := context.TODO()
-
-			err := servicemocks.SsoTestSetup(t, ssoSessionName)
-			if err != nil {
-				t.Fatalf("setup: %s", err)
-			}
-
-			closeSso, ssoEndpoint := servicemocks.SsoCredentialsApiMock()
-			defer closeSso()
-			testCase.Config.SsoEndpoint = ssoEndpoint
-
-			tempdir, err := os.MkdirTemp("", "temp")
-			if err != nil {
-				t.Fatalf("error creating temp dir: %s", err)
-			}
-			defer os.Remove(tempdir)
-			t.Setenv("TMPDIR", tempdir)
-
-			if testCase.SharedConfigurationFile != "" {
-				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
-
-				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
-				}
-
-				defer os.Remove(file.Name())
-
-				err = os.WriteFile(file.Name(), []byte(testCase.SharedConfigurationFile), 0600)
-
-				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
-				}
-
-				testCase.Config.SharedConfigFiles = []string{file.Name()}
-			}
-
-			testCase.Config.SkipCredsValidation = true
-
-			ctx, awsConfig, diags := GetAwsConfig(ctx, testCase.Config)
-
-			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
-				t.Errorf("unexpected diagnostics difference: %s", diff)
-			}
-			if diags.HasError() {
-				return
-			}
-
-			credentialsValue, err := awsConfig.Credentials.Retrieve(ctx)
-
-			if err != nil {
-				t.Fatalf("unexpected credentials Retrieve() error: %s", err)
-			}
-
-			if diff := cmp.Diff(credentialsValue, testCase.ExpectedCredentialsValue, cmpopts.IgnoreFields(aws.Credentials{}, "Expires")); diff != "" {
-				t.Fatalf("unexpected credentials: (- got, + expected)\n%s", diff)
-			}
-		})
-	}
-}
-
 var _ configtesting.TestDriver = &testDriver{}
 
 type testDriver struct {
@@ -3240,6 +3145,10 @@ type thing aws.Config
 
 func (t thing) GetCredentials() aws.CredentialsProvider {
 	return t.Credentials
+}
+
+func TestSSO(t *testing.T) {
+	configtesting.SSO(t, &testDriver{})
 }
 
 func TestLegacySSO(t *testing.T) {
