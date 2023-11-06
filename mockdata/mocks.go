@@ -9,6 +9,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/endpointcreds"
+	"github.com/aws/aws-sdk-go-v2/credentials/ssocreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
@@ -82,6 +83,14 @@ var (
 		SecretAccessKey: servicemocks.MockStsAssumeRoleWithWebIdentitySecretKey,
 		SessionToken:    servicemocks.MockStsAssumeRoleWithWebIdentitySessionToken,
 		Source:          stscreds.WebIdentityProviderName,
+		CanExpire:       true,
+	}
+
+	MockSsoCredentials = aws.Credentials{
+		AccessKeyID:     servicemocks.MockSsoAccessKeyID,
+		SecretAccessKey: servicemocks.MockSsoSecretAccessKey,
+		SessionToken:    servicemocks.MockSsoSessionToken,
+		Source:          ssocreds.ProviderName,
 		CanExpire:       true,
 	}
 )

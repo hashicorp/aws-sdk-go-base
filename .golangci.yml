@@ -19,11 +19,13 @@ linters:
     - ineffassign
     - misspell
     - staticcheck
+    - tenv
     - unconvert
     - unparam
     - unused
     - typecheck
     - vet
+    - whitespace
 
 linters-settings:
   gomnd:
@@ -32,3 +34,4 @@ linters-settings:
         ignored-functions:
           - strings.SplitN
           - strings.SplitAfterN
+          - os.MkdirAll
