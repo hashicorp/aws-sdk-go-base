@@ -36,12 +36,15 @@ type TestCaseDriver interface {
 }
 
 type Configurer interface {
+	SetAccessKey(s string)
+	SetSecretKey(s string)
 	AddEndpoint(k, v string)
 	AddSharedConfigFile(f string)
 }
 
 type Thing interface {
 	GetCredentials() aws.CredentialsProvider
+	GetRegion() string
 }
 
 func SSO(t *testing.T, driver TestDriver) {
