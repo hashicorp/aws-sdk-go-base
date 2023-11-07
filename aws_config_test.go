@@ -3092,7 +3092,10 @@ type testThingDoer struct {
 	config configurer
 }
 
-func (d *testThingDoer) Configuration() configtesting.Configurer {
+func (d *testThingDoer) Configuration(fs []configtesting.ConfigFunc) configtesting.Configurer {
+	for _, f := range fs {
+		f(&d.config)
+	}
 	return &d.config
 }
 
@@ -3128,6 +3131,10 @@ func (c *configurer) SetAccessKey(s string) {
 
 func (c *configurer) SetSecretKey(s string) {
 	c.SecretKey = s
+}
+
+func (c *configurer) SetUseFIPSEndpoint(b bool) {
+	c.UseFIPSEndpoint = b
 }
 
 func (c *configurer) AddEndpoint(k, v string) {
@@ -3587,7 +3594,7 @@ func TestSharedConfigFileParsing(t *testing.T) {
 
 			servicemocks.InitSessionTestEnv(t)
 
-			config := caseDriver.Configuration()
+			config := caseDriver.Configuration(nil)
 
 			config.SetAccessKey(servicemocks.MockStaticAccessKey)
 			config.SetSecretKey(servicemocks.MockStaticSecretKey)
