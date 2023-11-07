@@ -3610,7 +3610,7 @@ func TestSharedConfigFileParsing(t *testing.T) {
 				config.AddSharedConfigFile(file.Name())
 			}
 
-			ctx, thing := caseDriver.Apply(ctx, t)
+			_, thing := caseDriver.Apply(ctx, t)
 
 			tc.Check(t, thing)
 		})
