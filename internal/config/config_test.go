@@ -142,10 +142,10 @@ func TestValidateProxyConfig(t *testing.T) {
 			},
 			expectedDiags: diag.Diagnostics{
 				diag.NewWarningDiagnostic(
-					"Missing HTTPS Proxy",
+					missingHttpsProxyWarningSummary,
 					fmt.Sprintf(
 						"An HTTP proxy was set but no HTTPS proxy was. Using HTTP proxy %q for HTTPS requests. This behavior may change in future versions.\n\n"+
-							"To specify no proxy for HTTPS, set the HTTPS to an empty string",
+							"To specify no proxy for HTTPS, set the HTTPS to an empty string.",
 						"http://valid.test"),
 				),
 			},
@@ -194,9 +194,9 @@ func TestValidateProxyConfig(t *testing.T) {
 			},
 			expectedDiags: diag.Diagnostics{
 				diag.NewWarningDiagnostic(
-					"Missing HTTPS Proxy",
+					missingHttpsProxyWarningSummary,
 					"An HTTP proxy was set but no HTTPS proxy was.\n\n"+
-						"To specify no proxy for HTTPS, set the HTTPS to an empty string",
+						"To specify no proxy for HTTPS, set the HTTPS to an empty string.",
 				),
 			},
 		},
@@ -206,8 +206,7 @@ func TestValidateProxyConfig(t *testing.T) {
 		testcase := testcase
 
 		t.Run(name, func(t *testing.T) {
-			oldEnv := servicemocks.InitSessionTestEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.InitSessionTestEnv(t)
 
 			for k, v := range testcase.environmentVariables {
 				t.Setenv(k, v)

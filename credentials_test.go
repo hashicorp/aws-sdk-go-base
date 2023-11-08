@@ -88,7 +88,6 @@ func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 
 	validateCredentialsProvider(ctx, creds, "Ec2MetadataAccessKey", "Ec2MetadataSecretKey", "Ec2MetadataSessionToken", ec2rolecreds.ProviderName, t)
 	testCredentialsProviderWrappedWithCache(creds, t)
-
 }
 
 func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
@@ -162,9 +161,7 @@ func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
 	resetEnv := servicemocks.UnsetEnv(t)
 	defer resetEnv()
 
-	if err := os.Setenv("AWS_PROFILE", "myprofile"); err != nil {
-		t.Fatalf("Error resetting env var AWS_PROFILE: %s", err)
-	}
+	t.Setenv("AWS_PROFILE", "myprofile")
 
 	fileEnvName := writeCredentialsFile(credentialsFileContentsEnv, t)
 	defer os.Remove(fileEnvName)
@@ -172,9 +169,7 @@ func TestAWSGetCredentials_sharedCredentialsFile(t *testing.T) {
 	fileParamName := writeCredentialsFile(credentialsFileContentsParam, t)
 	defer os.Remove(fileParamName)
 
-	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", fileEnvName); err != nil {
-		t.Fatalf("Error resetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
-	}
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", fileEnvName)
 
 	// Confirm AWS_SHARED_CREDENTIALS_FILE is working
 	credsEnv, source, err := getCredentialsProvider(ctx, &Config{

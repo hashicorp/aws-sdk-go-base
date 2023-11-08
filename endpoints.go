@@ -8,6 +8,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/iam"
+	"github.com/aws/aws-sdk-go-v2/service/sso"
 	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 )
@@ -24,6 +25,17 @@ func credentialsEndpointResolver(ctx context.Context, c *Config) aws.EndpointRes
 			if endpoint := c.IamEndpoint; endpoint != "" {
 				logger.Info(ctx, "Credentials resolution: setting custom IAM endpoint", map[string]any{
 					"tf_aws.iam_client.endpoint": endpoint,
+				})
+				return aws.Endpoint{
+					URL:           endpoint,
+					Source:        aws.EndpointSourceCustom,
+					SigningRegion: region,
+				}, nil
+			}
+		case sso.ServiceID:
+			if endpoint := c.SsoEndpoint; endpoint != "" {
+				logger.Info(ctx, "Credentials resolution: setting custom SSO endpoint", map[string]any{
+					"tf_aws.sso_client.endpoint": endpoint,
 				})
 				return aws.Endpoint{
 					URL:           endpoint,

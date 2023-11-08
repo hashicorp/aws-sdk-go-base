@@ -50,8 +50,7 @@ func TestExpandFilePath(t *testing.T) {
 
 	for name, testcase := range testcases {
 		t.Run(name, func(t *testing.T) {
-			oldEnv := servicemocks.StashEnv()
-			defer servicemocks.PopEnv(oldEnv)
+			servicemocks.StashEnv(t)
 
 			for k, v := range testcase.envvars {
 				os.Setenv(k, v)

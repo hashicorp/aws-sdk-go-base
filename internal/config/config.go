@@ -58,6 +58,7 @@ type Config struct {
 	SharedConfigFiles              []string
 	SkipCredsValidation            bool
 	SkipRequestingAccountId        bool
+	SsoEndpoint                    string
 	StsEndpoint                    string
 	StsRegion                      string
 	SuppressDebugLog               bool
@@ -171,23 +172,40 @@ func (c Config) ValidateProxySettings(diags *diag.Diagnostics) {
 
 	if c.HTTPProxy != nil && *c.HTTPProxy != "" && c.HTTPSProxy == nil && os.Getenv("HTTPS_PROXY") == "" && os.Getenv("https_proxy") == "" {
 		if c.HTTPProxyMode == HTTPProxyModeLegacy {
-			*diags = diags.AddWarning(
-				"Missing HTTPS Proxy",
-				fmt.Sprintf(
-					"An HTTP proxy was set but no HTTPS proxy was. Using HTTP proxy %q for HTTPS requests. This behavior may change in future versions.\n\n"+
-						"To specify no proxy for HTTPS, set the HTTPS to an empty string",
-					aws.ToString(c.HTTPProxy),
-				),
+			*diags = diags.Append(
+				missingHttpsProxyLegacyWarningDiag(aws.ToString(c.HTTPProxy)),
 			)
 		} else {
-			*diags = diags.AddWarning(
-				"Missing HTTPS Proxy",
-				"An HTTP proxy was set but no HTTPS proxy was.\n\n"+
-					"To specify no proxy for HTTPS, set the HTTPS to an empty string",
+			*diags = diags.Append(
+				missingHttpsProxyWarningDiag(),
 			)
 		}
 	}
+}
 
+const (
+	missingHttpsProxyWarningSummary   = "Missing HTTPS Proxy"
+	missingHttpsProxyDetailProblem    = "An HTTP proxy was set but no HTTPS proxy was."
+	missingHttpsProxyDetailResolution = "To specify no proxy for HTTPS, set the HTTPS to an empty string."
+)
+
+func missingHttpsProxyLegacyWarningDiag(s string) diag.Diagnostic {
+	return diag.NewWarningDiagnostic(
+		missingHttpsProxyWarningSummary,
+		fmt.Sprintf(
+			missingHttpsProxyDetailProblem+" Using HTTP proxy %q for HTTPS requests. This behavior may change in future versions.\n\n"+
+				missingHttpsProxyDetailResolution,
+			s,
+		),
+	)
+}
+
+func missingHttpsProxyWarningDiag() diag.Diagnostic {
+	return diag.NewWarningDiagnostic(
+		missingHttpsProxyWarningSummary,
+		missingHttpsProxyDetailProblem+"\n\n"+
+			missingHttpsProxyDetailResolution,
+	)
 }
 
 func (c Config) ResolveSharedConfigFiles() ([]string, error) {

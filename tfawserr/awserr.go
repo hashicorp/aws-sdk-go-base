@@ -25,6 +25,16 @@ func ErrCodeEquals(err error, codes ...string) bool {
 	return false
 }
 
+// ErrCodeContains returns true if the error matches all these conditions:
+//   - err is of type smithy.APIError
+//   - APIError.ErrorCode() contains code
+func ErrCodeContains(err error, code string) bool {
+	if apiErr, ok := errs.As[smithy.APIError](err); ok {
+		return strings.Contains(apiErr.ErrorCode(), code)
+	}
+	return false
+}
+
 // ErrMessageContains returns true if the error matches all these conditions:
 //   - err is of type smithy.APIError
 //   - APIError.ErrorCode() equals code
