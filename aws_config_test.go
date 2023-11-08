@@ -3080,28 +3080,31 @@ func (t testDriver) TestCase() configtesting.TestCaseDriver {
 	if t.mode == configtesting.TestModeInvalid {
 		panic("TestDriver not initialized")
 	}
-	return &testThingDoer{
+	return &testCaseDriver{
 		mode: t.mode,
 	}
 }
 
-var _ configtesting.TestCaseDriver = &testThingDoer{}
+var _ configtesting.TestCaseDriver = &testCaseDriver{}
 
-type testThingDoer struct {
+type testCaseDriver struct {
 	mode   configtesting.TestMode
 	config configurer
 }
 
-func (d *testThingDoer) Configuration() configtesting.Configurer {
+func (d *testCaseDriver) Configuration(fs []configtesting.ConfigFunc) configtesting.Configurer {
+	for _, f := range fs {
+		f(&d.config)
+	}
 	return &d.config
 }
 
-func (d testThingDoer) Setup(_ *testing.T) {
+func (d testCaseDriver) Setup(_ *testing.T) {
 	// Noop
 }
 
 // TODO: Make work with expected diffs
-func (d testThingDoer) Apply(ctx context.Context, t *testing.T) (context.Context, configtesting.Thing) {
+func (d testCaseDriver) Apply(ctx context.Context, t *testing.T) (context.Context, configtesting.Thing) {
 	t.Helper()
 
 	if d.mode == configtesting.TestModeLocal {
@@ -3128,6 +3131,10 @@ func (c *configurer) SetAccessKey(s string) {
 
 func (c *configurer) SetSecretKey(s string) {
 	c.SecretKey = s
+}
+
+func (c *configurer) SetUseFIPSEndpoint(b bool) {
+	c.UseFIPSEndpoint = b
 }
 
 func (c *configurer) AddEndpoint(k, v string) {
@@ -3587,7 +3594,7 @@ func TestSharedConfigFileParsing(t *testing.T) {
 
 			servicemocks.InitSessionTestEnv(t)
 
-			config := caseDriver.Configuration()
+			config := caseDriver.Configuration(nil)
 
 			config.SetAccessKey(servicemocks.MockStaticAccessKey)
 			config.SetSecretKey(servicemocks.MockStaticSecretKey)
