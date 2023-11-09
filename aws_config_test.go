@@ -3133,6 +3133,10 @@ func (c *configurer) SetSecretKey(s string) {
 	c.SecretKey = s
 }
 
+func (c *configurer) SetProfile(s string) {
+	c.Profile = s
+}
+
 func (c *configurer) SetUseFIPSEndpoint(b bool) {
 	c.UseFIPSEndpoint = b
 }
@@ -3566,18 +3570,81 @@ func TestSharedConfigFileParsing(t *testing.T) {
 	}
 
 	testcases := map[string]struct {
+		Configuration           []configtesting.ConfigFunc
 		SharedConfigurationFile string
 		Check                   func(t *testing.T, thing configtesting.Thing)
 	}{
+		"leading newline": {
+			// Do not "fix" indentation!
+			SharedConfigurationFile: `
+[default]
+region = us-west-2
+`,
+			Check: func(t *testing.T, thing configtesting.Thing) {
+				region := thing.GetRegion()
+				if a, e := region, "us-west-2"; a != e {
+					t.Errorf("expected region %q, got %q", e, a)
+				}
+			},
+		},
 		"leading whitespace": {
+			// Do not "fix" indentation!
+			SharedConfigurationFile: `	[default]
+		region = us-west-2
+		`,
+			Check: func(t *testing.T, thing configtesting.Thing) {
+				region := thing.GetRegion()
+				if a, e := region, "us-west-2"; a != e {
+					t.Errorf("expected region %q, got %q", e, a)
+				}
+			},
+		},
+		"leading newline and whitespace": {
 			// Do not "fix" indentation!
 			SharedConfigurationFile: `
 	[default]
 	region = us-west-2
-	`,
+		`,
 			Check: func(t *testing.T, thing configtesting.Thing) {
 				region := thing.GetRegion()
 				if a, e := region, "us-west-2"; a != e {
+					t.Errorf("expected region %q, got %q", e, a)
+				}
+			},
+		},
+		"named profile after leading newline and whitespace": {
+			Configuration: []configtesting.ConfigFunc{
+				configtesting.WithProfile("test"),
+			},
+			// Do not "fix" indentation!
+			SharedConfigurationFile: `
+[default]
+region = us-west-2
+
+	[profile test]
+	region = us-east-1
+			`,
+			Check: func(t *testing.T, thing configtesting.Thing) {
+				region := thing.GetRegion()
+				if a, e := region, "us-east-1"; a != e {
+					t.Errorf("expected region %q, got %q", e, a)
+				}
+			},
+		},
+		"named profile": {
+			Configuration: []configtesting.ConfigFunc{
+				configtesting.WithProfile("test"),
+			},
+			SharedConfigurationFile: `
+[default]
+region = us-west-2
+
+[profile test]
+region = us-east-1
+`,
+			Check: func(t *testing.T, thing configtesting.Thing) {
+				region := thing.GetRegion()
+				if a, e := region, "us-east-1"; a != e {
 					t.Errorf("expected region %q, got %q", e, a)
 				}
 			},
@@ -3594,7 +3661,7 @@ func TestSharedConfigFileParsing(t *testing.T) {
 
 			servicemocks.InitSessionTestEnv(t)
 
-			config := caseDriver.Configuration(nil)
+			config := caseDriver.Configuration(tc.Configuration)
 
 			config.SetAccessKey(servicemocks.MockStaticAccessKey)
 			config.SetSecretKey(servicemocks.MockStaticSecretKey)
