@@ -38,6 +38,7 @@ type TestCaseDriver interface {
 type Configurer interface {
 	SetAccessKey(s string)
 	SetSecretKey(s string)
+	SetProfile(s string)
 	SetUseFIPSEndpoint(b bool)
 	AddEndpoint(k, v string)
 	AddSharedConfigFile(f string)
@@ -49,6 +50,12 @@ type Thing interface {
 }
 
 type ConfigFunc func(c Configurer)
+
+func WithProfile(s string) ConfigFunc {
+	return func(c Configurer) {
+		c.SetProfile(s)
+	}
+}
 
 func WithUseFIPSEndpoint(b bool) ConfigFunc {
 	return func(c Configurer) {

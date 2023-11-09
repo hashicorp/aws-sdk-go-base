@@ -3133,6 +3133,10 @@ func (c *configurer) SetSecretKey(s string) {
 	c.SecretKey = s
 }
 
+func (c *configurer) SetProfile(s string) {
+	c.Profile = s
+}
+
 func (c *configurer) SetUseFIPSEndpoint(b bool) {
 	c.UseFIPSEndpoint = b
 }
@@ -3561,67 +3565,7 @@ func TestRetryHandlers(t *testing.T) {
 // TestSharedConfigFileParsing prevents regression in shared config file parsing
 // * https://github.com/aws/aws-sdk-go-v2/issues/2349: indented keys
 func TestSharedConfigFileParsing(t *testing.T) {
-	driver := &testDriver{
-		mode: configtesting.TestModeLocal,
-	}
-
-	testcases := map[string]struct {
-		SharedConfigurationFile string
-		Check                   func(t *testing.T, thing configtesting.Thing)
-	}{
-		"leading whitespace": {
-			// Do not "fix" indentation!
-			SharedConfigurationFile: `
-	[default]
-	region = us-west-2
-	`,
-			Check: func(t *testing.T, thing configtesting.Thing) {
-				region := thing.GetRegion()
-				if a, e := region, "us-west-2"; a != e {
-					t.Errorf("expected region %q, got %q", e, a)
-				}
-			},
-		},
-	}
-
-	for name, tc := range testcases {
-		tc := tc
-
-		t.Run(name, func(t *testing.T) {
-			ctx := context.TODO()
-
-			caseDriver := driver.TestCase()
-
-			servicemocks.InitSessionTestEnv(t)
-
-			config := caseDriver.Configuration(nil)
-
-			config.SetAccessKey(servicemocks.MockStaticAccessKey)
-			config.SetSecretKey(servicemocks.MockStaticSecretKey)
-
-			if tc.SharedConfigurationFile != "" {
-				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
-
-				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
-				}
-
-				defer os.Remove(file.Name())
-
-				err = os.WriteFile(file.Name(), []byte(tc.SharedConfigurationFile), 0600) //nolint:gomnd
-
-				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
-				}
-
-				config.AddSharedConfigFile(file.Name())
-			}
-
-			_, thing := caseDriver.Apply(ctx, t)
-
-			tc.Check(t, thing)
-		})
-	}
+	configtesting.SharedConfigFileParsing(t, &testDriver{})
 }
 
 type withNoDelay struct {
