@@ -4,6 +4,10 @@
 issues:
   max-per-linter: 0
   max-same-issues: 0
+  exclude-rules:
+    - path: configtesting
+      linters:
+        - goconst
 
 linters:
   disable-all: true
@@ -28,6 +32,8 @@ linters:
     - whitespace
 
 linters-settings:
+  goconst:
+    ignore-tests: true
   gomnd:
     settings:
       mnd:
