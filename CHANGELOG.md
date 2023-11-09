@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.39 (2023-11-08)
+
 ENHANCEMENTS
 
 * Adds `SsoEndpoint` parameter to override default AWS SSO endpoint ([#741](https://github.com/hashicorp/aws-sdk-go-base/pull/741))
