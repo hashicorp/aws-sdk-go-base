@@ -5,6 +5,9 @@ jobs:
   go_mod:
     name: go mod
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path: [".", "tools", "v2/awsv1shim"]
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
@@ -13,10 +16,30 @@ jobs:
           go-version-file: ./go.mod
 
       - name: go mod
+        working-directory: ${{ matrix.path }}
         run: |
           go mod tidy
-          git diff --exit-code -- go.mod go.sum || \
-            (echo; echo "Unexpected difference in go.mod/go.sum files. Run 'go mod tidy' command or revert any go.mod/go.sum changes and commit."; exit 1)
+          git diff --exit-code --quiet -- go.mod go.sum || \
+            (echo; echo "Unexpected difference in ${{ matrix.path }}/go.mod or ${{ matrix.path }}/go.sum files. Run 'go mod tidy' command or revert any go.mod/go.sum changes and commit."; exit 1)
+
+  go_work_sync:
+    name: go work sync
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        path: [".", "tools", "v2/awsv1shim"]
+    steps:
+      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+      - uses: actions/setup-go@93397bea11091df50f3d7e59dc26a7711a8bcfbe # v4.1.0
+        with:
+          go-version-file: ./go.mod
+
+      - name: go work sync
+        run: |
+          go work sync
+          git diff --exit-code --quiet -- ${{ matrix.path }}/go.mod ${{ matrix.path }}/go.sum || \
+            (echo; echo "Modules out of sync in ${{ matrix.path }}/. Run 'go mod sync' and 'cd ${{ matrix.path }} && go mod tidy' to bring them in sync."; exit 1)
 
   go_test:
     name: go test
