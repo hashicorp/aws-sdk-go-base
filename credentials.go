@@ -135,6 +135,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 			return nil, "", diags.AddSimpleError(err)
 		}
 	}
+
 	// We need to validate both the configured and envvar named profiles for validity,
 	// but to use proper precedence, we only set the configured named profile
 	if c.Profile != "" {

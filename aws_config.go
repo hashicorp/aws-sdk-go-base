@@ -98,6 +98,13 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 		return ctx, aws.Config{}, diags.AddSimpleError(err)
 	}
 
+	if c.Profile != "" {
+		loadOptions = append(
+			loadOptions,
+			config.WithSharedConfigProfile(c.Profile),
+		)
+	}
+
 	// The providers set `MaxRetries` to a very large value.
 	// Add retries here so that authentication has a reasonable number of retries
 	if c.MaxRetries != 0 {

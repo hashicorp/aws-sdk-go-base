@@ -3080,28 +3080,31 @@ func (t testDriver) TestCase() configtesting.TestCaseDriver {
 	if t.mode == configtesting.TestModeInvalid {
 		panic("TestDriver not initialized")
 	}
-	return &testThingDoer{
+	return &testCaseDriver{
 		mode: t.mode,
 	}
 }
 
-var _ configtesting.TestCaseDriver = &testThingDoer{}
+var _ configtesting.TestCaseDriver = &testCaseDriver{}
 
-type testThingDoer struct {
+type testCaseDriver struct {
 	mode   configtesting.TestMode
 	config configurer
 }
 
-func (d *testThingDoer) Configuration() configtesting.Configurer {
+func (d *testCaseDriver) Configuration(fs []configtesting.ConfigFunc) configtesting.Configurer {
+	for _, f := range fs {
+		f(&d.config)
+	}
 	return &d.config
 }
 
-func (d testThingDoer) Setup(_ *testing.T) {
+func (d testCaseDriver) Setup(_ *testing.T) {
 	// Noop
 }
 
 // TODO: Make work with expected diffs
-func (d testThingDoer) Apply(ctx context.Context, t *testing.T) (context.Context, configtesting.Thing) {
+func (d testCaseDriver) Apply(ctx context.Context, t *testing.T) (context.Context, configtesting.Thing) {
 	t.Helper()
 
 	if d.mode == configtesting.TestModeLocal {
@@ -3128,6 +3131,14 @@ func (c *configurer) SetAccessKey(s string) {
 
 func (c *configurer) SetSecretKey(s string) {
 	c.SecretKey = s
+}
+
+func (c *configurer) SetProfile(s string) {
+	c.Profile = s
+}
+
+func (c *configurer) SetUseFIPSEndpoint(b bool) {
+	c.UseFIPSEndpoint = b
 }
 
 func (c *configurer) AddEndpoint(k, v string) {
@@ -3554,67 +3565,7 @@ func TestRetryHandlers(t *testing.T) {
 // TestSharedConfigFileParsing prevents regression in shared config file parsing
 // * https://github.com/aws/aws-sdk-go-v2/issues/2349: indented keys
 func TestSharedConfigFileParsing(t *testing.T) {
-	driver := &testDriver{
-		mode: configtesting.TestModeLocal,
-	}
-
-	testcases := map[string]struct {
-		SharedConfigurationFile string
-		Check                   func(t *testing.T, thing configtesting.Thing)
-	}{
-		"leading whitespace": {
-			// Do not "fix" indentation!
-			SharedConfigurationFile: `
-	[default]
-	region = us-west-2
-	`,
-			Check: func(t *testing.T, thing configtesting.Thing) {
-				region := thing.GetRegion()
-				if a, e := region, "us-west-2"; a != e {
-					t.Errorf("expected region %q, got %q", e, a)
-				}
-			},
-		},
-	}
-
-	for name, tc := range testcases {
-		tc := tc
-
-		t.Run(name, func(t *testing.T) {
-			ctx := context.TODO()
-
-			caseDriver := driver.TestCase()
-
-			servicemocks.InitSessionTestEnv(t)
-
-			config := caseDriver.Configuration()
-
-			config.SetAccessKey(servicemocks.MockStaticAccessKey)
-			config.SetSecretKey(servicemocks.MockStaticSecretKey)
-
-			if tc.SharedConfigurationFile != "" {
-				file, err := os.CreateTemp("", "aws-sdk-go-base-shared-configuration-file")
-
-				if err != nil {
-					t.Fatalf("unexpected error creating temporary shared configuration file: %s", err)
-				}
-
-				defer os.Remove(file.Name())
-
-				err = os.WriteFile(file.Name(), []byte(tc.SharedConfigurationFile), 0600) //nolint:gomnd
-
-				if err != nil {
-					t.Fatalf("unexpected error writing shared configuration file: %s", err)
-				}
-
-				config.AddSharedConfigFile(file.Name())
-			}
-
-			_, thing := caseDriver.Apply(ctx, t)
-
-			tc.Check(t, thing)
-		})
-	}
+	configtesting.SharedConfigFileParsing(t, &testDriver{})
 }
 
 type withNoDelay struct {

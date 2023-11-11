@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/config"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )

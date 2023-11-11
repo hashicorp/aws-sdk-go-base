@@ -30,7 +30,7 @@ type TestDriver interface {
 }
 
 type TestCaseDriver interface {
-	Configuration() Configurer
+	Configuration(f []ConfigFunc) Configurer
 	Setup(t *testing.T)
 	Apply(ctx context.Context, t *testing.T) (context.Context, Thing)
 }
@@ -38,6 +38,8 @@ type TestCaseDriver interface {
 type Configurer interface {
 	SetAccessKey(s string)
 	SetSecretKey(s string)
+	SetProfile(s string)
+	SetUseFIPSEndpoint(b bool)
 	AddEndpoint(k, v string)
 	AddSharedConfigFile(f string)
 }
@@ -45,6 +47,20 @@ type Configurer interface {
 type Thing interface {
 	GetCredentials() aws.CredentialsProvider
 	GetRegion() string
+}
+
+type ConfigFunc func(c Configurer)
+
+func WithProfile(s string) ConfigFunc {
+	return func(c Configurer) {
+		c.SetProfile(s)
+	}
+}
+
+func WithUseFIPSEndpoint(b bool) ConfigFunc {
+	return func(c Configurer) {
+		c.SetUseFIPSEndpoint(b)
+	}
 }
 
 func SSO(t *testing.T, driver TestDriver) {
@@ -55,10 +71,30 @@ func SSO(t *testing.T, driver TestDriver) {
 	const ssoSessionName = "test-sso-session"
 
 	testCases := map[string]struct {
+		Configuration            []ConfigFunc
 		SharedConfigurationFile  string
 		ExpectedCredentialsValue aws.Credentials
 	}{
 		"shared configuration file": {
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+sso_session = %s
+sso_account_id = 123456789012
+sso_role_name = testRole
+region = us-east-1
+
+[sso-session test-sso-session]
+sso_region = us-east-1
+sso_start_url = https://d-123456789a.awsapps.com/start
+sso_registration_scopes = sso:account:access
+`, ssoSessionName),
+			ExpectedCredentialsValue: mockdata.MockSsoCredentials,
+		},
+
+		"use FIPS": {
+			Configuration: []ConfigFunc{
+				WithUseFIPSEndpoint(true),
+			},
 			SharedConfigurationFile: fmt.Sprintf(`
 [default]
 sso_session = %s
@@ -90,7 +126,7 @@ sso_registration_scopes = sso:account:access
 				t.Fatalf("setup: %s", err)
 			}
 
-			config := caseDriver.Configuration()
+			config := caseDriver.Configuration(tc.Configuration)
 
 			closeSso, ssoEndpoint := servicemocks.SsoCredentialsApiMock()
 			defer closeSso()
@@ -146,10 +182,26 @@ func LegacySSO(t *testing.T, driver TestDriver) {
 	const ssoStartUrl = "https://d-123456789a.awsapps.com/start"
 
 	testCases := map[string]struct {
+		Configuration            []ConfigFunc
 		SharedConfigurationFile  string
 		ExpectedCredentialsValue aws.Credentials
 	}{
 		"shared configuration file": {
+			SharedConfigurationFile: fmt.Sprintf(`
+[default]
+sso_start_url = %s
+sso_region = us-east-1
+sso_account_id = 123456789012
+sso_role_name = testRole
+region = us-east-1
+`, ssoStartUrl),
+			ExpectedCredentialsValue: mockdata.MockSsoCredentials,
+		},
+
+		"use FIPS": {
+			Configuration: []ConfigFunc{
+				WithUseFIPSEndpoint(true),
+			},
 			SharedConfigurationFile: fmt.Sprintf(`
 [default]
 sso_start_url = %s
@@ -177,7 +229,7 @@ region = us-east-1
 				t.Fatalf("setup: %s", err)
 			}
 
-			config := caseDriver.Configuration()
+			config := caseDriver.Configuration(tc.Configuration)
 
 			closeSso, ssoEndpoint := servicemocks.SsoCredentialsApiMock()
 			defer closeSso()

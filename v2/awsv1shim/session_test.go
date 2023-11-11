@@ -17,10 +17,10 @@ import (
 	"testing"
 	"time"
 
-	retryModev2 "github.com/aws/aws-sdk-go-v2/aws"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws" // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	retryv2 "github.com/aws/aws-sdk-go-v2/aws/retry"
 	configv2 "github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds" // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -1395,7 +1395,7 @@ func TestRetryMode(t *testing.T) {
 		Config                  *awsbase.Config
 		EnvironmentVariables    map[string]string
 		SharedConfigurationFile string
-		ExpectedRetryMode       retryModev2.RetryMode
+		ExpectedRetryMode       awsv2.RetryMode
 	}{
 		"no configuration": {
 			Config: &awsbase.Config{
@@ -1409,9 +1409,9 @@ func TestRetryMode(t *testing.T) {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
-				RetryMode: retryModev2.RetryModeStandard,
+				RetryMode: awsv2.RetryModeStandard,
 			},
-			ExpectedRetryMode: retryModev2.RetryModeStandard,
+			ExpectedRetryMode: awsv2.RetryModeStandard,
 		},
 
 		"AWS_RETRY_MODE": {
@@ -1422,7 +1422,7 @@ func TestRetryMode(t *testing.T) {
 			EnvironmentVariables: map[string]string{
 				"AWS_RETRY_MODE": "adaptive",
 			},
-			ExpectedRetryMode: retryModev2.RetryModeAdaptive,
+			ExpectedRetryMode: awsv2.RetryModeAdaptive,
 		},
 
 		"shared configuration file": {
@@ -1434,19 +1434,19 @@ func TestRetryMode(t *testing.T) {
 		[default]
 		retry_mode = standard
 		`,
-			ExpectedRetryMode: retryModev2.RetryModeStandard,
+			ExpectedRetryMode: awsv2.RetryModeStandard,
 		},
 
 		"config overrides AWS_RETRY_MODE": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
-				RetryMode: retryModev2.RetryModeStandard,
+				RetryMode: awsv2.RetryModeStandard,
 			},
 			EnvironmentVariables: map[string]string{
 				"AWS_RETRY_MODE": "adaptive",
 			},
-			ExpectedRetryMode: retryModev2.RetryModeStandard,
+			ExpectedRetryMode: awsv2.RetryModeStandard,
 		},
 
 		"AWS_RETRY_MODE overrides shared configuration": {
@@ -1461,7 +1461,7 @@ func TestRetryMode(t *testing.T) {
 		[default]
 		retry_mode = adaptive
 		`,
-			ExpectedRetryMode: retryModev2.RetryModeStandard,
+			ExpectedRetryMode: awsv2.RetryModeStandard,
 		},
 	}
 

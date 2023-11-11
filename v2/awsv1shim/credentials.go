@@ -3,13 +3,13 @@
 
 package awsv1shim
 
-import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
+import (
 	"context"
 	"fmt"
 	"sync/atomic"
 	"time"
 
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws" // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"github.com/aws/aws-sdk-go/aws/credentials"
 )
 

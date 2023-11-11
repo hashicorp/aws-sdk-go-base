@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
-	credentialsv2 "github.com/aws/aws-sdk-go-v2/credentials"
-	stscredsv2 "github.com/aws/aws-sdk-go-v2/credentials/stscreds"
-	stsv2 "github.com/aws/aws-sdk-go-v2/service/sts"
-	ststypesv2 "github.com/aws/aws-sdk-go-v2/service/sts/types"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"                       // nosemgrep: no-sdkv2-imports-in-awsv1shim
+	credentialsv2 "github.com/aws/aws-sdk-go-v2/credentials"       // nosemgrep: no-sdkv2-imports-in-awsv1shim
+	stscredsv2 "github.com/aws/aws-sdk-go-v2/credentials/stscreds" // nosemgrep: no-sdkv2-imports-in-awsv1shim
+	stsv2 "github.com/aws/aws-sdk-go-v2/service/sts"               // nosemgrep: no-sdkv2-imports-in-awsv1shim
+	ststypesv2 "github.com/aws/aws-sdk-go-v2/service/sts/types"    // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 )
