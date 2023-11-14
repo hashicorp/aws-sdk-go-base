@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+ENHANCEMENTS
+
+* Adds `HttpsProxy` and `NoProxy` parameters to configure separate HTTPS proxy and proxy bypass ([#775](https://github.com/hashicorp/aws-sdk-go-base/pull/775))
+
 # v2.0.0-beta.39 (2023-11-08)
 
 ENHANCEMENTS
