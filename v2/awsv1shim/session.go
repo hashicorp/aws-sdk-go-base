@@ -8,7 +8,7 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"fmt"
 	"os"
 
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws" // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/endpoints"
 	"github.com/aws/aws-sdk-go/aws/request"

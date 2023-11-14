@@ -8,14 +8,14 @@ rules:
     paths:
       exclude:
         - awsv1shim
-        - tfawserr
         - awsmocks
     patterns:
       - pattern: |
           import ("$X")
+      - focus-metavariable: $X
       - metavariable-regex:
           metavariable: "$X"
-          regex: '^"github.com/aws/aws-sdk-go/.+"$'
+          regex: 'github.com/aws/aws-sdk-go/.+'
     severity: ERROR
 
   - id: no-sdkv2-imports-in-awsv1shim
@@ -24,15 +24,17 @@ rules:
     paths:
       include:
         - awsv1shim
-        - tfawserr
     patterns:
       - pattern: |
           import ("$X")
+      - focus-metavariable: $X
       - metavariable-regex:
           metavariable: "$X"
-          regex: '^"github.com/aws/aws-sdk-go-v2/.+"$'
+          regex: 'github.com/aws/aws-sdk-go-v2/.+'
       - pattern-not: |
           import ("github.com/aws/aws-sdk-go-v2/aws/transport/http")
       - pattern-not: |
           import ("github.com/aws/aws-sdk-go-v2/config")
+      - pattern-not: |
+          import ("github.com/aws/aws-sdk-go-v2/aws/retry")
     severity: ERROR

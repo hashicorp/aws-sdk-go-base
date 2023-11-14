@@ -15,8 +15,17 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/expand"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
+	"golang.org/x/net/http/httpproxy"
+)
+
+type ProxyMode int
+
+const (
+	HTTPProxyModeLegacy ProxyMode = iota
+	HTTPProxyModeSeparate
 )
 
 type Config struct {
@@ -33,12 +42,15 @@ type Config struct {
 	EC2MetadataServiceEndpointMode string
 	ForbiddenAccountIds            []string
 	HTTPClient                     *http.Client
-	HTTPProxy                      string
+	HTTPProxy                      *string
+	HTTPSProxy                     *string
 	IamEndpoint                    string
 	Insecure                       bool
 	Logger                         logging.Logger
 	MaxRetries                     int
+	NoProxy                        string
 	Profile                        string
+	HTTPProxyMode                  ProxyMode
 	Region                         string
 	RetryMode                      aws.RetryMode
 	SecretKey                      string
@@ -88,11 +100,18 @@ func (c Config) CustomCABundleReader() (*bytes.Reader, error) {
 // The returned options function is called on both AWS SDKv1 and v2 default HTTP clients.
 func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 	var err error
-	var proxyUrl *url.URL
-	if c.HTTPProxy != "" {
-		proxyUrl, err = url.Parse(c.HTTPProxy)
+	var httpProxyUrl *url.URL
+	if c.HTTPProxy != nil {
+		httpProxyUrl, err = url.Parse(aws.ToString(c.HTTPProxy))
 		if err != nil {
-			return nil, fmt.Errorf("error parsing HTTP proxy URL: %w", err)
+			return nil, fmt.Errorf("parsing HTTP proxy URL: %w", err)
+		}
+	}
+	var httpsProxyUrl *url.URL
+	if c.HTTPSProxy != nil {
+		httpsProxyUrl, err = url.Parse(aws.ToString(c.HTTPSProxy))
+		if err != nil {
+			return nil, fmt.Errorf("parsing HTTPS proxy URL: %w", err)
 		}
 	}
 
@@ -111,12 +130,82 @@ func (c Config) HTTPTransportOptions() (func(*http.Transport), error) {
 			tr.TLSClientConfig.InsecureSkipVerify = true
 		}
 
-		if proxyUrl != nil {
-			tr.Proxy = http.ProxyURL(proxyUrl)
+		proxyConfig := httpproxy.FromEnvironment()
+		if httpProxyUrl != nil {
+			proxyConfig.HTTPProxy = httpProxyUrl.String()
+			if c.HTTPProxyMode == HTTPProxyModeLegacy && proxyConfig.HTTPSProxy == "" {
+				proxyConfig.HTTPSProxy = httpProxyUrl.String()
+			}
+		}
+		if httpsProxyUrl != nil {
+			proxyConfig.HTTPSProxy = httpsProxyUrl.String()
+		}
+		if c.NoProxy != "" {
+			proxyConfig.NoProxy = c.NoProxy
+		}
+		tr.Proxy = func(req *http.Request) (*url.URL, error) {
+			return proxyConfig.ProxyFunc()(req.URL)
 		}
 	}
 
 	return opts, nil
+}
+
+func (c Config) ValidateProxySettings(diags *diag.Diagnostics) {
+	if c.HTTPProxy != nil {
+		if _, err := url.Parse(aws.ToString(c.HTTPProxy)); err != nil {
+			*diags = diags.AddError(
+				"Invalid HTTP Proxy",
+				fmt.Sprintf("Unable to parse URL: %s", err),
+			)
+		}
+	}
+
+	if c.HTTPSProxy != nil {
+		if _, err := url.Parse(aws.ToString(c.HTTPSProxy)); err != nil {
+			*diags = diags.AddError(
+				"Invalid HTTPS Proxy",
+				fmt.Sprintf("Unable to parse URL: %s", err),
+			)
+		}
+	}
+
+	if c.HTTPProxy != nil && *c.HTTPProxy != "" && c.HTTPSProxy == nil && os.Getenv("HTTPS_PROXY") == "" && os.Getenv("https_proxy") == "" {
+		if c.HTTPProxyMode == HTTPProxyModeLegacy {
+			*diags = diags.Append(
+				missingHttpsProxyLegacyWarningDiag(aws.ToString(c.HTTPProxy)),
+			)
+		} else {
+			*diags = diags.Append(
+				missingHttpsProxyWarningDiag(),
+			)
+		}
+	}
+}
+
+const (
+	missingHttpsProxyWarningSummary   = "Missing HTTPS Proxy"
+	missingHttpsProxyDetailProblem    = "An HTTP proxy was set but no HTTPS proxy was."
+	missingHttpsProxyDetailResolution = "To specify no proxy for HTTPS, set the HTTPS to an empty string."
+)
+
+func missingHttpsProxyLegacyWarningDiag(s string) diag.Diagnostic {
+	return diag.NewWarningDiagnostic(
+		missingHttpsProxyWarningSummary,
+		fmt.Sprintf(
+			missingHttpsProxyDetailProblem+" Using HTTP proxy %q for HTTPS requests. This behavior may change in future versions.\n\n"+
+				missingHttpsProxyDetailResolution,
+			s,
+		),
+	)
+}
+
+func missingHttpsProxyWarningDiag() diag.Diagnostic {
+	return diag.NewWarningDiagnostic(
+		missingHttpsProxyWarningSummary,
+		missingHttpsProxyDetailProblem+"\n\n"+
+			missingHttpsProxyDetailResolution,
+	)
 }
 
 func (c Config) ResolveSharedConfigFiles() ([]string, error) {

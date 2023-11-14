@@ -33,3 +33,8 @@ func EC2MetadataEndpointMode_Values() []string {
 		EC2MetadataEndpointModeIPv6,
 	}
 }
+
+const (
+	HTTPProxyModeLegacy   = config.HTTPProxyModeLegacy
+	HTTPProxyModeSeparate = config.HTTPProxyModeSeparate
+)
