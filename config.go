@@ -34,8 +34,6 @@ func EC2MetadataEndpointMode_Values() []string {
 	}
 }
 
-// type ProxyMode int
-
 const (
 	HTTPProxyModeLegacy   = config.HTTPProxyModeLegacy
 	HTTPProxyModeSeparate = config.HTTPProxyModeSeparate
