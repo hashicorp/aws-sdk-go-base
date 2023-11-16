@@ -35,6 +35,7 @@ region = us-west-2
 				}
 			},
 		},
+
 		"leading whitespace": {
 			// Do not "fix" indentation!
 			SharedConfigurationFile: `	[default]
@@ -47,6 +48,7 @@ region = us-west-2
 				}
 			},
 		},
+
 		"leading newline and whitespace": {
 			// Do not "fix" indentation!
 			SharedConfigurationFile: `
@@ -60,6 +62,7 @@ region = us-west-2
 				}
 			},
 		},
+
 		"named profile after leading newline and whitespace": {
 			Configuration: []ConfigFunc{
 				WithProfile("test"),
@@ -79,6 +82,7 @@ region = us-west-2
 				}
 			},
 		},
+
 		"named profile": {
 			Configuration: []ConfigFunc{
 				WithProfile("test"),
