@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BUG FIXES
+
+* Fixes error with stripping SSO Start URLs in shared configuration files ([#787](https://github.com/hashicorp/aws-sdk-go-base/pull/787))
+
 # v2.0.0-beta.40 (2023-11-14)
 
 ENHANCEMENTS
