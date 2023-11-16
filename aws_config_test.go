@@ -3118,6 +3118,10 @@ func (d testCaseDriver) Apply(ctx context.Context, t *testing.T) (context.Contex
 		t.Errorf("unexpected diagnostics difference: %s", diff)
 	}
 
+	if diags.HasError() {
+		t.FailNow()
+	}
+
 	return ctx, thing(awsConfig)
 }
 

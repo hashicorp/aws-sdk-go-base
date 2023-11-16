@@ -161,7 +161,11 @@ sso_registration_scopes = sso:account:access
 
 			ctx, thing := caseDriver.Apply(ctx, t)
 
-			credentialsValue, err := thing.GetCredentials().Retrieve(ctx)
+			credentials := thing.GetCredentials()
+			if credentials == nil {
+				t.Fatal("credentials are nil")
+			}
+			credentialsValue, err := credentials.Retrieve(ctx)
 
 			if err != nil {
 				t.Fatalf("retrieving credentials: %s", err)
@@ -264,7 +268,11 @@ region = us-east-1
 
 			ctx, thing := caseDriver.Apply(ctx, t)
 
-			credentialsValue, err := thing.GetCredentials().Retrieve(ctx)
+			credentials := thing.GetCredentials()
+			if credentials == nil {
+				t.Fatal("credentials are nil")
+			}
+			_, err := credentials.Retrieve(ctx)
 
 			if err != nil {
 				t.Fatalf("retrieving credentials: %s", err)
