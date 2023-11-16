@@ -49,6 +49,10 @@ type Thing interface {
 	GetRegion() string
 }
 
+type AwsConfigThing interface {
+	GetAwsConfig() aws.Config
+}
+
 type ConfigFunc func(c Configurer)
 
 func WithProfile(s string) ConfigFunc {
@@ -161,7 +165,11 @@ sso_registration_scopes = sso:account:access
 
 			ctx, thing := caseDriver.Apply(ctx, t)
 
-			credentialsValue, err := thing.GetCredentials().Retrieve(ctx)
+			credentials := thing.GetCredentials()
+			if credentials == nil {
+				t.Fatal("credentials are nil")
+			}
+			credentialsValue, err := credentials.Retrieve(ctx)
 
 			if err != nil {
 				t.Fatalf("retrieving credentials: %s", err)
@@ -264,7 +272,11 @@ region = us-east-1
 
 			ctx, thing := caseDriver.Apply(ctx, t)
 
-			credentialsValue, err := thing.GetCredentials().Retrieve(ctx)
+			credentials := thing.GetCredentials()
+			if credentials == nil {
+				t.Fatal("credentials are nil")
+			}
+			credentialsValue, err := credentials.Retrieve(ctx)
 
 			if err != nil {
 				t.Fatalf("retrieving credentials: %s", err)

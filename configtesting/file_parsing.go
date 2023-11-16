@@ -8,6 +8,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
@@ -35,6 +36,7 @@ region = us-west-2
 				}
 			},
 		},
+
 		"leading whitespace": {
 			// Do not "fix" indentation!
 			SharedConfigurationFile: `	[default]
@@ -47,6 +49,7 @@ region = us-west-2
 				}
 			},
 		},
+
 		"leading newline and whitespace": {
 			// Do not "fix" indentation!
 			SharedConfigurationFile: `
@@ -60,6 +63,7 @@ region = us-west-2
 				}
 			},
 		},
+
 		"named profile after leading newline and whitespace": {
 			Configuration: []ConfigFunc{
 				WithProfile("test"),
@@ -79,6 +83,7 @@ region = us-west-2
 				}
 			},
 		},
+
 		"named profile": {
 			Configuration: []ConfigFunc{
 				WithProfile("test"),
@@ -94,6 +99,30 @@ region = us-east-1
 				region := thing.GetRegion()
 				if a, e := region, "us-east-1"; a != e {
 					t.Errorf("expected region %q, got %q", e, a)
+				}
+			},
+		},
+
+		"trailing hash": {
+			SharedConfigurationFile: `
+[default]
+sso_start_url = https://d-123456789a.awsapps.com/start#
+`,
+			Check: func(t *testing.T, thing Thing) {
+				ct, ok := thing.(AwsConfigThing)
+				if !ok {
+					t.Skipf("Not an AwsConfigThing")
+				}
+
+				awsConfig := ct.GetAwsConfig()
+				var ssoStartUrl string
+				for _, source := range awsConfig.ConfigSources {
+					if shared, ok := source.(config.SharedConfig); ok {
+						ssoStartUrl = shared.SSOStartURL
+					}
+				}
+				if a, e := ssoStartUrl, "https://d-123456789a.awsapps.com/start#"; a != e {
+					t.Errorf("expected sso_start_url %q, got %q", e, a)
 				}
 			},
 		},

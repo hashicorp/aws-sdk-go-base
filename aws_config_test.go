@@ -3118,6 +3118,10 @@ func (d testCaseDriver) Apply(ctx context.Context, t *testing.T) (context.Contex
 		t.Errorf("unexpected diagnostics difference: %s", diff)
 	}
 
+	if diags.HasError() {
+		t.FailNow()
+	}
+
 	return ctx, thing(awsConfig)
 }
 
@@ -3168,6 +3172,10 @@ func (t thing) GetCredentials() aws.CredentialsProvider {
 
 func (t thing) GetRegion() string {
 	return t.Region
+}
+
+func (t thing) GetAwsConfig() aws.Config {
+	return aws.Config(t)
 }
 
 func TestSSO(t *testing.T) {
