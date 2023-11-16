@@ -272,7 +272,7 @@ region = us-east-1
 			if credentials == nil {
 				t.Fatal("credentials are nil")
 			}
-			_, err := credentials.Retrieve(ctx)
+			credentialsValue, err := credentials.Retrieve(ctx)
 
 			if err != nil {
 				t.Fatalf("retrieving credentials: %s", err)
