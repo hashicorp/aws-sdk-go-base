@@ -3174,6 +3174,10 @@ func (t thing) GetRegion() string {
 	return t.Region
 }
 
+func (t thing) GetAwsConfig() aws.Config {
+	return aws.Config(t)
+}
+
 func TestSSO(t *testing.T) {
 	configtesting.SSO(t, &testDriver{})
 }

@@ -49,6 +49,10 @@ type Thing interface {
 	GetRegion() string
 }
 
+type AwsConfigThing interface {
+	GetAwsConfig() aws.Config
+}
+
 type ConfigFunc func(c Configurer)
 
 func WithProfile(s string) ConfigFunc {
