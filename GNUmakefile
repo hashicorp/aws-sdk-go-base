@@ -1,3 +1,5 @@
+TIMEOUT ?= 30s
+
 default: test lint
 
 fmt:
@@ -13,8 +15,8 @@ importlint:
 	@impi --local . --scheme stdThirdPartyLocal ./...
 
 test:
-	go test -timeout=30s -parallel=4 ./...
-	cd v2/awsv1shim && go test -timeout=30s -parallel=4 ./...
+	go test -timeout=$(TIMEOUT) -parallel=4 ./...
+	cd v2/awsv1shim && go test -timeout=$(TIMEOUT) -parallel=4 ./...
 
 tools:
 	cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
