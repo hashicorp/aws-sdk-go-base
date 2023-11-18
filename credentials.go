@@ -238,6 +238,9 @@ func webIdentityCredentialsProvider(ctx context.Context, awsConfig aws.Config, c
 		"tf_aws.assume_role_with_web_identity.session_name": ar.SessionName,
 	})
 
+	// awsConfig now has IMDS creds, remove them before initializing
+	// We probably shouldn't be resolving config before setting this up
+	awsConfig.Credentials = nil
 	client := stsClient(ctx, awsConfig, c)
 
 	appCreds := stscreds.NewWebIdentityRoleProvider(client, ar.RoleARN, ar, func(opts *stscreds.WebIdentityRoleOptions) {
