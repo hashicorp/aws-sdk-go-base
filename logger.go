@@ -119,7 +119,7 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 
 	region := awsmiddleware.GetRegion(ctx)
 
-	if signingRegion := awsmiddleware.GetSigningRegion(ctx); signingRegion != region {
+	if signingRegion := awsmiddleware.GetSigningRegion(ctx); signingRegion != region { //nolint:staticcheck // Not retrievable elsewhere
 		ctx = logger.SetField(ctx, string(logging.SigningRegionKey), signingRegion)
 	}
 	if awsmiddleware.GetEndpointSource(ctx) == aws.EndpointSourceCustom {
