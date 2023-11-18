@@ -298,7 +298,7 @@ func s3AttributeSetter(ctx context.Context, in middleware.InitializeInput) []att
 
 		s3Attributes = append(s3Attributes, semconv.AWSS3Key(aws.ToString(v.Key)))
 
-		s3Attributes = append(s3Attributes, semconv.AWSS3PartNumber(int(v.PartNumber)))
+		s3Attributes = append(s3Attributes, semconv.AWSS3PartNumber(int(aws.ToInt32(v.PartNumber))))
 
 		s3Attributes = append(s3Attributes, semconv.AWSS3UploadID(aws.ToString(v.UploadId)))
 	}
@@ -327,7 +327,7 @@ func serializeDeleteShorthand(d *s3types.Delete) string {
 	}
 	fmt.Fprint(&builder, "],")
 
-	fmt.Fprintf(&builder, "Quiet=%t", d.Quiet)
+	fmt.Fprintf(&builder, "Quiet=%t", aws.ToBool(d.Quiet))
 
 	return builder.String()
 }
