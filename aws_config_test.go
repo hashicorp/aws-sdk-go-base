@@ -2763,7 +2763,7 @@ func TestAssumeRoleWithWebIdentity(t *testing.T) {
 		SharedConfigurationFile         string
 		SetSharedConfigurationFile      bool
 		ExpectedCredentialsValue        aws.Credentials
-		ValidateDiags                   test.DiagsValidator
+		ExpectedDiags                   diag.Diagnostics
 		MockStsEndpoints                []*servicemocks.MockEndpoint
 	}{
 		"config with inline token": {
@@ -2943,10 +2943,12 @@ web_identity_token_file = no-such-file
 				AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
-				"Assume Role With Web Identity",
-				"Role ARN was not set",
-			)),
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Assume Role With Web Identity",
+					"Role ARN was not set",
+				),
+			},
 		},
 
 		"invalid no token": {
@@ -2956,21 +2958,21 @@ web_identity_token_file = no-such-file
 				},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
-				"Assume Role With Web Identity",
-				"One of WebIdentityToken, WebIdentityTokenFile must be set",
-			)),
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Assume Role With Web Identity",
+					"One of WebIdentityToken, WebIdentityTokenFile must be set",
+				),
+			},
 		},
 	}
 
 	for testName, testCase := range testCases {
 		testCase := testCase
 
-		if testCase.ValidateDiags == nil {
-			testCase.ValidateDiags = test.ExpectNoDiags
-		}
-
 		t.Run(testName, func(t *testing.T) {
+			ctx := context.Background()
+
 			servicemocks.InitSessionTestEnv(t)
 
 			for k, v := range testCase.EnvironmentVariables {
@@ -3046,9 +3048,12 @@ web_identity_token_file = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := GetAwsConfig(ctx, testCase.Config)
 
-			testCase.ValidateDiags(t, diags)
+			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
+				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
+			}
+
 			if diags.HasError() {
 				return
 			}
