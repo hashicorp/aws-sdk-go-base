@@ -51,11 +51,3 @@ require (
 	golang.org/x/sys v0.13.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
-
-exclude ( // Contains INI parsing regression
-	github.com/aws/aws-sdk-go-v2/config v1.21.0
-	github.com/aws/aws-sdk-go-v2/config v1.22.0
-	github.com/aws/aws-sdk-go-v2/config v1.25.0
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.5.0
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.7.0
-)

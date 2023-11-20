@@ -55,9 +55,3 @@ require (
 )
 
 replace github.com/hashicorp/aws-sdk-go-base/v2 => ../..
-
-exclude ( // Contains INI parsing regression
-	github.com/aws/aws-sdk-go-v2/config v1.21.0
-	github.com/aws/aws-sdk-go-v2/config v1.22.0
-	github.com/aws/aws-sdk-go-v2/internal/ini v1.5.0
-)
