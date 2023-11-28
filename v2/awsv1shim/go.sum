@@ -1,5 +1,5 @@
-github.com/aws/aws-sdk-go v1.48.2 h1:Lf7+Y4WmHB0AQLRQZA46diSwDa+LWbwY6IGaYoCVtTc=
-github.com/aws/aws-sdk-go v1.48.2/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
+github.com/aws/aws-sdk-go v1.48.6 h1:hnL/TE3eRigirDLrdRE9AWE1ALZSVLAsC4wK8TGsMqk=
+github.com/aws/aws-sdk-go v1.48.6/go.mod h1:LF8svs817+Nz+DmiMQKTO3ubZ/6IaTpq3TjupRn3Eqk=
 github.com/aws/aws-sdk-go-v2 v1.23.1 h1:qXaFsOOMA+HsZtX8WoCa+gJnbyW7qyFFBlPqvTSzbaI=
 github.com/aws/aws-sdk-go-v2 v1.23.1/go.mod h1:i1XDttT4rnf6vxc9AuskLc6s7XBee8rlLilKlc03uAA=
 github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.5.1 h1:ZY3108YtBNq96jNZTICHxN1gSBSbnvIdYwwqnvCV4Mc=
