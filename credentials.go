@@ -58,87 +58,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		}
 	}
 
-	// The default AWS SDK authentication flow silently ignores invalid Profiles. Pre-validate that the Profile exists
-	// https://github.com/aws/aws-sdk-go-v2/issues/1591
-	profile := c.Profile
-	var profileSource string
-	if profile != "" {
-		profileSource = configSourceProviderConfig
-	} else {
-		profile = envConfig.SharedConfigProfile
-		profileSource = configSourceEnvironmentVariable
-	}
-
-	if profile != "" {
-		logger.Debug(ctx, "Using profile", map[string]any{
-			"tf_aws.profile":        profile,
-			"tf_aws.profile.source": profileSource,
-		})
-		sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
-		if err != nil {
-			return nil, "", diags.AddSimpleError(err)
-		}
-		if len(sharedCredentialsFiles) != 0 {
-			f := make([]string, len(sharedCredentialsFiles))
-			for i, v := range sharedCredentialsFiles {
-				f[i] = fmt.Sprintf(`"%s"`, v)
-			}
-			logger.Debug(ctx, "Using shared credentials files", map[string]any{
-				"tf_aws.shared_credentials_files":        f,
-				"tf_aws.shared_credentials_files.source": configSourceProviderConfig,
-			})
-		} else {
-			if envConfig.SharedCredentialsFile != "" {
-				sharedCredentialsFiles = []string{envConfig.SharedCredentialsFile}
-				logger.Debug(ctx, "Using shared credentials files", map[string]any{
-					"tf_aws.shared_credentials_files":        sharedCredentialsFiles,
-					"tf_aws.shared_credentials_files.source": configSourceEnvironmentVariable,
-				})
-			}
-		}
-
-		sharedConfigFiles, err := c.ResolveSharedConfigFiles()
-		if err != nil {
-			return nil, "", diags.AddSimpleError(err)
-		}
-		if len(sharedConfigFiles) != 0 {
-			f := make([]string, len(sharedConfigFiles))
-			for i, v := range sharedConfigFiles {
-				f[i] = fmt.Sprintf(`"%s"`, v)
-			}
-			logger.Debug(ctx, "Using shared configuration files", map[string]any{
-				"tf_aws.shared_config_files":        f,
-				"tf_aws.shared_config_files.source": configSourceProviderConfig,
-			})
-		} else {
-			if envConfig.SharedConfigFile != "" {
-				sharedConfigFiles = []string{envConfig.SharedConfigFile}
-				logger.Debug(ctx, "Using shared configuration files", map[string]any{
-					"tf_aws.shared_config_files":        sharedConfigFiles,
-					"tf_aws.shared_config_files.source": configSourceEnvironmentVariable,
-				})
-			}
-		}
-
-		logger.Debug(ctx, "Loading profile", map[string]any{
-			"tf_aws.profile": profile,
-		})
-		_, err = config.LoadSharedConfigProfile(ctx, profile, func(opts *config.LoadSharedConfigOptions) {
-			if len(sharedCredentialsFiles) != 0 {
-				opts.CredentialsFiles = sharedCredentialsFiles
-			}
-			if len(sharedConfigFiles) != 0 {
-				opts.ConfigFiles = sharedConfigFiles
-			}
-		})
-		if err != nil {
-			return nil, "", diags.AddSimpleError(err)
-		}
-	}
-
-	// We need to validate both the configured and envvar named profiles for validity,
-	// but to use proper precedence, we only set the configured named profile
-	if c.Profile != "" {
+	if profile := c.Profile; profile != "" {
 		logger.Debug(ctx, "Setting profile", map[string]any{
 			"tf_aws.profile":        profile,
 			"tf_aws.profile.source": configSourceProviderConfig,
@@ -147,6 +67,11 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 			loadOptions,
 			config.WithSharedConfigProfile(c.Profile),
 		)
+	} else if profile := envConfig.SharedConfigProfile; profile != "" {
+		logger.Debug(ctx, "Using profile", map[string]any{
+			"tf_aws.profile":        profile,
+			"tf_aws.profile.source": configSourceEnvironmentVariable,
+		})
 	}
 
 	if c.AccessKey != "" || c.SecretKey != "" || c.Token != "" {
