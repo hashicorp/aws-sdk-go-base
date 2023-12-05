@@ -5,6 +5,7 @@ package logging
 
 import (
 	"regexp"
+	"unsafe"
 )
 
 // IAM Unique ID prefixes from
@@ -24,40 +25,37 @@ var UniqueIDRegex = regexp.MustCompile(`(A3T[A-Z0-9]` +
 	`|ASIA` + // STS temporary access key
 	`)[A-Z0-9]{16,}`)
 
-var SensitiveKeyRegex = regexp.MustCompile(`[A-Za-z0-9/+=]{16,}`)
-
 const (
 	unmaskedFirst = 4
 	unmaskedLast  = 4
 )
 
-func MaskAWSAccessKey(field string) string {
-	field = UniqueIDRegex.ReplaceAllStringFunc(field, func(s string) string {
+func MaskAWSAccessKey(field []byte) []byte {
+	field = UniqueIDRegex.ReplaceAllFunc(field, func(s []byte) []byte {
 		return partialMaskString(s, unmaskedFirst, unmaskedLast)
 	})
 	return field
 }
 
 func MaskAWSSensitiveValues(field string) string {
-	field = MaskAWSAccessKey(field)
-	field = MaskAWSSecretKeys(field)
-	return field
+	b := unsafe.Slice(unsafe.StringData(field), len(field))
+	b = MaskAWSAccessKey(b)
+	MaskAWSSecretKeys(b)
+	return unsafe.String(unsafe.SliceData(b), len(b))
 }
 
 // MaskAWSSecretKeys masks likely AWS secret access keys in the input.
 // See https://aws.amazon.com/blogs/security/a-safer-way-to-distribute-aws-credentials-to-ec2/:
 // "Find me 40-character, base-64 strings that don’t have any base 64 characters immediately before or after".
-func MaskAWSSecretKeys(in string) string {
+func MaskAWSSecretKeys(in []byte) {
 	const (
 		secretKeyLen = 40
 	)
 	len := len(in)
-	out := make([]byte, len)
 	base64Characters := 0
 
 	for i := 0; i < len; i++ {
 		b := in[i]
-		out[i] = b
 
 		if (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9') || b == '/' || b == '+' || b == '=' {
 			// base64 character.
@@ -65,7 +63,7 @@ func MaskAWSSecretKeys(in string) string {
 		} else {
 			if base64Characters == secretKeyLen {
 				for j := (i - secretKeyLen) + unmaskedFirst; j < i-unmaskedLast; j++ {
-					out[j] = '*'
+					in[j] = '*'
 				}
 			}
 
@@ -75,9 +73,7 @@ func MaskAWSSecretKeys(in string) string {
 
 	if base64Characters == secretKeyLen {
 		for j := (len - secretKeyLen) + unmaskedFirst; j < len-unmaskedLast; j++ {
-			out[j] = '*'
+			in[j] = '*'
 		}
 	}
-
-	return string(out)
 }
