@@ -100,11 +100,41 @@ func TestMaskAWSSensitiveValues(t *testing.T) {
 	}
 }
 
+func BenchmarkMaskAWSAccessKey(b *testing.B) {
+	var s string
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		s = MaskAWSAccessKey(`
+{
+	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
+	"BucketName": "test-bucket",
+	"AWSKeyId": "AIDACKCEVSQ6C2EXAMPLE",
+}
+`)
+	}
+	dump = s
+}
+
 func BenchmarkPartialMaskString(b *testing.B) {
 	var s string
 	b.ReportAllocs()
 	for n := 0; n < b.N; n++ {
 		s = partialMaskString("AIDACKCEVSQ6C2EXAMPLE", 4, 4)
+	}
+	dump = s
+}
+
+func BenchmarkMaskAWSSecretKeys(b *testing.B) {
+	var s string
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		s = MaskAWSSecretKeys(`
+{
+	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
+	"BucketName": "test-bucket",
+	"AWSKeyId": "AIDACKCEVSQ6C2EXAMPLE",
+}
+`)
 	}
 	dump = s
 }
