@@ -139,4 +139,19 @@ func BenchmarkMaskAWSSecretKeys(b *testing.B) {
 	dump = s
 }
 
+func BenchmarkMaskAWSSensitiveValues(b *testing.B) {
+	var s string
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		s = MaskAWSSensitiveValues(`
+{
+	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
+	"BucketName": "test-bucket",
+	"AWSKeyId": "AIDACKCEVSQ6C2EXAMPLE",
+}
+`)
+	}
+	dump = s
+}
+
 var dump string
