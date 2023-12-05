@@ -99,3 +99,14 @@ func TestMaskAWSSensitiveValues(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkPartialMaskString(b *testing.B) {
+	var s string
+	b.ReportAllocs()
+	for n := 0; n < b.N; n++ {
+		s = partialMaskString("AIDACKCEVSQ6C2EXAMPLE", 4, 4)
+	}
+	dump = s
+}
+
+var dump string

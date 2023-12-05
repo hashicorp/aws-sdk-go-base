@@ -9,8 +9,12 @@ import (
 
 func partialMaskString(s string, first, last int) string {
 	l := len(s)
-	result := s[0:first]
-	result += strings.Repeat("*", l-first-last)
-	result += s[l-last:]
-	return result
+	result := strings.Builder{}
+	result.Grow(l)
+	result.WriteString(s[0:first])
+	for i := 0; i < l-first-last; i++ {
+		result.WriteByte('*')
+	}
+	result.WriteString(s[l-last:])
+	return result.String()
 }
