@@ -1920,7 +1920,7 @@ func TestAssumeRole(t *testing.T) {
 		Config                   *awsbase.Config
 		SharedConfigurationFile  string
 		ExpectedCredentialsValue credentials.Value
-		ValidateDiags            test.DiagsValidator
+		ExpectedDiags            diag.Diagnostics
 		MockStsEndpoints         []*servicemocks.MockEndpoint
 	}{
 		"config": {
@@ -2020,21 +2020,17 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				SecretKey:  servicemocks.MockStaticSecretKey,
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
-			ValidateDiags: test.ExpectDiagValidator(`"role ARN not set" error`, func(d diag.Diagnostic) bool {
-				return d.Equal(diag.NewErrorDiagnostic(
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
 					"Cannot assume IAM Role",
 					"IAM Role ARN not set",
-				))
-			}),
+				),
+			},
 		},
 	}
 
 	for testName, testCase := range testCases {
 		testCase := testCase
-
-		if testCase.ValidateDiags == nil {
-			testCase.ValidateDiags = test.ExpectNoDiags
-		}
 
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
@@ -2081,7 +2077,9 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			ctx, awsConfig, diags := awsbase.GetAwsConfig(ctx, testCase.Config)
 
-			testCase.ValidateDiags(t, diags)
+			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
+				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
+			}
 			if diags.HasError() {
 				return
 			}
