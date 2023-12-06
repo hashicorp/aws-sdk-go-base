@@ -22,6 +22,8 @@ const (
 )
 
 func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProvider, string, diag.Diagnostics) {
+	// This function will need to exist for any authentication methods that call STS until the providers use a reasonable default `MaxRetries`.
+	// Otherwise, retryable errors will cause the provider to appear to have frozen.
 	var diags diag.Diagnostics
 
 	logger := logging.RetrieveLogger(ctx)
