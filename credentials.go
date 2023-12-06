@@ -10,7 +10,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/aws/aws-sdk-go-v2/service/sts/types"
 	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
@@ -71,33 +70,6 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 			"tf_aws.profile":        profile,
 			"tf_aws.profile.source": configSourceEnvironmentVariable,
 		})
-	}
-
-	if c.AccessKey != "" || c.SecretKey != "" || c.Token != "" {
-		params := make([]string, 0, 3) //nolint:gomnd
-		if c.AccessKey != "" {
-			params = append(params, "access key")
-		}
-		if c.SecretKey != "" {
-			params = append(params, "secret key")
-		}
-		if c.Token != "" {
-			params = append(params, "token")
-		}
-		logger.Debug(ctx, "Using authentication parameters", map[string]any{
-			"tf_aws.auth_fields":        params,
-			"tf_aws.auth_fields.source": configSourceProviderConfig,
-		})
-		loadOptions = append(
-			loadOptions,
-			config.WithCredentialsProvider(
-				credentials.NewStaticCredentialsProvider(
-					c.AccessKey,
-					c.SecretKey,
-					c.Token,
-				),
-			),
-		)
 	}
 
 	logger.Debug(ctx, "Loading configuration")
