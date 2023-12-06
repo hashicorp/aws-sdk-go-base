@@ -2117,7 +2117,7 @@ func TestAssumeRoleWithWebIdentity(t *testing.T) {
 		SharedConfigurationFile    string
 		SetSharedConfigurationFile bool
 		ExpectedCredentialsValue   credentials.Value
-		ValidateDiags              test.DiagsValidator
+		ExpectedDiags              diag.Diagnostics
 		MockStsEndpoints           []*servicemocks.MockEndpoint
 	}{
 		"config with inline token": {
@@ -2297,10 +2297,12 @@ web_identity_token_file = no-such-file
 				AssumeRoleWithWebIdentity: &awsbase.AssumeRoleWithWebIdentity{},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
-				"Assume Role With Web Identity",
-				"Role ARN was not set",
-			)),
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Assume Role With Web Identity",
+					"Role ARN was not set",
+				),
+			},
 		},
 
 		"invalid no token": {
@@ -2310,19 +2312,17 @@ web_identity_token_file = no-such-file
 				},
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
-			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewErrorDiagnostic(
-				"Assume Role With Web Identity",
-				"One of WebIdentityToken, WebIdentityTokenFile must be set",
-			)),
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Assume Role With Web Identity",
+					"One of WebIdentityToken, WebIdentityTokenFile must be set",
+				),
+			},
 		},
 	}
 
 	for testName, testCase := range testCases {
 		testCase := testCase
-
-		if testCase.ValidateDiags == nil {
-			testCase.ValidateDiags = test.ExpectNoDiags
-		}
 
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
@@ -2410,7 +2410,9 @@ web_identity_token_file = no-such-file
 
 			ctx, awsConfig, diags := awsbase.GetAwsConfig(ctx, testCase.Config)
 
-			testCase.ValidateDiags(t, diags)
+			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
+				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
+			}
 			if diags.HasError() {
 				return
 			}

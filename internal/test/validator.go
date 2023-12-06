@@ -41,17 +41,6 @@ func ExpectDiagValidator(msg string, dv DiagValidator) DiagsValidator {
 	}
 }
 
-func ExpectWarningDiagValidator(expected diag.Diagnostic) DiagsValidator {
-	return func(t *testing.T, diags diag.Diagnostics) {
-		// Check for the correct type of error before checking for single diagnostic
-		if !expectDiagsContainsDiag(diags, expected) {
-			t.Fatalf("expected Diagnostic matching %#v, got %#v", expected, diags)
-		}
-
-		expectDiagsCount(t, diags, 1)
-	}
-}
-
 func expectDiagsCount(t *testing.T, diags diag.Diagnostics, c int) {
 	if l := diags.Count(); l != c {
 		t.Fatalf("Diagnostics: expected %d element, got %d\n%#v", c, l, diags)
