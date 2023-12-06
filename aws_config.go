@@ -370,6 +370,7 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
 		config.WithEC2IMDSClientEnableState(c.EC2MetadataServiceEnableState),
+		config.WithLogConfigurationWarnings(true),
 	}
 
 	if !c.SuppressDebugLog {

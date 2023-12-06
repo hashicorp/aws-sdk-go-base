@@ -36,7 +36,6 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 		// The endpoint resolver is added here instead of in commonLoadOptions() so that it
 		// is not included in the aws.Config returned to the caller
 		config.WithEndpointResolverWithOptions(credentialsEndpointResolver(ctx, c)),
-		config.WithLogConfigurationWarnings(true),
 	)
 
 	envConfig, err := config.NewEnvConfig()
