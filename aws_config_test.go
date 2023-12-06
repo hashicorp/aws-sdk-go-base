@@ -3205,7 +3205,7 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 		expectedPartition string
 		expectError       bool
 		mockStsEndpoints  []*servicemocks.MockEndpoint
-		ValidateDiags     test.DiagsValidator
+		ExpectedDiags     diag.Diagnostics
 	}{
 		{
 			desc: "StandardProvider_Config",
@@ -3263,10 +3263,6 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	for _, testCase := range testCases {
 		tc := testCase
 
-		if testCase.ValidateDiags == nil {
-			testCase.ValidateDiags = test.ExpectNoDiags
-		}
-
 		t.Run(tc.desc, func(t *testing.T) {
 			ts := servicemocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
 			defer ts.Close()
@@ -3279,7 +3275,12 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 
 			acctID, part, diags := GetAwsAccountIDAndPartition(ctx, awsConfig, tc.config)
 
-			testCase.ValidateDiags(t, diags)
+			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
+				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
+			}
+			if diags.HasError() {
+				return
+			}
 
 			if acctID != tc.expectedAcctID {
 				t.Errorf("expected account ID (%s), got: %s", tc.expectedAcctID, acctID)

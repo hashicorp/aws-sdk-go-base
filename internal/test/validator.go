@@ -58,15 +58,6 @@ func expectDiagsContainsErr(diags diag.Diagnostics, ev ErrValidator) bool {
 	return false
 }
 
-func expectDiagsContainsDiag(diags diag.Diagnostics, expected diag.Diagnostic) bool {
-	for _, d := range diags {
-		if d.Equal(expected) {
-			return true
-		}
-	}
-	return false
-}
-
 func expectDiagsContainsDiagFunc(diags diag.Diagnostics, dv DiagValidator) bool {
 	for _, d := range diags {
 		if dv(d) {
