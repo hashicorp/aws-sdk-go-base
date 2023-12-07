@@ -10,51 +10,11 @@ import (
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/test"
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
-
-func TestAWSGetCredentials_static(t *testing.T) {
-	testCases := []struct {
-		Key, Secret, Token string
-	}{
-		{
-			Key:    "test",
-			Secret: "secret",
-		}, {
-			Key:    "test",
-			Secret: "secret",
-			Token:  "token",
-		},
-	}
-
-	for _, testCase := range testCases {
-		ctx := test.Context(t)
-
-		c := testCase
-
-		cfg := Config{
-			AccessKey: c.Key,
-			SecretKey: c.Secret,
-			Token:     c.Token,
-		}
-
-		creds, source, err := getCredentialsProvider(ctx, &cfg)
-		if err != nil {
-			t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", err)
-		}
-
-		if a, e := source, credentials.StaticCredentialsName; a != e {
-			t.Errorf("Expected initial source to be %q, %q given", e, a)
-		}
-
-		validateCredentialsProvider(ctx, creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
-		testCredentialsProviderWrappedWithCache(creds, t)
-	}
-}
 
 // TestAWSGetCredentials_ec2Imds is designed to test the scenario of running Terraform
 // from an EC2 instance, without environment variables or manually supplied
@@ -88,50 +48,6 @@ func TestAWSGetCredentials_ec2Imds(t *testing.T) {
 
 	validateCredentialsProvider(ctx, creds, "Ec2MetadataAccessKey", "Ec2MetadataSecretKey", "Ec2MetadataSessionToken", ec2rolecreds.ProviderName, t)
 	testCredentialsProviderWrappedWithCache(creds, t)
-}
-
-func TestAWSGetCredentials_configShouldOverrideEc2IMDS(t *testing.T) {
-	resetEnv := servicemocks.UnsetEnv(t)
-	defer resetEnv()
-	// capture the test server's close method, to call after the test returns
-	ts := servicemocks.AwsMetadataApiMock(append(
-		servicemocks.Ec2metadata_securityCredentialsEndpoints,
-		servicemocks.Ec2metadata_instanceIdEndpoint,
-		servicemocks.Ec2metadata_iamInfoEndpoint,
-	))
-	defer ts()
-	testCases := []struct {
-		Key, Secret, Token string
-	}{
-		{
-			Key:    "test",
-			Secret: "secret",
-		}, {
-			Key:    "test",
-			Secret: "secret",
-			Token:  "token",
-		},
-	}
-
-	for _, testCase := range testCases {
-		ctx := test.Context(t)
-
-		c := testCase
-
-		cfg := Config{
-			AccessKey: c.Key,
-			SecretKey: c.Secret,
-			Token:     c.Token,
-		}
-
-		creds, _, err := getCredentialsProvider(ctx, &cfg)
-		if err != nil {
-			t.Fatalf("unexpected '%[1]T' error: %[1]s", err)
-		}
-
-		validateCredentialsProvider(ctx, creds, c.Key, c.Secret, c.Token, credentials.StaticCredentialsName, t)
-		testCredentialsProviderWrappedWithCache(creds, t)
-	}
 }
 
 func TestAWSGetCredentials_shouldErrorWithInvalidEc2ImdsEndpoint(t *testing.T) {
@@ -229,45 +145,6 @@ func TestAWSGetCredentials_webIdentityToken(t *testing.T) {
 		servicemocks.MockStsAssumeRoleWithWebIdentitySecretKey,
 		servicemocks.MockStsAssumeRoleWithWebIdentitySessionToken,
 		stscreds.WebIdentityProviderName, t)
-	testCredentialsProviderWrappedWithCache(creds, t)
-}
-
-func TestAWSGetCredentials_assumeRole(t *testing.T) {
-	ctx := test.Context(t)
-
-	key := "test"
-	secret := "secret"
-
-	cfg := Config{
-		AccessKey: key,
-		SecretKey: secret,
-		AssumeRole: &AssumeRole{
-			RoleARN:     servicemocks.MockStsAssumeRoleArn,
-			SessionName: servicemocks.MockStsAssumeRoleSessionName,
-		},
-	}
-
-	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
-		servicemocks.MockStsAssumeRoleValidEndpoint,
-		servicemocks.MockStsGetCallerIdentityValidAssumedRoleEndpoint,
-	})
-	defer ts.Close()
-	cfg.StsEndpoint = ts.URL
-
-	creds, source, diags := getCredentialsProvider(ctx, &cfg)
-	if diags != nil {
-		t.Fatalf("unexpected '%[1]T' error getting credentials provider: %[1]s", diags)
-	}
-
-	if a, e := source, credentials.StaticCredentialsName; a != e {
-		t.Errorf("Expected initial source to be %q, %q given", e, a)
-	}
-
-	validateCredentialsProvider(ctx, creds,
-		servicemocks.MockStsAssumeRoleAccessKey,
-		servicemocks.MockStsAssumeRoleSecretKey,
-		servicemocks.MockStsAssumeRoleSessionToken,
-		stscreds.ProviderName, t)
 	testCredentialsProviderWrappedWithCache(creds, t)
 }
 

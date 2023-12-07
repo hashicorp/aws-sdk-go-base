@@ -18,6 +18,7 @@ import (
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"github.com/aws/aws-sdk-go-v2/credentials/ec2rolecreds"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/smithy-go/middleware"
@@ -81,9 +82,38 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	}
 
 	logger.Debug(baseCtx, "Resolving credentials provider")
-	credentialsProvider, initialSource, d := getCredentialsProvider(baseCtx, c)
-	if d.HasError() {
-		return ctx, aws.Config{}, diags.Append(d...)
+	var (
+		credentialsProvider aws.CredentialsProvider
+		initialSource       string
+		staticCreds         bool
+	)
+	if c.AccessKey != "" || c.SecretKey != "" || c.Token != "" {
+		params := make([]string, 0, 3) //nolint:gomnd
+		if c.AccessKey != "" {
+			params = append(params, "access key")
+		}
+		if c.SecretKey != "" {
+			params = append(params, "secret key")
+		}
+		if c.Token != "" {
+			params = append(params, "token")
+		}
+		logger.Debug(baseCtx, "Using authentication parameters", map[string]any{
+			"tf_aws.auth_fields":        params,
+			"tf_aws.auth_fields.source": configSourceProviderConfig,
+		})
+		credentialsProvider = credentials.NewStaticCredentialsProvider(
+			c.AccessKey,
+			c.SecretKey,
+			c.Token,
+		)
+		staticCreds = true
+	} else {
+		var d diag.Diagnostics
+		credentialsProvider, initialSource, d = getCredentialsProvider(baseCtx, c)
+		if d.HasError() {
+			return ctx, aws.Config{}, diags.Append(d...)
+		}
 	}
 	creds, err := credentialsProvider.Retrieve(baseCtx)
 	if err != nil {
@@ -130,6 +160,17 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 	awsConfig, err := config.LoadDefaultConfig(baseCtx, loadOptions...)
 	if err != nil {
 		return ctx, aws.Config{}, diags.AddSimpleError(fmt.Errorf("loading configuration: %w", err))
+	}
+
+	if staticCreds {
+		if c.AssumeRole != nil {
+			provider, d := assumeRoleCredentialsProvider(baseCtx, awsConfig, c)
+			diags = diags.Append(d...)
+			if diags.HasError() {
+				return ctx, aws.Config{}, diags
+			}
+			awsConfig.Credentials = provider
+		}
 	}
 
 	resolveRetryer(baseCtx, &awsConfig)
@@ -329,6 +370,7 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 		config.WithHTTPClient(httpClient),
 		config.WithAPIOptions(apiOptions),
 		config.WithEC2IMDSClientEnableState(c.EC2MetadataServiceEnableState),
+		config.WithLogConfigurationWarnings(true),
 	}
 
 	if !c.SuppressDebugLog {
