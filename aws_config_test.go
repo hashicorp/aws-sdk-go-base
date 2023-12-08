@@ -3112,6 +3112,17 @@ func TestStsEndpoint(t *testing.T) {
 			ExpectedCredentials: mockdata.MockStaticCredentials,
 		},
 
+		"service config overrides base envvar": {
+			Config: Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetServiceEndpoint:  setValid,
+			SetInvalidEnv:       "AWS_ENDPOINT_URL",
+			ExpectedCredentials: mockdata.MockStaticCredentials,
+		},
+
 		"service config overrides service config_file": {
 			Config: Config{
 				Profile: "default",
@@ -3125,6 +3136,24 @@ services = sts-test
 [services sts-test]
 sts =
 	endpoint_url = %[2]s
+`,
+			SetServiceEndpoint: setValid,
+			ExpectedCredentials: aws.Credentials{
+				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
+				SecretAccessKey: "DefaultSharedCredentialsSecretKey",
+				Source:          sharedConfigCredentialsProvider,
+			},
+		},
+
+		"service config overrides base config_file": {
+			Config: Config{
+				Profile: "default",
+			},
+			ConfigFile: `
+[default]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+endpoint_url = %[2]s
 `,
 			SetServiceEndpoint: setValid,
 			ExpectedCredentials: aws.Credentials{
