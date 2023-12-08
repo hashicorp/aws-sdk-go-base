@@ -3105,7 +3105,7 @@ func TestStsEndpoint(t *testing.T) {
 			ExpectedCredentials: mockdata.MockStaticCredentials,
 		},
 
-		"global envvar": {
+		"base envvar": {
 			Config: Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
@@ -3115,7 +3115,7 @@ func TestStsEndpoint(t *testing.T) {
 			ExpectedCredentials: mockdata.MockStaticCredentials,
 		},
 
-		"service envvar overrides global envvar": {
+		"service envvar overrides base envvar": {
 			Config: Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
@@ -3147,7 +3147,7 @@ sts =
 			},
 		},
 
-		"service config_file overrides global config_file": {
+		"service config_file overrides base config_file": {
 			Config: Config{
 				Profile: "default",
 			},
@@ -3191,7 +3191,7 @@ sts =
 			},
 		},
 
-		"global envvar overrides service config_file": {
+		"base envvar overrides service config_file": {
 			Config: Config{
 				Profile: "default",
 			},
@@ -3213,7 +3213,7 @@ sts =
 			},
 		},
 
-		"global config_file": {
+		"base config_file": {
 			Config: Config{
 				Profile: "default",
 			},
@@ -3230,7 +3230,7 @@ endpoint_url = %[1]s
 			},
 		},
 
-		"global envvar overrides global config_file": {
+		"base envvar overrides base config_file": {
 			Config: Config{
 				Profile: "default",
 			},
@@ -3248,7 +3248,7 @@ endpoint_url = %[2]s
 			},
 		},
 
-		"service envvar overrides global config_file": {
+		"service envvar overrides base config_file": {
 			Config: Config{
 				Profile: "default",
 			},
