@@ -3191,7 +3191,27 @@ sts =
 			},
 		},
 
-		// TODO: does global envvar override service config_file?
+		"global envvar overrides service config_file": {
+			Config: Config{
+				Profile: "default",
+			},
+			SetEnv: "AWS_ENDPOINT_URL",
+			ConfigFile: `
+[default]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+services = sts-test
+
+[services sts-test]
+sts =
+	endpoint_url = %[2]s
+`,
+			ExpectedCredentials: aws.Credentials{
+				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
+				SecretAccessKey: "DefaultSharedCredentialsSecretKey",
+				Source:          sharedConfigCredentialsProvider,
+			},
+		},
 
 		"global config_file": {
 			Config: Config{
