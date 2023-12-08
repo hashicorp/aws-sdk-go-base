@@ -3126,26 +3126,26 @@ func TestStsEndpoint(t *testing.T) {
 			ExpectedCredentials: mockdata.MockStaticCredentials,
 		},
 
-		// 		"service config_file": {
-		// 			Config: Config{
-		// 				Profile: "default",
-		// 			},
-		// 			ConfigFile: `
-		// [default]
-		// aws_access_key_id = DefaultSharedCredentialsAccessKey
-		// aws_secret_access_key = DefaultSharedCredentialsSecretKey
-		// services = sts-test
+		"service config_file": {
+			Config: Config{
+				Profile: "default",
+			},
+			ConfigFile: `
+[default]
+aws_access_key_id = DefaultSharedCredentialsAccessKey
+aws_secret_access_key = DefaultSharedCredentialsSecretKey
+services = sts-test
 
-		// [services sts-test]
-		// sts =
-		// 	endpoint_url = %s
-		// `,
-		// 			ExpectedCredentials: aws.Credentials{
-		// 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
-		// 				SecretAccessKey: "DefaultSharedCredentialsSecretKey",
-		// 				Source:          sharedConfigCredentialsProvider,
-		// 			},
-		// 		},
+[services sts-test]
+sts =
+	endpoint_url = %s
+`,
+			ExpectedCredentials: aws.Credentials{
+				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
+				SecretAccessKey: "DefaultSharedCredentialsSecretKey",
+				Source:          sharedConfigCredentialsProvider,
+			},
+		},
 
 		// TODO: service envvar overrides service config_file
 
