@@ -34,6 +34,7 @@ type Config struct {
 	APNInfo                        *APNInfo
 	AssumeRole                     *AssumeRole
 	AssumeRoleWithWebIdentity      *AssumeRoleWithWebIdentity
+	BaseEndpointUrl                string
 	CallerDocumentationURL         string
 	CallerName                     string
 	CustomCABundle                 string

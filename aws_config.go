@@ -381,6 +381,13 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 		)
 	}
 
+	if c.BaseEndpointUrl != "" {
+		loadOptions = append(
+			loadOptions,
+			config.WithEndpointResolverWithOptions(baseEndpointResolver(c)),
+		)
+	}
+
 	sharedCredentialsFiles, err := c.ResolveSharedCredentialsFiles()
 	if err != nil {
 		return nil, err
@@ -456,4 +463,13 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	}
 
 	return loadOptions, nil
+}
+
+func baseEndpointResolver(c *Config) aws.EndpointResolverWithOptions {
+	return aws.EndpointResolverWithOptionsFunc(func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+		return aws.Endpoint{
+			URL:    c.BaseEndpointUrl,
+			Source: aws.EndpointSourceCustom,
+		}, nil
+	})
 }

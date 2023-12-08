@@ -3084,6 +3084,7 @@ func TestStsEndpoint(t *testing.T) {
 	)
 	testcases := map[string]struct {
 		Config             Config
+		SetBaseEndpoint    settype
 		SetServiceEndpoint settype
 		SetEnv             string
 		SetInvalidEnv      string
@@ -3161,6 +3162,16 @@ endpoint_url = %[2]s
 				SecretAccessKey: "DefaultSharedCredentialsSecretKey",
 				Source:          sharedConfigCredentialsProvider,
 			},
+		},
+
+		"base config": {
+			Config: Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			SetBaseEndpoint:     setValid,
+			ExpectedCredentials: mockdata.MockStaticCredentials,
 		},
 
 		"service envvar": {
@@ -3355,6 +3366,9 @@ endpoint_url = %[2]s
 			defer invalidTS.Close()
 			stsInvalidEndpoint := invalidTS.URL
 
+			if testcase.SetBaseEndpoint == setValid {
+				testcase.Config.BaseEndpointUrl = stsEndpoint
+			}
 			if testcase.SetServiceEndpoint == setValid {
 				testcase.Config.StsEndpoint = stsEndpoint
 			}
