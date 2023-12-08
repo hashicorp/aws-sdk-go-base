@@ -3077,12 +3077,12 @@ web_identity_token_file = no-such-file
 
 func TestStsEndpoint(t *testing.T) {
 	testcases := map[string]struct {
-		Config              Config
-		SetConfig           bool
-		SetEnv              string
-		SetInvalidEnv       string
+		Config        Config
+		SetConfig     bool
+		SetEnv        string
+		SetInvalidEnv string
+		// Use string at index 1 for valid endpoint url and index 2 for invalid endpoint url
 		ConfigFile          string
-		InvalidConfigFile   string
 		ExpectedCredentials aws.Credentials
 	}{
 		"config": {
@@ -3138,7 +3138,7 @@ services = sts-test
 
 [services sts-test]
 sts =
-	endpoint_url = %s
+	endpoint_url = %[1]s
 `,
 			ExpectedCredentials: aws.Credentials{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
@@ -3159,7 +3159,7 @@ sts =
 [default]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
-endpoint_url = %s
+endpoint_url = %[1]s
 `,
 			ExpectedCredentials: aws.Credentials{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
@@ -3173,11 +3173,11 @@ endpoint_url = %s
 				Profile: "default",
 			},
 			SetEnv: "AWS_ENDPOINT_URL",
-			InvalidConfigFile: `
+			ConfigFile: `
 [default]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
-endpoint_url = %s
+endpoint_url = %[2]s
 `,
 			ExpectedCredentials: aws.Credentials{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
@@ -3191,11 +3191,11 @@ endpoint_url = %s
 				Profile: "default",
 			},
 			SetEnv: "AWS_ENDPOINT_URL_STS",
-			InvalidConfigFile: `
+			ConfigFile: `
 [default]
 aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
-endpoint_url = %s
+endpoint_url = %[2]s
 `,
 			ExpectedCredentials: aws.Credentials{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
@@ -3236,12 +3236,7 @@ endpoint_url = %s
 			}
 			if testcase.ConfigFile != "" {
 				tempDir := t.TempDir()
-				filename := writeSharedConfigFile(t, &testcase.Config, tempDir, fmt.Sprintf(testcase.ConfigFile, stsEndpoint))
-				testcase.ExpectedCredentials.Source = sharedConfigCredentialsSource(filename)
-			}
-			if testcase.InvalidConfigFile != "" {
-				tempDir := t.TempDir()
-				filename := writeSharedConfigFile(t, &testcase.Config, tempDir, fmt.Sprintf(testcase.InvalidConfigFile, stsInvalidEndpoint))
+				filename := writeSharedConfigFile(t, &testcase.Config, tempDir, fmt.Sprintf(testcase.ConfigFile, stsEndpoint, stsInvalidEndpoint))
 				testcase.ExpectedCredentials.Source = sharedConfigCredentialsSource(filename)
 			}
 
