@@ -3076,11 +3076,17 @@ web_identity_token_file = no-such-file
 }
 
 func TestStsEndpoint(t *testing.T) {
+	type settype int
+	const (
+		setNone settype = iota
+		setValid
+		setInvalid
+	)
 	testcases := map[string]struct {
-		Config        Config
-		SetConfig     bool
-		SetEnv        string
-		SetInvalidEnv string
+		Config             Config
+		SetServiceEndpoint settype
+		SetEnv             string
+		SetInvalidEnv      string
 		// Use string at index 1 for valid endpoint url and index 2 for invalid endpoint url
 		ConfigFile          string
 		ExpectedCredentials aws.Credentials
@@ -3091,7 +3097,7 @@ func TestStsEndpoint(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			SetConfig:           true,
+			SetServiceEndpoint:  setValid,
 			ExpectedCredentials: mockdata.MockStaticCredentials,
 		},
 
@@ -3287,7 +3293,7 @@ endpoint_url = %[2]s
 			defer invalidTS.Close()
 			stsInvalidEndpoint := invalidTS.URL
 
-			if testcase.SetConfig {
+			if testcase.SetServiceEndpoint == setValid {
 				testcase.Config.StsEndpoint = stsEndpoint
 			}
 			if testcase.SetEnv != "" {
