@@ -3,18 +3,13 @@
 
 package logging
 
-import (
-	"strings"
-)
-
-func partialMaskString(s string, first, last int) string {
+func partialMaskString(s []byte, first, last int) []byte {
 	l := len(s)
-	result := strings.Builder{}
-	result.Grow(l)
-	result.WriteString(s[0:first])
+	result := make([]byte, 0, l)
+	result = append(result, s[0:first]...)
 	for i := 0; i < l-first-last; i++ {
-		result.WriteByte('*')
+		result = append(result, '*')
 	}
-	result.WriteString(s[l-last:])
-	return result.String()
+	result = append(result, s[l-last:]...)
+	return result
 }
