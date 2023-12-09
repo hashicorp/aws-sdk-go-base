@@ -2088,7 +2088,7 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 		EnvironmentVariables               map[string]string
 		SharedConfigurationFile            string
 		ExpectedEC2MetadataServiceEndpoint string
-		ValidateDiags                      test.DiagsValidator
+		ExpectedDiags                      diag.Diagnostics
 	}{
 		"no configuration": {
 			Config: &Config{
@@ -2126,10 +2126,12 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 				"AWS_METADATA_URL": "https://127.0.0.1:1234",
 			},
 			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
-			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewWarningDiagnostic(
-				"Deprecated Environment Variable",
-				`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`,
-			)),
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewWarningDiagnostic(
+					"Deprecated Environment Variable",
+					`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`,
+				),
+			},
 		},
 		"envvar overrides deprecated envvar": {
 			Config: &Config{
@@ -2141,11 +2143,13 @@ func TestEC2MetadataServiceEndpoint(t *testing.T) {
 				"AWS_EC2_METADATA_SERVICE_ENDPOINT": "https://127.0.0.1:1234",
 			},
 			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
-			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewWarningDiagnostic(
-				"Deprecated Environment Variable",
-				`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`+"\n"+
-					`"AWS_EC2_METADATA_SERVICE_ENDPOINT" is set to "https://127.0.0.1:1234" and "AWS_METADATA_URL" is set to "https://127.1.1.1:1111". Ignoring "AWS_METADATA_URL".`,
-			)),
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewWarningDiagnostic(
+					"Deprecated Environment Variable",
+					`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`+"\n"+
+						`"AWS_EC2_METADATA_SERVICE_ENDPOINT" is set to "https://127.0.0.1:1234" and "AWS_METADATA_URL" is set to "https://127.1.1.1:1111". Ignoring "AWS_METADATA_URL".`,
+				),
+			},
 		},
 
 		"shared configuration file": {
@@ -2210,19 +2214,17 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 ec2_metadata_service_endpoint = https://127.1.1.1:1111
 `,
 			ExpectedEC2MetadataServiceEndpoint: "https://127.0.0.1:1234",
-			ValidateDiags: test.ExpectWarningDiagValidator(diag.NewWarningDiagnostic(
-				"Deprecated Environment Variable",
-				`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`,
-			)),
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewWarningDiagnostic(
+					"Deprecated Environment Variable",
+					`The environment variable "AWS_METADATA_URL" is deprecated. Use "AWS_EC2_METADATA_SERVICE_ENDPOINT" instead.`,
+				),
+			},
 		},
 	}
 
 	for testName, testCase := range testCases {
 		testCase := testCase
-
-		if testCase.ValidateDiags == nil {
-			testCase.ValidateDiags = test.ExpectNoDiags
-		}
 
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
@@ -2253,7 +2255,12 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 
 			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
 
-			testCase.ValidateDiags(t, diags)
+			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
+				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
+			}
+			if diags.HasError() {
+				return
+			}
 
 			ec2MetadataServiceEndpoint, _, err := awsconfig.ResolveEC2IMDSEndpointConfig(awsConfig.ConfigSources)
 			if err != nil {
@@ -2582,7 +2589,7 @@ func TestAssumeRole(t *testing.T) {
 		Config                   *Config
 		SharedConfigurationFile  string
 		ExpectedCredentialsValue aws.Credentials
-		ValidateDiags            test.DiagsValidator
+		ExpectedDiags            diag.Diagnostics
 		MockStsEndpoints         []*servicemocks.MockEndpoint
 	}{
 		"config": {
@@ -2682,21 +2689,17 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				SecretKey:  servicemocks.MockStaticSecretKey,
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
-			ValidateDiags: test.ExpectDiagValidator(`"role ARN not set" error`, func(d diag.Diagnostic) bool {
-				return d.Equal(diag.NewErrorDiagnostic(
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
 					"Cannot assume IAM Role",
 					"IAM Role ARN not set",
-				))
-			}),
+				),
+			},
 		},
 	}
 
 	for testName, testCase := range testCases {
 		testCase := testCase
-
-		if testCase.ValidateDiags == nil {
-			testCase.ValidateDiags = test.ExpectNoDiags
-		}
 
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
@@ -2735,7 +2738,9 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
 
-			testCase.ValidateDiags(t, diags)
+			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
+				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
+			}
 			if diags.HasError() {
 				return
 			}
@@ -3053,7 +3058,6 @@ web_identity_token_file = no-such-file
 			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
 				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
 			}
-
 			if diags.HasError() {
 				return
 			}
@@ -3201,7 +3205,7 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 		expectedPartition string
 		expectError       bool
 		mockStsEndpoints  []*servicemocks.MockEndpoint
-		ValidateDiags     test.DiagsValidator
+		ExpectedDiags     diag.Diagnostics
 	}{
 		{
 			desc: "StandardProvider_Config",
@@ -3259,10 +3263,6 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	for _, testCase := range testCases {
 		tc := testCase
 
-		if testCase.ValidateDiags == nil {
-			testCase.ValidateDiags = test.ExpectNoDiags
-		}
-
 		t.Run(tc.desc, func(t *testing.T) {
 			ts := servicemocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
 			defer ts.Close()
@@ -3275,7 +3275,12 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 
 			acctID, part, diags := GetAwsAccountIDAndPartition(ctx, awsConfig, tc.config)
 
-			testCase.ValidateDiags(t, diags)
+			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
+				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
+			}
+			if diags.HasError() {
+				return
+			}
 
 			if acctID != tc.expectedAcctID {
 				t.Errorf("expected account ID (%s), got: %s", tc.expectedAcctID, acctID)
