@@ -1,6 +1,12 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.45 (2023-12-12)
+
+BUG FIXES
+
+* Updates dependencies.
+
 # v2.0.0-beta.44 (2023-12-01)
 
 BUG FIXES
