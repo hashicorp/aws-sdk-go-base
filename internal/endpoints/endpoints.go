@@ -68,6 +68,7 @@ var partitions = []partition{
 			"ap-southeast-3", // Asia Pacific (Jakarta).
 			"ap-southeast-4", // Asia Pacific (Melbourne).
 			"ca-central-1",   // Canada (Central).
+			"ca-west-1",      // Canada (Calgary).
 			"eu-central-1",   // Europe (Frankfurt).
 			"eu-central-2",   // Europe (Zurich).
 			"eu-north-1",     // Europe (Stockholm).
