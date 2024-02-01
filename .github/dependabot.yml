@@ -27,6 +27,11 @@ updates:
 
   - package-ecosystem: "gomod"
     directory: "/v2/awsv1shim"
+    groups:
+      open-telemetry:
+        patterns:
+          - "go.opentelemetry.io/otel"
+          - "go.opentelemetry.io/contrib/*"
     ignore:
       - dependency-name: "github.com/aws/aws-sdk-go-v2"
       - dependency-name: "github.com/aws/aws-sdk-go-v2/*"
