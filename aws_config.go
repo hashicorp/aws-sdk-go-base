@@ -187,41 +187,48 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 // Adapted from the per-service-client `resolveRetryer()` functions in the AWS SDK for Go v2
 // e.g. https://github.com/aws/aws-sdk-go-v2/blob/main/service/accessanalyzer/api_client.go
 func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
-	retryMode := awsConfig.RetryMode
-	if len(retryMode) == 0 {
-		defaultsMode := resolveDefaultsMode(ctx, awsConfig)
-		modeConfig, err := defaults.GetModeConfiguration(defaultsMode)
-		if err == nil {
-			retryMode = modeConfig.RetryMode
+	newRetryer := func() aws.RetryerV2 {
+		retryMode := awsConfig.RetryMode
+		if len(retryMode) == 0 {
+			defaultsMode := resolveDefaultsMode(ctx, awsConfig)
+			modeConfig, err := defaults.GetModeConfiguration(defaultsMode)
+			if err == nil {
+				retryMode = modeConfig.RetryMode
+			}
 		}
-	}
-	if len(retryMode) == 0 {
-		retryMode = aws.RetryModeStandard
-	}
+		if len(retryMode) == 0 {
+			retryMode = aws.RetryModeStandard
+		}
 
-	var standardOptions []func(*retry.StandardOptions)
-	if v, found, _ := awsconfig.GetRetryMaxAttempts(ctx, awsConfig.ConfigSources); found && v != 0 {
-		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
-			so.MaxAttempts = v
-		})
-	}
-
-	var retryer aws.RetryerV2
-	switch retryMode {
-	case aws.RetryModeAdaptive:
-		var adaptiveOptions []func(*retry.AdaptiveModeOptions)
-		if len(standardOptions) != 0 {
-			adaptiveOptions = append(adaptiveOptions, func(ao *retry.AdaptiveModeOptions) {
-				ao.StandardOptions = append(ao.StandardOptions, standardOptions...)
+		var standardOptions []func(*retry.StandardOptions)
+		if v, found, _ := awsconfig.GetRetryMaxAttempts(ctx, awsConfig.ConfigSources); found && v != 0 {
+			standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
+				so.MaxAttempts = v
 			})
 		}
-		retryer = retry.NewAdaptiveMode(adaptiveOptions...)
 
-	default:
-		retryer = retry.NewStandard(standardOptions...)
+		var retryer aws.RetryerV2
+		switch retryMode {
+		case aws.RetryModeAdaptive:
+			var adaptiveOptions []func(*retry.AdaptiveModeOptions)
+			if len(standardOptions) != 0 {
+				adaptiveOptions = append(adaptiveOptions, func(ao *retry.AdaptiveModeOptions) {
+					ao.StandardOptions = append(ao.StandardOptions, standardOptions...)
+				})
+			}
+			retryer = retry.NewAdaptiveMode(adaptiveOptions...)
+
+		default:
+			retryer = retry.NewStandard(standardOptions...)
+		}
+
+		return retryer
 	}
 
 	awsConfig.Retryer = func() aws.Retryer {
+		// Ensure that each invocation of this function returns an independent Retryer.
+		retryer := newRetryer()
+
 		return &networkErrorShortcutter{
 			RetryerV2: retryer,
 		}
