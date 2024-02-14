@@ -206,24 +206,29 @@ func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
 		})
 	}
 
-	var retryer aws.RetryerV2
-	switch retryMode {
-	case aws.RetryModeAdaptive:
-		var adaptiveOptions []func(*retry.AdaptiveModeOptions)
-		if len(standardOptions) != 0 {
-			adaptiveOptions = append(adaptiveOptions, func(ao *retry.AdaptiveModeOptions) {
-				ao.StandardOptions = append(ao.StandardOptions, standardOptions...)
-			})
-		}
-		retryer = retry.NewAdaptiveMode(adaptiveOptions...)
+	newRetryer := func(retryMode aws.RetryMode, standardOptions []func(*retry.StandardOptions)) aws.RetryerV2 {
+		var retryer aws.RetryerV2
+		switch retryMode {
+		case aws.RetryModeAdaptive:
+			var adaptiveOptions []func(*retry.AdaptiveModeOptions)
+			if len(standardOptions) != 0 {
+				adaptiveOptions = append(adaptiveOptions, func(ao *retry.AdaptiveModeOptions) {
+					ao.StandardOptions = append(ao.StandardOptions, standardOptions...)
+				})
+			}
+			retryer = retry.NewAdaptiveMode(adaptiveOptions...)
 
-	default:
-		retryer = retry.NewStandard(standardOptions...)
+		default:
+			retryer = retry.NewStandard(standardOptions...)
+		}
+
+		return retryer
 	}
 
 	awsConfig.Retryer = func() aws.Retryer {
 		return &networkErrorShortcutter{
-			RetryerV2: retryer,
+			// Ensure that each invocation of this function returns an independent Retryer.
+			RetryerV2: newRetryer(retryMode, standardOptions),
 		}
 	}
 }
