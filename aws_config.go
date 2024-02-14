@@ -187,26 +187,26 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 // Adapted from the per-service-client `resolveRetryer()` functions in the AWS SDK for Go v2
 // e.g. https://github.com/aws/aws-sdk-go-v2/blob/main/service/accessanalyzer/api_client.go
 func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
-	newRetryer := func() aws.RetryerV2 {
-		retryMode := awsConfig.RetryMode
-		if len(retryMode) == 0 {
-			defaultsMode := resolveDefaultsMode(ctx, awsConfig)
-			modeConfig, err := defaults.GetModeConfiguration(defaultsMode)
-			if err == nil {
-				retryMode = modeConfig.RetryMode
-			}
+	retryMode := awsConfig.RetryMode
+	if len(retryMode) == 0 {
+		defaultsMode := resolveDefaultsMode(ctx, awsConfig)
+		modeConfig, err := defaults.GetModeConfiguration(defaultsMode)
+		if err == nil {
+			retryMode = modeConfig.RetryMode
 		}
-		if len(retryMode) == 0 {
-			retryMode = aws.RetryModeStandard
-		}
+	}
+	if len(retryMode) == 0 {
+		retryMode = aws.RetryModeStandard
+	}
 
-		var standardOptions []func(*retry.StandardOptions)
-		if v, found, _ := awsconfig.GetRetryMaxAttempts(ctx, awsConfig.ConfigSources); found && v != 0 {
-			standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
-				so.MaxAttempts = v
-			})
-		}
+	var standardOptions []func(*retry.StandardOptions)
+	if v, found, _ := awsconfig.GetRetryMaxAttempts(ctx, awsConfig.ConfigSources); found && v != 0 {
+		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
+			so.MaxAttempts = v
+		})
+	}
 
+	newRetryer := func(retryMode aws.RetryMode, standardOptions []func(*retry.StandardOptions)) aws.RetryerV2 {
 		var retryer aws.RetryerV2
 		switch retryMode {
 		case aws.RetryModeAdaptive:
@@ -226,11 +226,9 @@ func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
 	}
 
 	awsConfig.Retryer = func() aws.Retryer {
-		// Ensure that each invocation of this function returns an independent Retryer.
-		retryer := newRetryer()
-
 		return &networkErrorShortcutter{
-			RetryerV2: retryer,
+			// Ensure that each invocation of this function returns an independent Retryer.
+			RetryerV2: newRetryer(retryMode, standardOptions),
 		}
 	}
 }
