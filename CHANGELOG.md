@@ -1,6 +1,13 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.47 (2024-02-14)
+
+BUG FIXES
+
+* Ensures that each AWS SDK for Go v2 API client gets an independent `Retryer`. ([#918](https://github.com/hashicorp/aws-sdk-go-base/pull/918))
+* Updates dependencies.
+
 # v2.0.0-beta.46 (2024-01-03)
 
 BUG FIXES
