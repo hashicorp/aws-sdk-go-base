@@ -16,6 +16,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/defaults"
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
+	"github.com/aws/aws-sdk-go-v2/aws/ratelimit"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
@@ -28,6 +29,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
+	"golang.org/x/exp/slices"
 )
 
 const loggerName string = "aws-base"
@@ -173,7 +175,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 		}
 	}
 
-	resolveRetryer(baseCtx, &awsConfig)
+	resolveRetryer(baseCtx, c.TokenBucketRateLimiterCapacity, &awsConfig)
 
 	if !c.SkipCredsValidation {
 		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(baseCtx, awsConfig, c)); err != nil {
@@ -186,7 +188,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 
 // Adapted from the per-service-client `resolveRetryer()` functions in the AWS SDK for Go v2
 // e.g. https://github.com/aws/aws-sdk-go-v2/blob/main/service/accessanalyzer/api_client.go
-func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
+func resolveRetryer(ctx context.Context, tokenBucketRateLimiterCapacity int, awsConfig *aws.Config) {
 	retryMode := awsConfig.RetryMode
 	if len(retryMode) == 0 {
 		defaultsMode := resolveDefaultsMode(ctx, awsConfig)
@@ -206,8 +208,15 @@ func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
 		})
 	}
 
-	newRetryer := func(retryMode aws.RetryMode, standardOptions []func(*retry.StandardOptions)) aws.RetryerV2 {
+	newRetryer := func(retryMode aws.RetryMode, standardOptions []func(*retry.StandardOptions), tokenBucketRateLimiterCapacity int) aws.RetryerV2 {
 		var retryer aws.RetryerV2
+
+		if tokenBucketRateLimiterCapacity > 0 {
+			standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
+				so.RateLimiter = ratelimit.NewTokenRateLimit(uint(tokenBucketRateLimiterCapacity))
+			})
+		}
+
 		switch retryMode {
 		case aws.RetryModeAdaptive:
 			var adaptiveOptions []func(*retry.AdaptiveModeOptions)
@@ -228,7 +237,7 @@ func resolveRetryer(ctx context.Context, awsConfig *aws.Config) {
 	awsConfig.Retryer = func() aws.Retryer {
 		return &networkErrorShortcutter{
 			// Ensure that each invocation of this function returns an independent Retryer.
-			RetryerV2: newRetryer(retryMode, standardOptions),
+			RetryerV2: newRetryer(retryMode, slices.Clone(standardOptions), tokenBucketRateLimiterCapacity),
 		}
 	}
 }
