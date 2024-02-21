@@ -211,7 +211,7 @@ func resolveRetryer(ctx context.Context, tokenBucketRateLimiterCapacity int, aws
 	newRetryer := func(retryMode aws.RetryMode, standardOptions []func(*retry.StandardOptions), tokenBucketRateLimiterCapacity int) aws.RetryerV2 {
 		var retryer aws.RetryerV2
 
-		if tokenBucketRateLimiterCapacity >= 0 {
+		if tokenBucketRateLimiterCapacity > 0 {
 			standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
 				so.RateLimiter = ratelimit.NewTokenRateLimit(uint(tokenBucketRateLimiterCapacity))
 			})
