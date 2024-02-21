@@ -63,6 +63,7 @@ type Config struct {
 	StsRegion                      string
 	SuppressDebugLog               bool
 	Token                          string
+	TokenBucketRateLimiterCapacity int
 	UseDualStackEndpoint           bool
 	UseFIPSEndpoint                bool
 	UseLegacyWorkflow              bool
