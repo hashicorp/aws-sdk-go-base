@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"net"
 	"net/http"
 	"net/url"
@@ -44,7 +45,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-log/tflogtest"
 	"go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws"
 	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
-	"golang.org/x/exp/maps"
 )
 
 const (
