@@ -1036,32 +1036,6 @@ aws_access_key_id = ProfileSharedCredentialsAccessKey
 aws_secret_access_key = ProfileSharedCredentialsSecretKey
 `,
 		},
-		{
-			Config: &Config{
-				Profile:           "SharedCredentialsProfile",
-				Region:            "us-east-1",
-				UseLegacyWorkflow: true,
-			},
-			Description: "environment AWS_ACCESS_KEY_ID overrides config Profile in legacy workflow",
-			EnvironmentVariables: map[string]string{
-				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
-				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
-			},
-			ExpectedCredentialsValue: mockdata.MockEnvCredentials,
-			ExpectedRegion:           "us-east-1",
-			MockStsEndpoints: []*servicemocks.MockEndpoint{
-				servicemocks.MockStsGetCallerIdentityValidEndpoint,
-			},
-			SharedCredentialsFile: `
-[default]
-aws_access_key_id = DefaultSharedCredentialsAccessKey
-aws_secret_access_key = DefaultSharedCredentialsSecretKey
-
-[SharedCredentialsProfile]
-aws_access_key_id = ProfileSharedCredentialsAccessKey
-aws_secret_access_key = ProfileSharedCredentialsSecretKey
-`,
-		},
 	}
 
 	for _, testCase := range testCases {

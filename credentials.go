@@ -45,17 +45,9 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	}
 
 	if c.Profile != "" && os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
-		if c.UseLegacyWorkflow {
-			diags.AddWarning("Configuration conflict overridden",
-				`A Profile was specified along with the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY". `+
-					`The legacy workflow is enabled, so the Profile will be ignored in favor of the environment variable credentials. `+
-					`This behavior may be removed in the future.`)
-			c.Profile = ""
-		} else {
-			diags.AddWarning("Configuration conflict detected",
-				`A Profile was specified along with the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY". `+
-					`The Profile is now used instead of the environment variable credentials. This may lead to unexpected behavior.`)
-		}
+		diags.AddWarning("Configuration conflict detected",
+			`A Profile was specified along with the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY". `+
+				`The Profile is now used instead of the environment variable credentials. This may lead to unexpected behavior.`)
 	}
 
 	if profile := c.Profile; profile != "" {
