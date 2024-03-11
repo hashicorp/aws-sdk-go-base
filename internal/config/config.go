@@ -66,7 +66,6 @@ type Config struct {
 	TokenBucketRateLimiterCapacity int
 	UseDualStackEndpoint           bool
 	UseFIPSEndpoint                bool
-	UseLegacyWorkflow              bool
 	UserAgent                      UserAgentProducts
 }
 
