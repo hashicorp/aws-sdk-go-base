@@ -3,7 +3,7 @@
 
 package slices
 
-import "golang.org/x/exp/slices"
+import "slices"
 
 // ApplyToAll returns a new slice containing the results of applying the function `f` to each element of the original slice `s`.
 func ApplyToAll[T, U any](s []T, f func(T) U) []U {
