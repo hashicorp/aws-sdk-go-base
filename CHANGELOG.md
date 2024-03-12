@@ -1,6 +1,17 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.49 (2024-03-12)
+
+NOTES
+
+* Updates to Go 1.21 (used by Terraform starting with `v1.6.0` and the AWS provider since `5.37.0`), which, for Windows, requires at least Windows 10 or Windows Server 2016--support for previous versions has been discontinued--and, for macOS, requires macOS 10.15 Catalina or later--support for previous versions has been discontinued ([#960](https://github.com/hashicorp/aws-sdk-go-base/pull/960)).
+* Updates dependencies.
+
+BREAKING CHANGES
+
+* Removes the `UseLegacyWorkflow` configuration option ([#962](https://github.com/hashicorp/aws-sdk-go-base/pull/962))
+
 # v2.0.0-beta.48 (2024-02-21)
 
 BUG FIXES
