@@ -1,6 +1,16 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.50 (2024-03-19)
+
+BUG FIXES
+
+* Updates dependencies.
+
+ENHANCEMENTS
+
+* Changes the default AWS SDK for Go v2 API client [`RateLimiter`](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2@v1.26.0/aws/retry#RateLimiter) to [`ratelimit.None`](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/aws/ratelimit#pkg-variables) in order to maintain behavioral compatibility with AWS SDK for Go v1 ([#977](https://github.com/hashicorp/aws-sdk-go-base/pull/977))
+
 # v2.0.0-beta.49 (2024-03-12)
 
 NOTES
