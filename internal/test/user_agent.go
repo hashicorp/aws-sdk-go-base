@@ -36,9 +36,9 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
-				constants.AppendUserAgentEnvVar: "Last",
+				constants.AppendUserAgentEnvVar: "Last/9.0.0",
 			},
-			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
+			ExpectedUserAgent: awsSdkGoUserAgent() + " Last/9.0.0",
 		},
 		"APN User-Agent Products": {
 			Config: &config.Config{
@@ -82,9 +82,9 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 				},
 			},
 			EnvironmentVariables: map[string]string{
-				constants.AppendUserAgentEnvVar: "Last",
+				constants.AppendUserAgentEnvVar: "Last/9.0.0",
 			},
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last",
+			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last/9.0.0",
 		},
 		"User-Agent Products": {
 			Config: &config.Config{
