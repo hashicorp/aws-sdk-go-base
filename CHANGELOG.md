@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BUG FIXES
+
+* Correctly handles user agents passed using `TF_APPEND_USER_AGENT` which contain `/`,  `(`, `)`, or space ([#990](https://github.com/hashicorp/aws-sdk-go-base/pull/990))
+
 # v2.0.0-beta.50 (2024-03-19)
 
 BUG FIXES
