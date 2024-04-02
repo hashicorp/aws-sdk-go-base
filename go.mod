@@ -15,7 +15,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.28.6
 	github.com/aws/smithy-go v1.20.2
 	github.com/google/go-cmp v0.6.0
-	github.com/hashicorp/go-hclog v1.6.2
+	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-multierror v1.1.1
 	github.com/hashicorp/terraform-plugin-log v0.9.0
 	github.com/mitchellh/go-homedir v1.1.0
