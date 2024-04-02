@@ -68,6 +68,18 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 			ExpectedUserAgent: awsSdkGoUserAgent() + " Env1/1.2 Env2",
 		},
 
+		"customized User-Agent TF_APPEND_USER_AGENT with comment": {
+			Config: &config.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				constants.AppendUserAgentEnvVar: "Env1/1.2 (comment) Env2",
+			},
+			ExpectedUserAgent: awsSdkGoUserAgent() + " Env1/1.2 (comment) Env2",
+		},
+
 		"APN User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
