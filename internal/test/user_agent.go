@@ -20,6 +20,8 @@ type UserAgentTestCase struct {
 }
 
 func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUserAgentProducts func(t *testing.T, testCase UserAgentTestCase)) {
+	t.Helper()
+
 	testCases := map[string]UserAgentTestCase{
 		"standard User-Agent": {
 			Config: &config.Config{
@@ -29,17 +31,55 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 			},
 			ExpectedUserAgent: awsSdkGoUserAgent(),
 		},
-		"customized User-Agent TF_APPEND_USER_AGENT": {
+
+		"customized User-Agent TF_APPEND_USER_AGENT product": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
-				constants.AppendUserAgentEnvVar: "Last",
+				constants.AppendUserAgentEnvVar: "Env",
 			},
-			ExpectedUserAgent: awsSdkGoUserAgent() + " Last",
+			ExpectedUserAgent: awsSdkGoUserAgent() + " Env",
 		},
+
+		"customized User-Agent TF_APPEND_USER_AGENT product version": {
+			Config: &config.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				constants.AppendUserAgentEnvVar: "Env/1.2",
+			},
+			ExpectedUserAgent: awsSdkGoUserAgent() + " Env/1.2",
+		},
+
+		"customized User-Agent TF_APPEND_USER_AGENT multi product": {
+			Config: &config.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				constants.AppendUserAgentEnvVar: "Env1/1.2 Env2",
+			},
+			ExpectedUserAgent: awsSdkGoUserAgent() + " Env1/1.2 Env2",
+		},
+
+		"customized User-Agent TF_APPEND_USER_AGENT with comment": {
+			Config: &config.Config{
+				AccessKey: servicemocks.MockStaticAccessKey,
+				Region:    "us-east-1",
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			EnvironmentVariables: map[string]string{
+				constants.AppendUserAgentEnvVar: "Env1/1.2 (comment) Env2",
+			},
+			ExpectedUserAgent: awsSdkGoUserAgent() + " Env1/1.2 (comment) Env2",
+		},
+
 		"APN User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
@@ -62,6 +102,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 			},
 			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent(),
 		},
+
 		"APN User-Agent Products and TF_APPEND_USER_AGENT": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
@@ -82,10 +123,11 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 				},
 			},
 			EnvironmentVariables: map[string]string{
-				constants.AppendUserAgentEnvVar: "Last",
+				constants.AppendUserAgentEnvVar: "Last/9.0.0",
 			},
-			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last",
+			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 " + awsSdkGoUserAgent() + " Last/9.0.0",
 		},
+
 		"User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
@@ -105,6 +147,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 			},
 			ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment)",
 		},
+
 		"APN and User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
@@ -137,6 +180,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 			},
 			ExpectedUserAgent: "APN/1.0 partner/1.0 first/1.2.3 second/1.0.2 (a comment) " + awsSdkGoUserAgent() + " third/4.5.6 fourth/2.1",
 		},
+
 		"context": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
@@ -156,6 +200,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 			},
 			ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment)",
 		},
+
 		"User-Agent Products and context": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,

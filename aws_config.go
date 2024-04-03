@@ -16,7 +16,6 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/aws/defaults"
-	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/aws/aws-sdk-go-v2/aws/ratelimit"
 	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -357,7 +356,7 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	}
 
 	if len(c.UserAgent) > 0 {
-		apiOptions = append(apiOptions, withUserAgentAppender(c.UserAgent))
+		apiOptions = append(apiOptions, withUserAgentAppender(c.UserAgent.BuildUserAgentString()))
 	}
 
 	apiOptions = append(apiOptions, func(stack *middleware.Stack) error {
@@ -369,7 +368,7 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 			"source": fmt.Sprintf("envvar(%q)", constants.AppendUserAgentEnvVar),
 			"value":  v,
 		})
-		apiOptions = append(apiOptions, awsmiddleware.AddUserAgentKey(v))
+		apiOptions = append(apiOptions, withUserAgentAppender(v))
 	}
 
 	if !c.SuppressDebugLog {

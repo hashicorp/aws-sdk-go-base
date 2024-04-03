@@ -39,13 +39,13 @@ func prependUserAgentHeader(request *smithyhttp.Request, value string) {
 	request.Header["User-Agent"] = append(request.Header["User-Agent"][:0], current)
 }
 
-func withUserAgentAppender(foo UserAgentProducts) func(*middleware.Stack) error {
+func withUserAgentAppender(ua string) func(*middleware.Stack) error {
 	return func(stack *middleware.Stack) error {
-		return stack.Build.Add(userAgentMiddleware(foo), middleware.After)
+		return stack.Build.Add(userAgentMiddleware(ua), middleware.After)
 	}
 }
 
-func userAgentMiddleware(foo UserAgentProducts) middleware.BuildMiddleware {
+func userAgentMiddleware(ua string) middleware.BuildMiddleware {
 	return middleware.BuildMiddlewareFunc("tfUserAgentAppender",
 		func(ctx context.Context, in middleware.BuildInput, next middleware.BuildHandler) (middleware.BuildOutput, middleware.Metadata, error) {
 			request, ok := in.Request.(*smithyhttp.Request)
@@ -53,7 +53,7 @@ func userAgentMiddleware(foo UserAgentProducts) middleware.BuildMiddleware {
 				return middleware.BuildOutput{}, middleware.Metadata{}, fmt.Errorf("unknown request type %T", in.Request)
 			}
 
-			appendUserAgentHeader(request, foo.BuildUserAgentString())
+			appendUserAgentHeader(request, ua)
 
 			return next.HandleBuild(ctx, in)
 		},
