@@ -118,4 +118,11 @@ var partitions = []partition{
 			"us-isob-east-1", // US ISOB East (Ohio).
 		},
 	},
+	{
+		id:          "aws-iso-e",
+		regionRegex: regexp.MustCompile(`^eu\-isoe\-\w+\-\d+$`),
+		regions: []string{
+			"eu-isoe-west-1", // EU ISOE West.
+		},
+	},
 }
