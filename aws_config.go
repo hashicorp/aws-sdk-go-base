@@ -203,7 +203,6 @@ func resolveRetryer(ctx context.Context, tokenBucketRateLimiterCapacity int, aws
 	var standardOptions []func(*retry.StandardOptions)
 	standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
 		// AWS SDK for Go v1 DefaultRetryerMaxRetryDelay: https://github.com/aws/aws-sdk-go/blob/9f6e3bb9f523aef97fa1cd5c5f8ba8ecf212e44e/aws/client/default_retryer.go#L48-L49.
-		// Note that certain EC2 operations have a lower value: https://github.com/aws/aws-sdk-go/blob/9f6e3bb9f523aef97fa1cd5c5f8ba8ecf212e44e/service/ec2/customizations.go#L34-L46
 		so.MaxBackoff = 300 * time.Second
 	})
 
