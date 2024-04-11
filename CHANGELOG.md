@@ -1,6 +1,16 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.52 (2024-04-11)
+
+BUG FIXES
+
+* Updates dependencies.
+
+ENHANCEMENTS
+
+* Adds `MaxBackoff` parameter to configure the maximum backoff delay that is allowed to occur between retrying a failed request ([#1011](https://github.com/hashicorp/aws-sdk-go-base/pull/1011))
+
 # v2.0.0-beta.51 (2024-04-04)
 
 BUG FIXES
