@@ -1,6 +1,14 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BUG FIXES
+
+* Updates dependencies.
+
+ENHANCEMENTS
+
+* Adds `MaxBackoff` parameter to configure the maximum backoff delay that is allowed to occur between retrying a failed request
+
 # v2.0.0-beta.51 (2024-04-04)
 
 BUG FIXES
