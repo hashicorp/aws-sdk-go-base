@@ -174,7 +174,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 		}
 	}
 
-	resolveRetryer(baseCtx, c.TokenBucketRateLimiterCapacity, &awsConfig)
+	resolveRetryer(baseCtx, c, &awsConfig)
 
 	if !c.SkipCredsValidation {
 		if _, _, err := getAccountIDAndPartitionFromSTSGetCallerIdentity(baseCtx, stsClient(baseCtx, awsConfig, c)); err != nil {
@@ -187,7 +187,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 
 // Adapted from the per-service-client `resolveRetryer()` functions in the AWS SDK for Go v2
 // e.g. https://github.com/aws/aws-sdk-go-v2/blob/main/service/accessanalyzer/api_client.go
-func resolveRetryer(ctx context.Context, tokenBucketRateLimiterCapacity int, awsConfig *aws.Config) {
+func resolveRetryer(ctx context.Context, c *Config, awsConfig *aws.Config) {
 	retryMode := awsConfig.RetryMode
 	if len(retryMode) == 0 {
 		defaultsMode := resolveDefaultsMode(ctx, awsConfig)
@@ -201,10 +201,6 @@ func resolveRetryer(ctx context.Context, tokenBucketRateLimiterCapacity int, aws
 	}
 
 	var standardOptions []func(*retry.StandardOptions)
-	standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
-		// AWS SDK for Go v1 DefaultRetryerMaxRetryDelay: https://github.com/aws/aws-sdk-go/blob/9f6e3bb9f523aef97fa1cd5c5f8ba8ecf212e44e/aws/client/default_retryer.go#L48-L49.
-		so.MaxBackoff = 300 * time.Second
-	})
 
 	if v, found, _ := awsconfig.GetRetryMaxAttempts(ctx, awsConfig.ConfigSources); found && v != 0 {
 		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
@@ -212,18 +208,24 @@ func resolveRetryer(ctx context.Context, tokenBucketRateLimiterCapacity int, aws
 		})
 	}
 
-	newRetryer := func(retryMode aws.RetryMode, standardOptions []func(*retry.StandardOptions), tokenBucketRateLimiterCapacity int) aws.RetryerV2 {
-		var retryer aws.RetryerV2
+	if maxBackoff := c.MaxBackoff; maxBackoff > 0 {
+		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
+			so.MaxBackoff = maxBackoff
+		})
+	}
 
-		if tokenBucketRateLimiterCapacity > 0 {
-			standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
-				so.RateLimiter = ratelimit.NewTokenRateLimit(uint(tokenBucketRateLimiterCapacity))
-			})
-		} else {
-			standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
-				so.RateLimiter = ratelimit.None
-			})
-		}
+	if tokenBucketRateLimiterCapacity := c.TokenBucketRateLimiterCapacity; tokenBucketRateLimiterCapacity > 0 {
+		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
+			so.RateLimiter = ratelimit.NewTokenRateLimit(uint(tokenBucketRateLimiterCapacity))
+		})
+	} else {
+		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
+			so.RateLimiter = ratelimit.None
+		})
+	}
+
+	newRetryer := func(retryMode aws.RetryMode, standardOptions []func(*retry.StandardOptions)) aws.RetryerV2 {
+		var retryer aws.RetryerV2
 
 		switch retryMode {
 		case aws.RetryModeAdaptive:
@@ -245,7 +247,7 @@ func resolveRetryer(ctx context.Context, tokenBucketRateLimiterCapacity int, aws
 	awsConfig.Retryer = func() aws.Retryer {
 		return &networkErrorShortcutter{
 			// Ensure that each invocation of this function returns an independent Retryer.
-			RetryerV2: newRetryer(retryMode, slices.Clone(standardOptions), tokenBucketRateLimiterCapacity),
+			RetryerV2: newRetryer(retryMode, slices.Clone(standardOptions)),
 		}
 	}
 }

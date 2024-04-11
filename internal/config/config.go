@@ -47,6 +47,7 @@ type Config struct {
 	IamEndpoint                    string
 	Insecure                       bool
 	Logger                         logging.Logger
+	MaxBackoff                     time.Duration
 	MaxRetries                     int
 	NoProxy                        string
 	Profile                        string
