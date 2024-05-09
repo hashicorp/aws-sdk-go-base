@@ -1,13 +1,15 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.53 (2024-05-09)
+
 BUG FIXES
 
 * Updates dependencies.
 
 ENHANCEMENTS
 
-* Adds `Backoff` parameter to configure the backoff strategy the retryer will use to determine the delay between retry attempts
+* Adds `Backoff` parameter to configure the backoff strategy the retryer will use to determine the delay between retry attempts ([#1045](https://github.com/hashicorp/aws-sdk-go-base/pull/1045))
 
 # v2.0.0-beta.52 (2024-04-11)
 
