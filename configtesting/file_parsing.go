@@ -152,7 +152,7 @@ sso_start_url = https://d-123456789a.awsapps.com/start#
 
 				defer os.Remove(file.Name())
 
-				err = os.WriteFile(file.Name(), []byte(tc.SharedConfigurationFile), 0600) //nolint:gomnd
+				err = os.WriteFile(file.Name(), []byte(tc.SharedConfigurationFile), 0600) //nolint:mnd
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)

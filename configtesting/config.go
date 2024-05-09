@@ -152,7 +152,7 @@ sso_registration_scopes = sso:account:access
 
 				defer os.Remove(file.Name())
 
-				err = os.WriteFile(file.Name(), []byte(tc.SharedConfigurationFile), 0600) //nolint:gomnd
+				err = os.WriteFile(file.Name(), []byte(tc.SharedConfigurationFile), 0600) //nolint:mnd
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)
@@ -259,7 +259,7 @@ region = us-east-1
 
 				defer os.Remove(file.Name())
 
-				err = os.WriteFile(file.Name(), []byte(tc.SharedConfigurationFile), 0600) //nolint:gomnd
+				err = os.WriteFile(file.Name(), []byte(tc.SharedConfigurationFile), 0600) //nolint:mnd
 
 				if err != nil {
 					t.Fatalf("unexpected error writing shared configuration file: %s", err)

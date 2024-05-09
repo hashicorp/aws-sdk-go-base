@@ -230,8 +230,8 @@ func normalizeHeaderName(k string) string {
 }
 
 func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
-	parts := regexp.MustCompile(`\s+`).Split(v, 2) //nolint:gomnd
-	if len(parts) != 2 {                           //nolint:gomnd
+	parts := regexp.MustCompile(`\s+`).Split(v, 2) //nolint:mnd
+	if len(parts) != 2 {                           //nolint:mnd
 		return attribute.KeyValue{}, false
 	}
 	scheme := parts[0]
@@ -271,7 +271,7 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 func resendCountAttribute(v string) (kv attribute.KeyValue, ok bool) {
 	re := regexp.MustCompile(`attempt=(\d+);`)
 	match := re.FindStringSubmatch(v)
-	if len(match) != 2 { //nolint:gomnd
+	if len(match) != 2 { //nolint:mnd
 		return
 	}
 

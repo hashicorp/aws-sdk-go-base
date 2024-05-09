@@ -89,7 +89,7 @@ func GetAwsConfig(ctx context.Context, c *Config) (context.Context, aws.Config, 
 		staticCreds         bool
 	)
 	if c.AccessKey != "" || c.SecretKey != "" || c.Token != "" {
-		params := make([]string, 0, 3) //nolint:gomnd
+		params := make([]string, 0, 3) //nolint:mnd
 		if c.AccessKey != "" {
 			params = append(params, "access key")
 		}
