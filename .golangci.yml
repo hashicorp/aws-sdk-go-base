@@ -18,26 +18,24 @@ linters:
     - exportloopref
     - goconst
     - gofmt
-    - gomnd
     - gosimple
+    - govet
     - ineffassign
     - misspell
+    - mnd
     - staticcheck
     - tenv
     - unconvert
     - unparam
     - unused
     - typecheck
-    - vet
     - whitespace
 
 linters-settings:
   goconst:
     ignore-tests: true
-  gomnd:
-    settings:
-      mnd:
-        ignored-functions:
-          - strings.SplitN
-          - strings.SplitAfterN
-          - os.MkdirAll
+  mnd:
+    ignored-functions:
+      - strings.SplitN
+      - strings.SplitAfterN
+      - os.MkdirAll
