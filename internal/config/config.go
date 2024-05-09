@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	awshttp "github.com/aws/aws-sdk-go-v2/aws/transport/http"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
@@ -34,6 +35,7 @@ type Config struct {
 	APNInfo                        *APNInfo
 	AssumeRole                     *AssumeRole
 	AssumeRoleWithWebIdentity      *AssumeRoleWithWebIdentity
+	Backoff                        retry.BackoffDelayer
 	CallerDocumentationURL         string
 	CallerName                     string
 	CustomCABundle                 string
