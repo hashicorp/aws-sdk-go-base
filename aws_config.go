@@ -202,6 +202,12 @@ func resolveRetryer(ctx context.Context, c *Config, awsConfig *aws.Config) {
 
 	var standardOptions []func(*retry.StandardOptions)
 
+	if backoff := c.Backoff; backoff != nil {
+		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
+			so.Backoff = backoff
+		})
+	}
+
 	if v, found, _ := awsconfig.GetRetryMaxAttempts(ctx, awsConfig.ConfigSources); found && v != 0 {
 		standardOptions = append(standardOptions, func(so *retry.StandardOptions) {
 			so.MaxAttempts = v
