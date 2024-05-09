@@ -53,7 +53,7 @@ func flattenFields(fields ...map[string]any) []any {
 	for _, m := range fields {
 		totalLen = len(m)
 	}
-	f := make([]any, 0, totalLen*2) //nolint:gomnd
+	f := make([]any, 0, totalLen*2) //nolint:mnd
 
 	for _, m := range fields {
 		for k, v := range m {

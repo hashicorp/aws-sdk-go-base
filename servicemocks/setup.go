@@ -199,7 +199,7 @@ func SsoTestSetup(t *testing.T, ssoKey string) (err error) {
 	}()
 
 	_, err = tokenFile.WriteString(fmt.Sprintf(ssoTokenCacheFile, time.Now().
-		Add(15*time.Minute). //nolint:gomnd
+		Add(15*time.Minute). //nolint:mnd
 		Format(time.RFC3339)))
 	if err != nil {
 		return err

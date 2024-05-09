@@ -488,7 +488,7 @@ func SsoCredentialsApiMock() (func(), string) {
 		w.Write([]byte(fmt.Sprintf( //nolint:errcheck
 			ssoCredentialsResponse,
 			time.Now().
-				Add(15*time.Minute). //nolint:gomnd
+				Add(15*time.Minute). //nolint:mnd
 				UnixNano()/int64(time.Millisecond))))
 	}))
 
