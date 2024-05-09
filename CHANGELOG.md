@@ -1,6 +1,14 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BUG FIXES
+
+* Updates dependencies.
+
+ENHANCEMENTS
+
+* Adds `Backoff` parameter to configure the backoff strategy the retryer will use to determine the delay between retry attempts
+
 # v2.0.0-beta.52 (2024-04-11)
 
 BUG FIXES
