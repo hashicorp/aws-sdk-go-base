@@ -8,6 +8,18 @@ issues:
     - path: configtesting
       linters:
         - goconst
+    - linters:
+        - staticcheck
+      text: "SA1019: aws.Endpoint is deprecated"
+    - linters:
+        - staticcheck
+      text: "SA1019: aws.EndpointResolverWithOptions is deprecated"
+    - linters:
+        - staticcheck
+      text: "SA1019: aws.EndpointResolverWithOptionsFunc is deprecated"
+    - linters:
+        - staticcheck
+      text: "SA1019: config.WithEndpointResolverWithOptions is deprecated"
 
 linters:
   disable-all: true
