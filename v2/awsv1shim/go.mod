@@ -3,7 +3,7 @@ module github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2
 go 1.21
 
 require (
-	github.com/aws/aws-sdk-go v1.53.19
+	github.com/aws/aws-sdk-go v1.54.3
 	github.com/aws/aws-sdk-go-v2 v1.27.2
 	github.com/aws/aws-sdk-go-v2/config v1.27.18
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.18
