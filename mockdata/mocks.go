@@ -72,6 +72,7 @@ var (
 
 	MockStsAssumeRoleCredentials = aws.Credentials{
 		AccessKeyID:     servicemocks.MockStsAssumeRoleAccessKey,
+		AccountID:       "555555555555",
 		SecretAccessKey: servicemocks.MockStsAssumeRoleSecretKey,
 		SessionToken:    servicemocks.MockStsAssumeRoleSessionToken,
 		Source:          stscreds.ProviderName,
@@ -80,6 +81,7 @@ var (
 
 	MockStsAssumeRoleWithWebIdentityCredentials = aws.Credentials{
 		AccessKeyID:     servicemocks.MockStsAssumeRoleWithWebIdentityAccessKey,
+		AccountID:       "666666666666",
 		SecretAccessKey: servicemocks.MockStsAssumeRoleWithWebIdentitySecretKey,
 		SessionToken:    servicemocks.MockStsAssumeRoleWithWebIdentitySessionToken,
 		Source:          stscreds.WebIdentityProviderName,
@@ -88,6 +90,7 @@ var (
 
 	MockSsoCredentials = aws.Credentials{
 		AccessKeyID:     servicemocks.MockSsoAccessKeyID,
+		AccountID:       "123456789012",
 		SecretAccessKey: servicemocks.MockSsoSecretAccessKey,
 		SessionToken:    servicemocks.MockSsoSessionToken,
 		Source:          ssocreds.ProviderName,
