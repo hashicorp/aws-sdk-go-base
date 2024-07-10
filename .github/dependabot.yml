@@ -9,7 +9,10 @@ updates:
       interval: "daily"
 
   - package-ecosystem: "gomod"
-    directory: "/"
+    directories:
+      - "/"
+      - "/tools"
+      - "/v2/awsv1shim"
     groups:
       aws-sdk-go:
         patterns:
@@ -19,29 +22,6 @@ updates:
         patterns:
           - "go.opentelemetry.io/otel"
           - "go.opentelemetry.io/contrib/*"
-    ignore:
-      - dependency-name: "golang.org/x/tools"
-      - dependency-name: "google.golang.org/grpc"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "gomod"
-    directory: "/v2/awsv1shim"
-    groups:
-      open-telemetry:
-        patterns:
-          - "go.opentelemetry.io/otel"
-          - "go.opentelemetry.io/contrib/*"
-    ignore:
-      - dependency-name: "github.com/aws/aws-sdk-go-v2"
-      - dependency-name: "github.com/aws/aws-sdk-go-v2/*"
-      - dependency-name: "golang.org/x/tools"
-      - dependency-name: "google.golang.org/grpc"
-    schedule:
-      interval: "daily"
-
-  - package-ecosystem: "gomod"
-    directory: "/tools"
     ignore:
       - dependency-name: "golang.org/x/tools"
       - dependency-name: "google.golang.org/grpc"
