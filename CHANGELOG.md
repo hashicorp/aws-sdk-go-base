@@ -2,6 +2,7 @@
 # v2.0.0 (Unreleased)
 
 # v2.0.0-beta.55 (2024-08-27)
+
 BUG FIXES
 
 * Updates dependencies.
