@@ -91,9 +91,8 @@ func TestGetSessionOptions(t *testing.T) {
 
 // End-to-end testing for GetSession
 func TestGetSession(t *testing.T) {
-	testCases := []struct {
+	testCases := map[string]struct {
 		Config                     *awsbase.Config
-		Description                string
 		EnableEc2MetadataServer    bool
 		EnableEcsCredentialsServer bool
 		EnableWebIdentityEnvVars   bool
@@ -106,25 +105,23 @@ func TestGetSession(t *testing.T) {
 		SharedConfigurationFile    string
 		SharedCredentialsFile      string
 	}{
-		{
+		"no configuration or credentials": {
 			Config:        &awsbase.Config{},
-			Description:   "no configuration or credentials",
 			ValidateDiags: test.ExpectDiagValidator("NoValidCredentialSourcesError", awsbase.IsNoValidCredentialSourcesError),
 		},
-		{
+		"config AccessKey": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AccessKey",
 			ExpectedCredentialsValue: mockdata.MockStaticCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AccessKey config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &awsbase.AssumeRole{
@@ -134,7 +131,6 @@ func TestGetSession(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AccessKey config AssumeRoleARN access key",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -142,7 +138,7 @@ func TestGetSession(t *testing.T) {
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AssumeRoleDuration": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &awsbase.AssumeRole{
@@ -153,7 +149,6 @@ func TestGetSession(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AssumeRoleDuration",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -161,7 +156,7 @@ func TestGetSession(t *testing.T) {
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AssumeRoleExternalID": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &awsbase.AssumeRole{
@@ -172,7 +167,6 @@ func TestGetSession(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AssumeRoleExternalID",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -180,7 +174,7 @@ func TestGetSession(t *testing.T) {
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AssumeRolePolicy": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &awsbase.AssumeRole{
@@ -191,7 +185,6 @@ func TestGetSession(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AssumeRolePolicy",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -199,7 +192,7 @@ func TestGetSession(t *testing.T) {
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AssumeRolePolicyARNs": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &awsbase.AssumeRole{
@@ -210,7 +203,6 @@ func TestGetSession(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AssumeRolePolicyARNs",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -218,7 +210,7 @@ func TestGetSession(t *testing.T) {
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AssumeRoleTags": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &awsbase.AssumeRole{
@@ -231,7 +223,6 @@ func TestGetSession(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AssumeRoleTags",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -239,7 +230,7 @@ func TestGetSession(t *testing.T) {
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AssumeRoleTransitiveTagKeys": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &awsbase.AssumeRole{
@@ -253,7 +244,6 @@ func TestGetSession(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AssumeRoleTransitiveTagKeys",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -261,7 +251,7 @@ func TestGetSession(t *testing.T) {
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AssumeRoleSourceIdentity": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &awsbase.AssumeRole{
@@ -272,7 +262,6 @@ func TestGetSession(t *testing.T) {
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AssumeRoleSourceIdentity",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -280,12 +269,11 @@ func TestGetSession(t *testing.T) {
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config Profile shared credentials profile aws_access_key_id": {
 			Config: &awsbase.Config{
 				Profile: "SharedCredentialsProfile",
 				Region:  "us-east-1",
 			},
-			Description: "config Profile shared credentials profile aws_access_key_id",
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "ProfileSharedCredentialsAccessKey",
 				ProviderName:    credentials.SharedCredsProviderName,
@@ -305,12 +293,11 @@ aws_access_key_id = ProfileSharedCredentialsAccessKey
 aws_secret_access_key = ProfileSharedCredentialsSecretKey
 `,
 		},
-		{
+		"config Profile shared configuration credential_source Ec2InstanceMetadata": {
 			Config: &awsbase.Config{
 				Profile: "SharedConfigurationProfile",
 				Region:  "us-east-1",
 			},
-			Description:              "config Profile shared configuration credential_source Ec2InstanceMetadata",
 			EnableEc2MetadataServer:  true,
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
@@ -325,12 +312,11 @@ role_arn = %[1]s
 role_session_name = %[2]s
 `, servicemocks.MockStsAssumeRoleArn, servicemocks.MockStsAssumeRoleSessionName),
 		},
-		// 		{
+		// 		"config Profile shared configuration credential_source EcsContainer": {
 		// 			Config: &awsbase.Config{
 		// 				Profile: "SharedConfigurationProfile",
 		// 				Region:  "us-east-1",
 		// 			},
-		// 			Description: "config Profile shared configuration credential_source EcsContainer",
 		// 			EnvironmentVariables: map[string]string{
 		// 				"AWS_CONTAINER_CREDENTIALS_RELATIVE_URI": "/creds",
 		// 			},
@@ -349,12 +335,11 @@ role_session_name = %[2]s
 		// role_session_name = %[2]s
 		// `, servicemocks.MockStsAssumeRoleArn, servicemocks.MockStsAssumeRoleSessionName),
 		// 		},
-		{
+		"config Profile shared configuration source_profile": {
 			Config: &awsbase.Config{
 				Profile: "SharedConfigurationProfile",
 				Region:  "us-east-1",
 			},
-			Description:              "config Profile shared configuration source_profile",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -372,11 +357,10 @@ aws_access_key_id = SharedConfigurationSourceAccessKey
 aws_secret_access_key = SharedConfigurationSourceSecretKey
 `, servicemocks.MockStsAssumeRoleArn, servicemocks.MockStsAssumeRoleSessionName),
 		},
-		{
+		"environment AWS_ACCESS_KEY_ID": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "environment AWS_ACCESS_KEY_ID",
 			EnvironmentVariables: map[string]string{
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
@@ -387,7 +371,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"environment AWS_ACCESS_KEY_ID config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
 				AssumeRole: &awsbase.AssumeRole{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
@@ -395,7 +379,6 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				},
 				Region: "us-east-1",
 			},
-			Description: "environment AWS_ACCESS_KEY_ID config AssumeRoleARN access key",
 			EnvironmentVariables: map[string]string{
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
@@ -407,11 +390,10 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"environment AWS_PROFILE shared credentials profile aws_access_key_id": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "environment AWS_PROFILE shared credentials profile aws_access_key_id",
 			EnvironmentVariables: map[string]string{
 				"AWS_PROFILE": "SharedCredentialsProfile",
 			},
@@ -434,11 +416,10 @@ aws_access_key_id = ProfileSharedCredentialsAccessKey
 aws_secret_access_key = ProfileSharedCredentialsSecretKey
 `,
 		},
-		{
+		"environment AWS_PROFILE shared configuration credential_source Ec2InstanceMetadata": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description:             "environment AWS_PROFILE shared configuration credential_source Ec2InstanceMetadata",
 			EnableEc2MetadataServer: true,
 			EnvironmentVariables: map[string]string{
 				"AWS_PROFILE": "SharedConfigurationProfile",
@@ -480,11 +461,10 @@ role_session_name = %[2]s
 		// role_session_name = %[2]s
 		// `, servicemocks.MockStsAssumeRoleArn, servicemocks.MockStsAssumeRoleSessionName),
 		// 		},
-		{
+		"environment AWS_PROFILE shared configuration source_profile": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "environment AWS_PROFILE shared configuration source_profile",
 			EnvironmentVariables: map[string]string{
 				"AWS_PROFILE": "SharedConfigurationProfile",
 			},
@@ -505,11 +485,10 @@ aws_access_key_id = SharedConfigurationSourceAccessKey
 aws_secret_access_key = SharedConfigurationSourceSecretKey
 `, servicemocks.MockStsAssumeRoleArn, servicemocks.MockStsAssumeRoleSessionName),
 		},
-		{
+		"environment AWS_SESSION_TOKEN": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "environment AWS_SESSION_TOKEN",
 			EnvironmentVariables: map[string]string{
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
@@ -521,11 +500,10 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"shared credentials default aws_access_key_id": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "shared credentials default aws_access_key_id",
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
 				ProviderName:    credentials.SharedCredsProviderName,
@@ -541,7 +519,7 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 `,
 		},
-		{
+		"shared credentials default aws_access_key_id config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
 				AssumeRole: &awsbase.AssumeRole{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
@@ -549,7 +527,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				},
 				Region: "us-east-1",
 			},
-			Description:              "shared credentials default aws_access_key_id config AssumeRoleARN access key",
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -562,11 +539,10 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 `,
 		},
-		{
+		"web identity token access key": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description:              "web identity token access key",
 			EnableWebIdentityEnvVars: true,
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleWithWebIdentityCredentials,
 			ExpectedRegion:           "us-east-1",
@@ -575,11 +551,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"EC2 metadata access key": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description:              "EC2 metadata access key",
 			EnableEc2MetadataServer:  true,
 			ExpectedCredentialsValue: mockdata.MockEc2MetadataCredentials,
 			ExpectedRegion:           "us-east-1",
@@ -587,7 +562,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"EC2 metadata access key config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
 				AssumeRole: &awsbase.AssumeRole{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
@@ -595,7 +570,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				},
 				Region: "us-east-1",
 			},
-			Description:              "EC2 metadata access key config AssumeRoleARN access key",
 			EnableEc2MetadataServer:  true,
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
@@ -604,11 +578,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"ECS credentials access key": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description:                "ECS credentials access key",
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockEcsCredentialsCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -616,7 +589,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"ECS credentials access key config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
 				AssumeRole: &awsbase.AssumeRole{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
@@ -624,7 +597,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				},
 				Region: "us-east-1",
 			},
-			Description:                "ECS credentials access key config AssumeRoleARN access key",
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -633,7 +605,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"AssumeWebIdentity envvar AssumeRoleARN access key": {
 			Config: &awsbase.Config{
 				AssumeRole: &awsbase.AssumeRole{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
@@ -641,7 +613,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				},
 				Region: "us-east-1",
 			},
-			Description:              "AssumeWebIdentity envvar AssumeRoleARN access key",
 			EnableWebIdentityEnvVars: true,
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
@@ -651,7 +622,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"AssumeWebIdentity config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
 				AssumeRole: &awsbase.AssumeRole{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
@@ -659,7 +630,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				},
 				Region: "us-east-1",
 			},
-			Description:              "AssumeWebIdentity config AssumeRoleARN access key",
 			EnableWebIdentityConfig:  true,
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedRegion:           "us-east-1",
@@ -669,13 +639,12 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AccessKey over environment AWS_ACCESS_KEY_ID": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "config AccessKey over environment AWS_ACCESS_KEY_ID",
 			EnvironmentVariables: map[string]string{
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
@@ -686,13 +655,12 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AccessKey over shared credentials default aws_access_key_id": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AccessKey over shared credentials default aws_access_key_id",
 			ExpectedCredentialsValue: mockdata.MockStaticCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -704,26 +672,24 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 `,
 		},
-		{
+		"config AccessKey over EC2 metadata access key": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "config AccessKey over EC2 metadata access key",
 			ExpectedCredentialsValue: mockdata.MockStaticCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"config AccessKey over ECS credentials access key": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:                "config AccessKey over ECS credentials access key",
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockStaticCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -731,11 +697,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"environment AWS_ACCESS_KEY_ID over shared credentials default aws_access_key_id": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "environment AWS_ACCESS_KEY_ID over shared credentials default aws_access_key_id",
 			EnvironmentVariables: map[string]string{
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
@@ -751,11 +716,10 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 `,
 		},
-		{
+		"environment AWS_ACCESS_KEY_ID over EC2 metadata access key": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "environment AWS_ACCESS_KEY_ID over EC2 metadata access key",
 			EnvironmentVariables: map[string]string{
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
@@ -766,11 +730,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"environment AWS_ACCESS_KEY_ID over ECS credentials access key": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "environment AWS_ACCESS_KEY_ID over ECS credentials access key",
 			EnvironmentVariables: map[string]string{
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
@@ -782,11 +745,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"shared credentials default aws_access_key_id over EC2 metadata access key": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "shared credentials default aws_access_key_id over EC2 metadata access key",
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
 				ProviderName:    credentials.SharedCredsProviderName,
@@ -802,11 +764,10 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 `,
 		},
-		{
+		"shared credentials default aws_access_key_id over ECS credentials access key": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description:                "shared credentials default aws_access_key_id over ECS credentials access key",
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue: credentials.Value{
 				AccessKeyID:     "DefaultSharedCredentialsAccessKey",
@@ -823,11 +784,10 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 `,
 		},
-		{
+		"ECS credentials access key over EC2 metadata access key": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description:                "ECS credentials access key over EC2 metadata access key",
 			EnableEcsCredentialsServer: true,
 			ExpectedCredentialsValue:   mockdata.MockEcsCredentialsCredentials,
 			ExpectedRegion:             "us-east-1",
@@ -835,12 +795,11 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"retrieve region from shared configuration file": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:              "retrieve region from shared configuration file",
 			ExpectedCredentialsValue: mockdata.MockStaticCredentials,
 			ExpectedRegion:           "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -851,7 +810,7 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 region = us-east-1
 `,
 		},
-		{
+		"assume role error": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				AssumeRole: &awsbase.AssumeRole{
@@ -861,7 +820,6 @@ region = us-east-1
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description:    "assume role error",
 			ValidateDiags:  test.ExpectDiagValidator("CannotAssumeRoleError", awsbase.IsCannotAssumeRoleError),
 			ExpectedRegion: "us-east-1",
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
@@ -869,13 +827,12 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"ExpiredToken invalid body": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "ExpiredToken invalid body",
 			ValidateDiags: test.ExpectErrDiagValidator("ExpiredToken", func(err error) bool {
 				return strings.Contains(err.Error(), "ExpiredToken")
 			}),
@@ -883,13 +840,12 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredToken,
 			},
 		},
-		{
+		"ExpiredToken valid body": { // in case they change it
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "ExpiredToken valid body", // in case they change it
 			ValidateDiags: test.ExpectErrDiagValidator("ExpiredToken", func(err error) bool {
 				return strings.Contains(err.Error(), "ExpiredToken")
 			}),
@@ -897,13 +853,12 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityValidBodyExpiredToken,
 			},
 		},
-		{
+		"ExpiredTokenException invalid body": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "ExpiredTokenException invalid body",
 			ValidateDiags: test.ExpectErrDiagValidator("ExpiredTokenException", func(err error) bool {
 				return strings.Contains(err.Error(), "ExpiredTokenException")
 			}),
@@ -911,13 +866,12 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityInvalidBodyExpiredTokenException,
 			},
 		},
-		{
+		"ExpiredTokenException valid body": { // in case they change it
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "ExpiredTokenException valid body", // in case they change it
 			ValidateDiags: test.ExpectErrDiagValidator("ExpiredTokenException", func(err error) bool {
 				return strings.Contains(err.Error(), "ExpiredTokenException")
 			}),
@@ -925,13 +879,12 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityValidBodyExpiredTokenException,
 			},
 		},
-		{
+		"RequestExpired invalid body": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "RequestExpired invalid body",
 			ValidateDiags: test.ExpectErrDiagValidator("RequestExpired", func(err error) bool {
 				return strings.Contains(err.Error(), "RequestExpired")
 			}),
@@ -939,13 +892,12 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityInvalidBodyRequestExpired,
 			},
 		},
-		{
-			Config: &awsbase.Config{
+		"RequestExpired valid body": {
+			Config: &awsbase.Config{ // in case they change it
 				AccessKey: servicemocks.MockStaticAccessKey,
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
-			Description: "RequestExpired valid body", // in case they change it
 			ValidateDiags: test.ExpectErrDiagValidator("RequestExpired", func(err error) bool {
 				return strings.Contains(err.Error(), "RequestExpired")
 			}),
@@ -953,13 +905,12 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityValidBodyRequestExpired,
 			},
 		},
-		// 		{
+		// 		"credential validation error":{
 		// 			Config: &awsbase.Config{
 		// 				AccessKey: servicemocks.MockStaticAccessKey,
 		// 				Region:    "us-east-1",
 		// 				SecretKey: servicemocks.MockStaticSecretKey,
 		// 			},
-		// 			Description: "credential validation error",
 		// 			ExpectedError: func(err error) bool {
 		// 				return tfawserr.ErrCodeEquals(err, "AccessDenied")
 		// 			},
@@ -969,12 +920,11 @@ region = us-east-1
 		// 		},
 
 		// TODO: handle both GetAwsConfig() and GetSession() errors
-		// 		{
+		// 		"session creation error":{
 		// 			Config: &awsbase.Config{
 		// 				Profile: "SharedConfigurationProfile",
 		// 				Region:  "us-east-1",
 		// 			},
-		// 			Description: "session creation error",
 		// 			ExpectedError: func(err error) bool {
 		// 				return tfawserr.ErrCodeEquals(err, "CredentialRequiresARNError")
 		// 			},
@@ -983,23 +933,21 @@ region = us-east-1
 		// source_profile = SourceSharedCredentials
 		// `,
 		// 		},
-		{
+		"skip credentials validation": {
 			Config: &awsbase.Config{
 				AccessKey:           servicemocks.MockStaticAccessKey,
 				Region:              "us-east-1",
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
 			},
-			Description:              "skip credentials validation",
 			ExpectedCredentialsValue: mockdata.MockStaticCredentials,
 			ExpectedRegion:           "us-east-1",
 		},
-		{
+		"skip EC2 Metadata API check": {
 			Config: &awsbase.Config{
 				Region:                        "us-east-1",
 				EC2MetadataServiceEnableState: imds.ClientDisabled,
 			},
-			Description:    "skip EC2 Metadata API check",
 			ValidateDiags:  test.ExpectDiagValidator("NoValidCredentialSourcesError", awsbase.IsNoValidCredentialSourcesError),
 			ExpectedRegion: "us-east-1",
 			// The IMDS server must be enabled so that auth will succeed if the IMDS is called
@@ -1008,11 +956,10 @@ region = us-east-1
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
 			},
 		},
-		{
+		"invalid profile name from envvar": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "invalid profile name from envvar",
 			EnvironmentVariables: map[string]string{
 				"AWS_PROFILE": "no-such-profile",
 			},
@@ -1026,12 +973,11 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 `,
 		},
-		{
+		"no-such-profile": {
 			Config: &awsbase.Config{
 				Profile: "no-such-profile",
 				Region:  "us-east-1",
 			},
-			Description: "invalid profile name from config",
 			ValidateDiags: test.ExpectErrDiagValidator("SharedConfigProfileNotExistError", func(err error) bool {
 				var e configv2.SharedConfigProfileNotExistError
 				return errors.As(err, &e)
@@ -1042,9 +988,8 @@ aws_access_key_id = DefaultSharedCredentialsAccessKey
 aws_secret_access_key = DefaultSharedCredentialsSecretKey
 `,
 		},
-		{
-			Config:      &awsbase.Config{},
-			Description: "AWS_ACCESS_KEY_ID overrides AWS_PROFILE",
+		"AWS_ACCESS_KEY_ID overrides AWS_PROFILE": {
+			Config: &awsbase.Config{},
 			EnvironmentVariables: map[string]string{
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
@@ -1064,11 +1009,10 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 			},
 			ExpectedCredentialsValue: mockdata.MockEnvCredentials,
 		},
-		{
+		"AWS_ACCESS_KEY_ID does not override invalid profile name from envvar": {
 			Config: &awsbase.Config{
 				Region: "us-east-1",
 			},
-			Description: "AWS_ACCESS_KEY_ID does not override invalid profile name from envvar",
 			EnvironmentVariables: map[string]string{
 				"AWS_ACCESS_KEY_ID":     servicemocks.MockEnvAccessKey,
 				"AWS_SECRET_ACCESS_KEY": servicemocks.MockEnvSecretKey,
@@ -1086,14 +1030,15 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 	}
 
-	for _, testCase := range testCases {
+	for testName, testCase := range testCases {
+		testName := testName
 		testCase := testCase
 
 		if testCase.ValidateDiags == nil {
 			testCase.ValidateDiags = test.ExpectNoDiags
 		}
 
-		t.Run(testCase.Description, func(t *testing.T) {
+		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
 			servicemocks.InitSessionTestEnv(t)
