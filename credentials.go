@@ -100,7 +100,7 @@ AWS Error: %w`, err)
 		return nil, "", diags.Append(c.NewNoValidCredentialSourcesError(err))
 	}
 
-	if c.AssumeRole == nil {
+	if len(c.AssumeRole) == 0 {
 		return cfg.Credentials, creds.Source, diags
 	}
 
@@ -157,67 +157,71 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 
 	logger := logging.RetrieveLogger(ctx)
 
-	ar := c.AssumeRole
+	var creds aws.CredentialsProvider
 
-	if ar.RoleARN == "" {
-		return nil, diags.AddError(
-			"Cannot assume IAM Role",
-			"IAM Role ARN not set",
-		)
-	}
-
-	logger.Info(ctx, "Assuming IAM Role", map[string]any{
-		"tf_aws.assume_role.role_arn":        ar.RoleARN,
-		"tf_aws.assume_role.session_name":    ar.SessionName,
-		"tf_aws.assume_role.external_id":     ar.ExternalID,
-		"tf_aws.assume_role.source_identity": ar.SourceIdentity,
-	})
-
-	// When assuming a role, we need to first authenticate the base credentials above, then assume the desired role
-	client := stsClient(ctx, awsConfig, c)
-
-	appCreds := stscreds.NewAssumeRoleProvider(client, ar.RoleARN, func(opts *stscreds.AssumeRoleOptions) {
-		opts.RoleSessionName = ar.SessionName
-		opts.Duration = ar.Duration
-
-		if ar.ExternalID != "" {
-			opts.ExternalID = aws.String(ar.ExternalID)
+	for _, ar := range c.AssumeRole {
+		if ar.RoleARN == "" {
+			return nil, diags.AddError(
+				"Cannot assume IAM Role",
+				"IAM Role ARN not set",
+			)
 		}
 
-		if ar.Policy != "" {
-			opts.Policy = aws.String(ar.Policy)
-		}
+		logger.Info(ctx, "Assuming IAM Role", map[string]any{
+			"tf_aws.assume_role.role_arn":        ar.RoleARN,
+			"tf_aws.assume_role.session_name":    ar.SessionName,
+			"tf_aws.assume_role.external_id":     ar.ExternalID,
+			"tf_aws.assume_role.source_identity": ar.SourceIdentity,
+		})
 
-		if len(ar.PolicyARNs) > 0 {
-			opts.PolicyARNs = getPolicyDescriptorTypes(ar.PolicyARNs)
-		}
+		// When assuming a role, we need to first authenticate the base credentials above, then assume the desired role
+		client := stsClient(ctx, awsConfig, c)
 
-		if len(ar.Tags) > 0 {
-			var tags []types.Tag
-			for k, v := range ar.Tags {
-				tag := types.Tag{
-					Key:   aws.String(k),
-					Value: aws.String(v),
-				}
-				tags = append(tags, tag)
+		appCreds := stscreds.NewAssumeRoleProvider(client, ar.RoleARN, func(opts *stscreds.AssumeRoleOptions) {
+			opts.RoleSessionName = ar.SessionName
+			opts.Duration = ar.Duration
+
+			if ar.ExternalID != "" {
+				opts.ExternalID = aws.String(ar.ExternalID)
 			}
 
-			opts.Tags = tags
-		}
+			if ar.Policy != "" {
+				opts.Policy = aws.String(ar.Policy)
+			}
 
-		if len(ar.TransitiveTagKeys) > 0 {
-			opts.TransitiveTagKeys = ar.TransitiveTagKeys
-		}
+			if len(ar.PolicyARNs) > 0 {
+				opts.PolicyARNs = getPolicyDescriptorTypes(ar.PolicyARNs)
+			}
 
-		if ar.SourceIdentity != "" {
-			opts.SourceIdentity = aws.String(ar.SourceIdentity)
+			if len(ar.Tags) > 0 {
+				var tags []types.Tag
+				for k, v := range ar.Tags {
+					tag := types.Tag{
+						Key:   aws.String(k),
+						Value: aws.String(v),
+					}
+					tags = append(tags, tag)
+				}
+
+				opts.Tags = tags
+			}
+
+			if len(ar.TransitiveTagKeys) > 0 {
+				opts.TransitiveTagKeys = ar.TransitiveTagKeys
+			}
+
+			if ar.SourceIdentity != "" {
+				opts.SourceIdentity = aws.String(ar.SourceIdentity)
+			}
+		})
+		_, err := appCreds.Retrieve(ctx)
+		if err != nil {
+			return nil, diags.Append(newCannotAssumeRoleError(ar, err))
 		}
-	})
-	_, err := appCreds.Retrieve(ctx)
-	if err != nil {
-		return nil, diags.Append(c.NewCannotAssumeRoleError(err))
+		creds = aws.NewCredentialsCache(appCreds)
+		awsConfig.Credentials = creds
 	}
-	return aws.NewCredentialsCache(appCreds), nil
+	return creds, nil
 }
 
 func getPolicyDescriptorTypes(policyARNs []string) []types.PolicyDescriptorType {

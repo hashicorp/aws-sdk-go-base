@@ -124,10 +124,10 @@ func TestGetSession(t *testing.T) {
 		"config AccessKey config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -141,11 +141,11 @@ func TestGetSession(t *testing.T) {
 		"config AssumeRoleDuration": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					Duration:    1 * time.Hour,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -159,11 +159,11 @@ func TestGetSession(t *testing.T) {
 		"config AssumeRoleExternalID": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					ExternalID:  servicemocks.MockStsAssumeRoleExternalId,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -177,11 +177,11 @@ func TestGetSession(t *testing.T) {
 		"config AssumeRolePolicy": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					Policy:      servicemocks.MockStsAssumeRolePolicy,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -195,11 +195,11 @@ func TestGetSession(t *testing.T) {
 		"config AssumeRolePolicyARNs": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					PolicyARNs:  []string{servicemocks.MockStsAssumeRolePolicyArn},
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -213,13 +213,13 @@ func TestGetSession(t *testing.T) {
 		"config AssumeRoleTags": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
 					Tags: map[string]string{
 						servicemocks.MockStsAssumeRoleTagKey: servicemocks.MockStsAssumeRoleTagValue,
 					},
-				},
+				}},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -233,14 +233,14 @@ func TestGetSession(t *testing.T) {
 		"config AssumeRoleTransitiveTagKeys": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
 					Tags: map[string]string{
 						servicemocks.MockStsAssumeRoleTagKey: servicemocks.MockStsAssumeRoleTagValue,
 					},
 					TransitiveTagKeys: []string{servicemocks.MockStsAssumeRoleTagKey},
-				},
+				}},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -254,11 +254,11 @@ func TestGetSession(t *testing.T) {
 		"config AssumeRoleSourceIdentity": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:        servicemocks.MockStsAssumeRoleArn,
 					SessionName:    servicemocks.MockStsAssumeRoleSessionName,
 					SourceIdentity: servicemocks.MockStsAssumeRoleSourceIdentity,
-				},
+				}},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -373,10 +373,10 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 		},
 		"environment AWS_ACCESS_KEY_ID config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region: "us-east-1",
 			},
 			EnvironmentVariables: map[string]string{
@@ -521,10 +521,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		"shared credentials default aws_access_key_id config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region: "us-east-1",
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
@@ -564,10 +564,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		"EC2 metadata access key config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region: "us-east-1",
 			},
 			EnableEc2MetadataServer:  true,
@@ -591,10 +591,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		"ECS credentials access key config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region: "us-east-1",
 			},
 			EnableEcsCredentialsServer: true,
@@ -607,10 +607,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		"AssumeWebIdentity envvar AssumeRoleARN access key": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region: "us-east-1",
 			},
 			EnableWebIdentityEnvVars: true,
@@ -624,10 +624,10 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 		},
 		"AssumeWebIdentity config AssumeRoleARN access key": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region: "us-east-1",
 			},
 			EnableWebIdentityConfig:  true,
@@ -813,10 +813,10 @@ region = us-east-1
 		"assume role error": {
 			Config: &awsbase.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				Region:    "us-east-1",
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -1870,10 +1870,10 @@ func TestAssumeRole(t *testing.T) {
 	}{
 		"config": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -1903,10 +1903,10 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 		"config overrides shared configuration": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
-				},
+				}},
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -1928,11 +1928,11 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 		"with duration": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
 					Duration:    1 * time.Hour,
-				},
+				}},
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -1944,11 +1944,11 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 		"with policy": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{
+				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
 					SessionName: servicemocks.MockStsAssumeRoleSessionName,
 					Policy:      "{}",
-				},
+				}},
 				AccessKey: servicemocks.MockStaticAccessKey,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
@@ -1960,9 +1960,11 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 		"invalid empty config": {
 			Config: &awsbase.Config{
-				AssumeRole: &awsbase.AssumeRole{},
-				AccessKey:  servicemocks.MockStaticAccessKey,
-				SecretKey:  servicemocks.MockStaticSecretKey,
+				AssumeRole: []awsbase.AssumeRole{
+					{},
+				},
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			ExpectedDiags: diag.Diagnostics{

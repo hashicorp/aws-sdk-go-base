@@ -9,58 +9,6 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 )
 
-// CannotAssumeRoleError occurs when AssumeRole cannot complete.
-type CannotAssumeRoleError struct {
-	Config *Config
-	err    error
-}
-
-func (e CannotAssumeRoleError) Severity() diag.Severity {
-	return diag.SeverityError
-}
-
-func (e CannotAssumeRoleError) Summary() string {
-	return "Cannot assume IAM Role"
-}
-
-func (e CannotAssumeRoleError) Detail() string {
-	if e.Config == nil || e.Config.AssumeRole == nil {
-		return fmt.Sprintf("Error: %s", e.err)
-	}
-
-	return fmt.Sprintf(`IAM Role (%s) cannot be assumed.
-
-There are a number of possible causes of this - the most common are:
-  * The credentials used in order to assume the role are invalid
-  * The credentials do not have appropriate permission to assume the role
-  * The role ARN is not valid
-
-Error: %s
-`, e.Config.AssumeRole.RoleARN, e.err)
-}
-
-func (e CannotAssumeRoleError) Equal(other diag.Diagnostic) bool {
-	ed, ok := other.(CannotAssumeRoleError)
-	if !ok {
-		return false
-	}
-
-	return ed.Summary() == e.Summary() && ed.Detail() == e.Detail()
-}
-
-func (e CannotAssumeRoleError) Err() error {
-	return e.err
-}
-
-func (c *Config) NewCannotAssumeRoleError(err error) CannotAssumeRoleError {
-	return CannotAssumeRoleError{
-		Config: c,
-		err:    err,
-	}
-}
-
-var _ diag.DiagnosticWithErr = CannotAssumeRoleError{}
-
 // CannotAssumeRoleWithWebIdentityError occurs when AssumeRoleWithWebIdentity cannot complete.
 type CannotAssumeRoleWithWebIdentityError struct {
 	Config *Config

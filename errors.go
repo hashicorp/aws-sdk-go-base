@@ -4,16 +4,63 @@
 package awsbase
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/config"
 )
 
-// CannotAssumeRoleError occurs when AssumeRole cannot complete.
-type CannotAssumeRoleError = config.CannotAssumeRoleError
+// cannotAssumeRoleError occurs when AssumeRole cannot complete.
+type cannotAssumeRoleError struct {
+	ar  config.AssumeRole
+	err error
+}
+
+func (e cannotAssumeRoleError) Severity() diag.Severity {
+	return diag.SeverityError
+}
+
+func (e cannotAssumeRoleError) Summary() string {
+	return "Cannot assume IAM Role"
+}
+
+func (e cannotAssumeRoleError) Detail() string {
+	return fmt.Sprintf(`IAM Role (%s) cannot be assumed.
+
+There are a number of possible causes of this - the most common are:
+  * The credentials used in order to assume the role are invalid
+  * The credentials do not have appropriate permission to assume the role
+  * The role ARN is not valid
+
+Error: %s
+`, e.ar.RoleARN, e.err)
+}
+
+func (e cannotAssumeRoleError) Equal(other diag.Diagnostic) bool {
+	ed, ok := other.(cannotAssumeRoleError)
+	if !ok {
+		return false
+	}
+
+	return ed.Summary() == e.Summary() && ed.Detail() == e.Detail()
+}
+
+func (e cannotAssumeRoleError) Err() error {
+	return e.err
+}
+
+func newCannotAssumeRoleError(ar AssumeRole, err error) cannotAssumeRoleError {
+	return cannotAssumeRoleError{
+		ar:  ar,
+		err: err,
+	}
+}
+
+var _ diag.DiagnosticWithErr = cannotAssumeRoleError{}
 
 // IsCannotAssumeRoleError returns true if the error contains the CannotAssumeRoleError type.
 func IsCannotAssumeRoleError(diag diag.Diagnostic) bool {
-	_, ok := diag.(CannotAssumeRoleError)
+	_, ok := diag.(cannotAssumeRoleError)
 	return ok
 }
 
