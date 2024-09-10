@@ -1,6 +1,7 @@
 module github.com/hashicorp/aws-sdk-go-base/tools
 
-go 1.22
+go 1.22.1
+
 toolchain go1.22.7
 
 require (
