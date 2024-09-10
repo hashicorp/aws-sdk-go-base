@@ -159,15 +159,17 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 
 	var creds aws.CredentialsProvider
 
-	for _, ar := range c.AssumeRole {
+	total := len(c.AssumeRole)
+	for i, ar := range c.AssumeRole {
 		if ar.RoleARN == "" {
 			return nil, diags.AddError(
 				"Cannot assume IAM Role",
-				"IAM Role ARN not set",
+				fmt.Sprintf("IAM Role ARN not set in assume role %d of %d", i+1, total),
 			)
 		}
 
 		logger.Info(ctx, "Assuming IAM Role", map[string]any{
+			"tf_aws.assume_role.index":           i,
 			"tf_aws.assume_role.role_arn":        ar.RoleARN,
 			"tf_aws.assume_role.session_name":    ar.SessionName,
 			"tf_aws.assume_role.external_id":     ar.ExternalID,

@@ -1868,7 +1868,7 @@ func TestAssumeRole(t *testing.T) {
 		ExpectedDiags            diag.Diagnostics
 		MockStsEndpoints         []*servicemocks.MockEndpoint
 	}{
-		"config": {
+		"config single": {
 			Config: &awsbase.Config{
 				AssumeRole: []awsbase.AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
@@ -1880,6 +1880,31 @@ func TestAssumeRole(t *testing.T) {
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleValidEndpoint,
+			},
+		},
+
+		"config multiple": {
+			Config: &awsbase.Config{
+				AssumeRole: []awsbase.AssumeRole{
+					{
+						RoleARN:     servicemocks.MockStsAssumeRoleArn,
+						SessionName: servicemocks.MockStsAssumeRoleSessionName,
+					},
+					{
+						RoleARN:     servicemocks.MockStsAssumeRoleArn2,
+						SessionName: servicemocks.MockStsAssumeRoleSessionName2,
+					},
+				},
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpoint,
+				servicemocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{
+					"RoleArn":         servicemocks.MockStsAssumeRoleArn2,
+					"RoleSessionName": servicemocks.MockStsAssumeRoleSessionName2,
+				}),
 			},
 		},
 

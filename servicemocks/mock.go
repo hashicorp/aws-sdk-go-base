@@ -33,6 +33,7 @@ const (
 
 	MockStsAssumeRoleAccessKey                               = `AssumeRoleAccessKey`
 	MockStsAssumeRoleArn                                     = `arn:aws:iam::555555555555:role/AssumeRole`
+	MockStsAssumeRoleArn2                                    = `arn:aws:iam::555555555555:role/AssumeRole2`
 	MockStsAssumeRoleExternalId                              = `AssumeRoleExternalId`
 	MockStsAssumeRoleInvalidResponseBodyInvalidClientTokenId = `<ErrorResponse xmlns="https://sts.amazonaws.com/doc/2011-06-15/">
 <Error>
@@ -53,6 +54,7 @@ const (
 	MockStsAssumeRolePolicyArn         = `arn:aws:iam::555555555555:policy/AssumeRolePolicy1`
 	MockStsAssumeRoleSecretKey         = `AssumeRoleSecretKey`
 	MockStsAssumeRoleSessionName       = `AssumeRoleSessionName`
+	MockStsAssumeRoleSessionName2      = `AssumeRoleSessionName2`
 	MockStsAssumeRoleSessionToken      = `AssumeRoleSessionToken`
 	MockStsAssumeRoleSourceIdentity    = `AssumeRoleSourceIdentity`
 	MockStsAssumeRoleTagKey            = `AssumeRoleTagKey`

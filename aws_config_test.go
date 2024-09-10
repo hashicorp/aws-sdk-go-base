@@ -2512,7 +2512,7 @@ func TestAssumeRole(t *testing.T) {
 		ExpectedDiags            diag.Diagnostics
 		MockStsEndpoints         []*servicemocks.MockEndpoint
 	}{
-		"config": {
+		"config single": {
 			Config: &Config{
 				AssumeRole: []AssumeRole{{
 					RoleARN:     servicemocks.MockStsAssumeRoleArn,
@@ -2524,6 +2524,31 @@ func TestAssumeRole(t *testing.T) {
 			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
 			MockStsEndpoints: []*servicemocks.MockEndpoint{
 				servicemocks.MockStsAssumeRoleValidEndpoint,
+			},
+		},
+
+		"config multiple": {
+			Config: &Config{
+				AssumeRole: []AssumeRole{
+					{
+						RoleARN:     servicemocks.MockStsAssumeRoleArn,
+						SessionName: servicemocks.MockStsAssumeRoleSessionName,
+					},
+					{
+						RoleARN:     servicemocks.MockStsAssumeRoleArn2,
+						SessionName: servicemocks.MockStsAssumeRoleSessionName2,
+					},
+				},
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpoint,
+				servicemocks.MockStsAssumeRoleValidEndpointWithOptions(map[string]string{
+					"RoleArn":         servicemocks.MockStsAssumeRoleArn2,
+					"RoleSessionName": servicemocks.MockStsAssumeRoleSessionName2,
+				}),
 			},
 		},
 
@@ -2602,7 +2627,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			},
 		},
 
-		"invalid empty config": {
+		"invalid empty single config": {
 			Config: &Config{
 				AssumeRole: []AssumeRole{
 					{},
@@ -2614,8 +2639,32 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			ExpectedDiags: diag.Diagnostics{
 				diag.NewErrorDiagnostic(
 					"Cannot assume IAM Role",
-					"IAM Role ARN not set",
+					"IAM Role ARN not set in assume role 1 of 1",
 				),
+			},
+		},
+
+		"invalid empty last config": {
+			Config: &Config{
+				AssumeRole: []AssumeRole{
+					{
+						RoleARN:     servicemocks.MockStsAssumeRoleArn,
+						SessionName: servicemocks.MockStsAssumeRoleSessionName,
+					},
+					{},
+				},
+				AccessKey: servicemocks.MockStaticAccessKey,
+				SecretKey: servicemocks.MockStaticSecretKey,
+			},
+			ExpectedCredentialsValue: mockdata.MockStsAssumeRoleCredentials,
+			ExpectedDiags: diag.Diagnostics{
+				diag.NewErrorDiagnostic(
+					"Cannot assume IAM Role",
+					"IAM Role ARN not set in assume role 2 of 2",
+				),
+			},
+			MockStsEndpoints: []*servicemocks.MockEndpoint{
+				servicemocks.MockStsAssumeRoleValidEndpoint,
 			},
 		},
 	}
