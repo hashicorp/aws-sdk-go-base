@@ -1995,7 +1995,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 			ExpectedDiags: diag.Diagnostics{
 				diag.NewErrorDiagnostic(
 					"Cannot assume IAM Role",
-					"IAM Role ARN not set",
+					"IAM Role ARN not set in assume role 1 of 1",
 				),
 			},
 		},
