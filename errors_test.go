@@ -24,7 +24,7 @@ func TestIsCannotAssumeRoleError(t *testing.T) {
 		},
 		{
 			Name:     "Top-level CannotAssumeRoleError",
-			Diag:     CannotAssumeRoleError{},
+			Diag:     cannotAssumeRoleError{},
 			Expected: true,
 		},
 	}
@@ -53,7 +53,7 @@ func TestIsNoValidCredentialSourcesError(t *testing.T) {
 		},
 		{
 			Name: "Top-level CannotAssumeRoleError",
-			Diag: CannotAssumeRoleError{},
+			Diag: cannotAssumeRoleError{},
 		},
 		{
 			Name:     "Top-level NoValidCredentialSourcesError",

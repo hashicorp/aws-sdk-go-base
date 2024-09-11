@@ -33,7 +33,7 @@ type Config struct {
 	AccessKey                      string
 	AllowedAccountIds              []string
 	APNInfo                        *APNInfo
-	AssumeRole                     *AssumeRole
+	AssumeRole                     []AssumeRole
 	AssumeRoleWithWebIdentity      *AssumeRoleWithWebIdentity
 	Backoff                        retry.BackoffDelayer
 	CallerDocumentationURL         string
