@@ -1,6 +1,12 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.56 (2024-09-11)
+
+ENHANCEMENTS
+
+* Adds support for IAM role chaining ([#1170](https://github.com/hashicorp/aws-sdk-go-base/pull/1170))
+
 # v2.0.0-beta.55 (2024-08-27)
 
 BUG FIXES
