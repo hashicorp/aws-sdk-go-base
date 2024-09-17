@@ -53,5 +53,31 @@ func TestPartitionForRegion(t *testing.T) {
 			t.Errorf("expected PartitionID %q for Region %q, got %q", testcase.expectedID, region, gotID.ID())
 		}
 	}
+}
 
+func TestPartitionRegions(t *testing.T) {
+	t.Parallel()
+
+	testcases := map[string]struct {
+		expectedRegions bool
+	}{
+		"us-east-1": {
+			expectedRegions: true,
+		},
+		"us-gov-west-1": {
+			expectedRegions: true,
+		},
+		"not-found": {
+			expectedRegions: false,
+		},
+	}
+
+	ps := endpoints.DefaultPartitions()
+	for region, testcase := range testcases {
+		gotID, _ := endpoints.PartitionForRegion(ps, region)
+
+		if got, want := len(gotID.Regions()) > 0, testcase.expectedRegions; got != want {
+			t.Errorf("expected Regions %t for Region %q, got %t", want, region, got)
+		}
+	}
 }
