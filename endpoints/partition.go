@@ -7,6 +7,8 @@ import (
 	"regexp"
 )
 
+// Partition represents an AWS partition.
+// See https://docs.aws.amazon.com/whitepapers/latest/aws-fault-isolation-boundaries/partitions.html.
 type Partition struct {
 	id          string
 	name        string
@@ -14,18 +16,33 @@ type Partition struct {
 	regionRegex *regexp.Regexp
 }
 
-func (p *Partition) ID() string {
+// ID returns the identifier of the partition.
+func (p Partition) ID() string {
 	return p.id
 }
 
-func (p *Partition) Name() string {
+// Name returns the name of the partition.
+func (p Partition) Name() string {
 	return p.name
 }
 
-func (p *Partition) DNSSuffix() string {
+// DNSSuffix returns the base domain name of the partition.
+func (p Partition) DNSSuffix() string {
 	return p.dnsSuffix
 }
 
-func (p *Partition) RegionRegex() *regexp.Regexp {
+// RegionRegex return the regular expression that matches Region IDs for the partition.
+func (p Partition) RegionRegex() *regexp.Regexp {
 	return p.regionRegex
+}
+
+// DefaultPartitions returns a list of the partitions.
+func DefaultPartitions() []Partition {
+	partitions := make([]Partition, len(partitionsAndRegions))
+
+	for _, v := range partitionsAndRegions {
+		partitions = append(partitions, v.partition)
+	}
+
+	return partitions
 }
