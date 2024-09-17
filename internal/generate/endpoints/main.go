@@ -23,10 +23,11 @@ import (
 )
 
 type PartitionDatum struct {
-	ID        string
-	Name      string
-	DNSSuffix string
-	Regions   []RegionDatum
+	ID          string
+	Name        string
+	DNSSuffix   string
+	RegionRegex string
+	Regions     []RegionDatum
 }
 
 type RegionDatum struct {
@@ -111,6 +112,12 @@ func main() {
 				if name, ok := partition["partitionName"].(string); ok {
 					partitionDatum.Name = name
 				}
+				if dnsSuffix, ok := partition["dnsSuffix"].(string); ok {
+					partitionDatum.DNSSuffix = dnsSuffix
+				}
+				if regionRegex, ok := partition["regionRegex"].(string); ok {
+					partitionDatum.RegionRegex = regionRegex
+				}
 				if regions, ok := partition["regions"].(map[string]any); ok {
 					for id, region := range regions {
 						regionDatum := RegionDatum{
@@ -135,6 +142,12 @@ func main() {
 	sort.SliceStable(td.Partitions, func(i, j int) bool {
 		return td.Partitions[i].ID < td.Partitions[j].ID
 	})
+
+	for i := 0; i < len(td.Partitions); i++ {
+		sort.SliceStable(td.Partitions[i].Regions, func(j, k int) bool {
+			return td.Partitions[i].Regions[j].ID < td.Partitions[i].Regions[k].ID
+		})
+	}
 
 	d := g.NewGoFileDestination(outputFilename)
 
