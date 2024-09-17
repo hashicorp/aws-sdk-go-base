@@ -4,6 +4,7 @@
 package endpoints
 
 import (
+	"maps"
 	"regexp"
 )
 
@@ -36,13 +37,39 @@ func (p Partition) RegionRegex() *regexp.Regexp {
 	return p.regionRegex
 }
 
-// DefaultPartitions returns a list of the partitions.
-func DefaultPartitions() []Partition {
-	partitions := make([]Partition, len(partitionsAndRegions))
-
-	for _, v := range partitionsAndRegions {
-		partitions = append(partitions, v.partition)
+// Regions returns a map of Regions for the partition, indexed by their ID.
+func (p Partition) Regions() map[string]Region {
+	partitionAndRegion, ok := partitionsAndRegions[p.id]
+	if !ok {
+		return nil
 	}
 
-	return partitions
+	return maps.Clone(partitionAndRegion.regions)
+}
+
+// DefaultPartitions returns a list of the partitions.
+func DefaultPartitions() []Partition {
+	ps := make([]Partition, len(partitionsAndRegions))
+
+	for _, v := range partitionsAndRegions {
+		ps = append(ps, v.partition)
+	}
+
+	return ps
+}
+
+// PartitionForRegion returns the first partition which includes the specific Region.
+func PartitionForRegion(ps []Partition, regionID string) (Partition, bool) {
+	for _, p := range ps {
+		partitionAndRegion, ok := partitionsAndRegions[p.id]
+		if !ok {
+			continue
+		}
+
+		if _, ok := partitionAndRegion.regions[regionID]; ok || partitionAndRegion.partition.regionRegex.MatchString(regionID) {
+			return p, true
+		}
+	}
+
+	return Partition{}, false
 }
