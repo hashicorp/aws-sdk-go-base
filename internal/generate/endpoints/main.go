@@ -66,7 +66,8 @@ func main() {
 
 	td := TemplateData{}
 	templateFuncMap := template.FuncMap{
-		"IDToConstant": func(s string) (string, error) {
+		// KebabToTitle splits a kebab case string and returns a string with each part title cased.
+		"KebabToTitle": func(s string) (string, error) {
 			parts := strings.Split(s, "-")
 			return strings.Join(slices.ApplyToAll(parts, func(s string) string {
 				return common.FirstUpper(s)

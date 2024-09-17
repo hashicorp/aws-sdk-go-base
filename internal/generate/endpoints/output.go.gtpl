@@ -7,6 +7,6 @@ package endpoints
 
 const (
 {{- range .Partitions }}
-    {{ .ID | IDToConstant}}PartitionID = "{{ .ID }}"
+    {{ .ID | KebabToTitle}}PartitionID = "{{ .ID }}"
 {{- end }}
 )
