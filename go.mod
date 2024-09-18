@@ -5,7 +5,6 @@ go 1.22
 toolchain go1.22.7
 
 require (
-	github.com/YakDriver/regexache v0.24.0
 	github.com/aws/aws-sdk-go-v2 v1.30.5
 	github.com/aws/aws-sdk-go-v2/config v1.27.35
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.33

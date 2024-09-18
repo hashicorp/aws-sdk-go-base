@@ -6,7 +6,7 @@
 package endpoints
 
 import (
-	"github.com/YakDriver/regexache"
+	"regexp"
 )
 
 // All known partition IDs.
@@ -81,7 +81,7 @@ var (
 				id:          AwsPartitionID,
 				name:        "AWS Standard",
 				dnsSuffix:   "amazonaws.com",
-				regionRegex: regexache.MustCompile(`^(us|eu|ap|sa|ca|me|af|il|mx)\-\w+\-\d+$`),
+				regionRegex: regexp.MustCompile(`^(us|eu|ap|sa|ca|me|af|il|mx)\-\w+\-\d+$`),
 			},
 			regions: map[string]Region{
 				AfSouth1RegionID: {
@@ -211,7 +211,7 @@ var (
 				id:          AwsCnPartitionID,
 				name:        "AWS China",
 				dnsSuffix:   "amazonaws.com.cn",
-				regionRegex: regexache.MustCompile(`^cn\-\w+\-\d+$`),
+				regionRegex: regexp.MustCompile(`^cn\-\w+\-\d+$`),
 			},
 			regions: map[string]Region{
 				CnNorth1RegionID: {
@@ -229,7 +229,7 @@ var (
 				id:          AwsIsoPartitionID,
 				name:        "AWS ISO (US)",
 				dnsSuffix:   "c2s.ic.gov",
-				regionRegex: regexache.MustCompile(`^us\-iso\-\w+\-\d+$`),
+				regionRegex: regexp.MustCompile(`^us\-iso\-\w+\-\d+$`),
 			},
 			regions: map[string]Region{
 				UsIsoEast1RegionID: {
@@ -247,7 +247,7 @@ var (
 				id:          AwsIsoBPartitionID,
 				name:        "AWS ISOB (US)",
 				dnsSuffix:   "sc2s.sgov.gov",
-				regionRegex: regexache.MustCompile(`^us\-isob\-\w+\-\d+$`),
+				regionRegex: regexp.MustCompile(`^us\-isob\-\w+\-\d+$`),
 			},
 			regions: map[string]Region{
 				UsIsobEast1RegionID: {
@@ -261,7 +261,7 @@ var (
 				id:          AwsIsoEPartitionID,
 				name:        "AWS ISOE (Europe)",
 				dnsSuffix:   "cloud.adc-e.uk",
-				regionRegex: regexache.MustCompile(`^eu\-isoe\-\w+\-\d+$`),
+				regionRegex: regexp.MustCompile(`^eu\-isoe\-\w+\-\d+$`),
 			},
 			regions: map[string]Region{
 				EuIsoeWest1RegionID: {
@@ -275,7 +275,7 @@ var (
 				id:          AwsIsoFPartitionID,
 				name:        "AWS ISOF",
 				dnsSuffix:   "csp.hci.ic.gov",
-				regionRegex: regexache.MustCompile(`^us\-isof\-\w+\-\d+$`),
+				regionRegex: regexp.MustCompile(`^us\-isof\-\w+\-\d+$`),
 			},
 			regions: map[string]Region{},
 		},
@@ -284,7 +284,7 @@ var (
 				id:          AwsUsGovPartitionID,
 				name:        "AWS GovCloud (US)",
 				dnsSuffix:   "amazonaws.com",
-				regionRegex: regexache.MustCompile(`^us\-gov\-\w+\-\d+$`),
+				regionRegex: regexp.MustCompile(`^us\-gov\-\w+\-\d+$`),
 			},
 			regions: map[string]Region{
 				UsGovEast1RegionID: {

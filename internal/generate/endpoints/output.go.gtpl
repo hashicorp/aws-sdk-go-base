@@ -6,7 +6,7 @@
 package endpoints
 
 import (
-    "github.com/YakDriver/regexache"
+    "regexp"
 )
 
 // All known partition IDs.
@@ -39,7 +39,7 @@ var (
                 id: {{ .ID | KebabToTitle}}PartitionID,
                 name: "{{ .Name }}",
                 dnsSuffix: "{{ .DNSSuffix }}",
-                regionRegex: regexache.MustCompile(`{{ .RegionRegex }}`),
+                regionRegex: regexp.MustCompile(`{{ .RegionRegex }}`),
             },
             regions: map[string]Region{
             {{- range .Regions }}
