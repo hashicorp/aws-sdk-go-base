@@ -26,21 +26,14 @@ const (
 {{- end }}
 )
 
-type partitionAndRegions struct {
-	partition Partition
-	regions   map[string]Region
-}
-
 var (
-	partitionsAndRegions = map[string]partitionAndRegions{
+	partitions = map[string]Partition{
 {{- range .Partitions }}
         {{ .ID | KebabToTitle}}PartitionID: {
-            partition: Partition{
-                id: {{ .ID | KebabToTitle}}PartitionID,
-                name: "{{ .Name }}",
-                dnsSuffix: "{{ .DNSSuffix }}",
-                regionRegex: regexp.MustCompile(`{{ .RegionRegex }}`),
-            },
+            id: {{ .ID | KebabToTitle}}PartitionID,
+            name: "{{ .Name }}",
+            dnsSuffix: "{{ .DNSSuffix }}",
+            regionRegex: regexp.MustCompile(`{{ .RegionRegex }}`),
             regions: map[string]Region{
             {{- range .Regions }}
                 {{ .ID | KebabToTitle}}RegionID: {

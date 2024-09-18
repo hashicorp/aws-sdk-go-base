@@ -69,20 +69,13 @@ const (
 	UsGovWest1RegionID = "us-gov-west-1" // AWS GovCloud (US-West)
 )
 
-type partitionAndRegions struct {
-	partition Partition
-	regions   map[string]Region
-}
-
 var (
-	partitionsAndRegions = map[string]partitionAndRegions{
+	partitions = map[string]Partition{
 		AwsPartitionID: {
-			partition: Partition{
-				id:          AwsPartitionID,
-				name:        "AWS Standard",
-				dnsSuffix:   "amazonaws.com",
-				regionRegex: regexp.MustCompile(`^(us|eu|ap|sa|ca|me|af|il|mx)\-\w+\-\d+$`),
-			},
+			id:          AwsPartitionID,
+			name:        "AWS Standard",
+			dnsSuffix:   "amazonaws.com",
+			regionRegex: regexp.MustCompile(`^(us|eu|ap|sa|ca|me|af|il|mx)\-\w+\-\d+$`),
 			regions: map[string]Region{
 				AfSouth1RegionID: {
 					id:          AfSouth1RegionID,
@@ -207,12 +200,10 @@ var (
 			},
 		},
 		AwsCnPartitionID: {
-			partition: Partition{
-				id:          AwsCnPartitionID,
-				name:        "AWS China",
-				dnsSuffix:   "amazonaws.com.cn",
-				regionRegex: regexp.MustCompile(`^cn\-\w+\-\d+$`),
-			},
+			id:          AwsCnPartitionID,
+			name:        "AWS China",
+			dnsSuffix:   "amazonaws.com.cn",
+			regionRegex: regexp.MustCompile(`^cn\-\w+\-\d+$`),
 			regions: map[string]Region{
 				CnNorth1RegionID: {
 					id:          CnNorth1RegionID,
@@ -225,12 +216,10 @@ var (
 			},
 		},
 		AwsIsoPartitionID: {
-			partition: Partition{
-				id:          AwsIsoPartitionID,
-				name:        "AWS ISO (US)",
-				dnsSuffix:   "c2s.ic.gov",
-				regionRegex: regexp.MustCompile(`^us\-iso\-\w+\-\d+$`),
-			},
+			id:          AwsIsoPartitionID,
+			name:        "AWS ISO (US)",
+			dnsSuffix:   "c2s.ic.gov",
+			regionRegex: regexp.MustCompile(`^us\-iso\-\w+\-\d+$`),
 			regions: map[string]Region{
 				UsIsoEast1RegionID: {
 					id:          UsIsoEast1RegionID,
@@ -243,12 +232,10 @@ var (
 			},
 		},
 		AwsIsoBPartitionID: {
-			partition: Partition{
-				id:          AwsIsoBPartitionID,
-				name:        "AWS ISOB (US)",
-				dnsSuffix:   "sc2s.sgov.gov",
-				regionRegex: regexp.MustCompile(`^us\-isob\-\w+\-\d+$`),
-			},
+			id:          AwsIsoBPartitionID,
+			name:        "AWS ISOB (US)",
+			dnsSuffix:   "sc2s.sgov.gov",
+			regionRegex: regexp.MustCompile(`^us\-isob\-\w+\-\d+$`),
 			regions: map[string]Region{
 				UsIsobEast1RegionID: {
 					id:          UsIsobEast1RegionID,
@@ -257,12 +244,10 @@ var (
 			},
 		},
 		AwsIsoEPartitionID: {
-			partition: Partition{
-				id:          AwsIsoEPartitionID,
-				name:        "AWS ISOE (Europe)",
-				dnsSuffix:   "cloud.adc-e.uk",
-				regionRegex: regexp.MustCompile(`^eu\-isoe\-\w+\-\d+$`),
-			},
+			id:          AwsIsoEPartitionID,
+			name:        "AWS ISOE (Europe)",
+			dnsSuffix:   "cloud.adc-e.uk",
+			regionRegex: regexp.MustCompile(`^eu\-isoe\-\w+\-\d+$`),
 			regions: map[string]Region{
 				EuIsoeWest1RegionID: {
 					id:          EuIsoeWest1RegionID,
@@ -271,21 +256,17 @@ var (
 			},
 		},
 		AwsIsoFPartitionID: {
-			partition: Partition{
-				id:          AwsIsoFPartitionID,
-				name:        "AWS ISOF",
-				dnsSuffix:   "csp.hci.ic.gov",
-				regionRegex: regexp.MustCompile(`^us\-isof\-\w+\-\d+$`),
-			},
-			regions: map[string]Region{},
+			id:          AwsIsoFPartitionID,
+			name:        "AWS ISOF",
+			dnsSuffix:   "csp.hci.ic.gov",
+			regionRegex: regexp.MustCompile(`^us\-isof\-\w+\-\d+$`),
+			regions:     map[string]Region{},
 		},
 		AwsUsGovPartitionID: {
-			partition: Partition{
-				id:          AwsUsGovPartitionID,
-				name:        "AWS GovCloud (US)",
-				dnsSuffix:   "amazonaws.com",
-				regionRegex: regexp.MustCompile(`^us\-gov\-\w+\-\d+$`),
-			},
+			id:          AwsUsGovPartitionID,
+			name:        "AWS GovCloud (US)",
+			dnsSuffix:   "amazonaws.com",
+			regionRegex: regexp.MustCompile(`^us\-gov\-\w+\-\d+$`),
 			regions: map[string]Region{
 				UsGovEast1RegionID: {
 					id:          UsGovEast1RegionID,

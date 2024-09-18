@@ -15,6 +15,7 @@ type Partition struct {
 	name        string
 	dnsSuffix   string
 	regionRegex *regexp.Regexp
+	regions     map[string]Region
 }
 
 // ID returns the identifier of the partition.
@@ -39,20 +40,15 @@ func (p Partition) RegionRegex() *regexp.Regexp {
 
 // Regions returns a map of Regions for the partition, indexed by their ID.
 func (p Partition) Regions() map[string]Region {
-	partitionAndRegion, ok := partitionsAndRegions[p.id]
-	if !ok {
-		return nil
-	}
-
-	return maps.Clone(partitionAndRegion.regions)
+	return maps.Clone(p.regions)
 }
 
 // DefaultPartitions returns a list of the partitions.
 func DefaultPartitions() []Partition {
-	ps := make([]Partition, len(partitionsAndRegions))
+	ps := make([]Partition, 0, len(partitions))
 
-	for _, v := range partitionsAndRegions {
-		ps = append(ps, v.partition)
+	for _, p := range partitions {
+		ps = append(ps, p)
 	}
 
 	return ps
@@ -61,12 +57,7 @@ func DefaultPartitions() []Partition {
 // PartitionForRegion returns the first partition which includes the specific Region.
 func PartitionForRegion(ps []Partition, regionID string) (Partition, bool) {
 	for _, p := range ps {
-		partitionAndRegion, ok := partitionsAndRegions[p.id]
-		if !ok {
-			continue
-		}
-
-		if _, ok := partitionAndRegion.regions[regionID]; ok || partitionAndRegion.partition.regionRegex.MatchString(regionID) {
+		if _, ok := p.regions[regionID]; ok || p.regionRegex.MatchString(regionID) {
 			return p, true
 		}
 	}
