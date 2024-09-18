@@ -5,8 +5,9 @@ package validation
 
 import (
 	"fmt"
+	"slices"
 
-	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
+	"github.com/hashicorp/aws-sdk-go-base/v2/endpoints"
 )
 
 type InvalidRegionError struct {
@@ -14,17 +15,16 @@ type InvalidRegionError struct {
 }
 
 func (e *InvalidRegionError) Error() string {
-	return fmt.Sprintf("Invalid AWS Region: %s", e.region)
+	return fmt.Sprintf("invalid AWS Region: %s", e.region)
 }
 
 // SupportedRegion checks if the given region is a valid AWS region.
 func SupportedRegion(region string) error {
-	for _, partition := range endpoints.Partitions() {
-		for _, partitionRegion := range partition.Regions() {
-			if region == partitionRegion {
-				return nil
-			}
-		}
+	if slices.ContainsFunc(endpoints.DefaultPartitions(), func(p endpoints.Partition) bool {
+		_, ok := p.Regions()[region]
+		return ok
+	}) {
+		return nil
 	}
 
 	return &InvalidRegionError{

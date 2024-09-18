@@ -24,9 +24,9 @@ import (
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/aws/smithy-go/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
+	"github.com/hashicorp/aws-sdk-go-base/v2/endpoints"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/awsconfig"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/constants"
-	"github.com/hashicorp/aws-sdk-go-base/v2/internal/endpoints"
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 )
@@ -337,7 +337,9 @@ func GetAwsAccountIDAndPartition(ctx context.Context, awsConfig aws.Config, c *C
 				"Errors: %w", err))
 	}
 
-	return "", endpoints.PartitionForRegion(awsConfig.Region), nil
+	partition, _ := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), awsConfig.Region)
+
+	return "", partition.ID(), nil
 }
 
 func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptions) error, error) {
