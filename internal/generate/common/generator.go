@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"fmt"
 	"go/format"
+	"io"
 	"maps"
 	"os"
 	"path"
@@ -15,44 +16,36 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/hashicorp/cli"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 )
 
-type Generator struct {
-	ui cli.Ui
-}
+type Generator struct{}
 
 func NewGenerator() *Generator {
-	return &Generator{
-		ui: &cli.BasicUi{
-			Reader:      os.Stdin,
-			Writer:      os.Stdout,
-			ErrorWriter: os.Stderr,
-		},
-	}
-}
-
-func (g *Generator) UI() cli.Ui {
-	return g.ui
+	return &Generator{}
 }
 
 func (g *Generator) Infof(format string, a ...interface{}) {
-	g.ui.Info(fmt.Sprintf(format, a...))
+	g.output(os.Stdout, format, a...)
 }
 
 func (g *Generator) Warnf(format string, a ...interface{}) {
-	g.ui.Warn(fmt.Sprintf(format, a...))
+	g.Errorf(format, a...)
 }
 
 func (g *Generator) Errorf(format string, a ...interface{}) {
-	g.ui.Error(fmt.Sprintf(format, a...))
+	g.output(os.Stderr, format, a...)
 }
 
 func (g *Generator) Fatalf(format string, a ...interface{}) {
 	g.Errorf(format, a...)
 	os.Exit(1)
+}
+
+func (g *Generator) output(w io.Writer, format string, a ...interface{}) {
+	fmt.Fprintf(w, format, a...)
+	fmt.Fprint(w, "\n")
 }
 
 type Destination interface {

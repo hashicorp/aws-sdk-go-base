@@ -56,10 +56,11 @@ func main() {
 	}
 
 	inputURL := args[0]
-	outputFilename := `endpoints_gen.go`
+	filename := `endpoints_gen.go`
 	target := map[string]any{}
 
 	g := common.NewGenerator()
+	g.Infof("Generating endpoints/%s", filename)
 
 	if err := readHTTPJSON(inputURL, &target); err != nil {
 		g.Fatalf("error reading JSON from %s: %s", inputURL, err)
@@ -149,14 +150,14 @@ func main() {
 		})
 	}
 
-	d := g.NewGoFileDestination(outputFilename)
+	d := g.NewGoFileDestination(filename)
 
 	if err := d.WriteTemplate("endpoints", tmpl, td, templateFuncMap); err != nil {
 		g.Fatalf("error generating endpoint resolver: %s", err)
 	}
 
 	if err := d.Write(); err != nil {
-		g.Fatalf("generating file (%s): %s", outputFilename, err)
+		g.Fatalf("generating file (%s): %s", filename, err)
 	}
 }
 
