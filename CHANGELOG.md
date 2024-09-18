@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.57 (2024-09-18)
+
 ENHANCEMENTS
 
 * Adds top-level `endpoints` package containing AWS partition and Region metadata ([#1176](https://github.com/hashicorp/aws-sdk-go-base/pull/1176))
