@@ -3,7 +3,7 @@
 
 package endpoints
 
-// Region represents an AWS service endpoint.
+// Service represents an AWS service endpoint.
 type Service struct {
 	id string
 }
