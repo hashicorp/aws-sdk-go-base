@@ -73,7 +73,7 @@ func main() {
 
 	td := TemplateData{}
 	templateFuncMap := template.FuncMap{
-		// IDToTitle splits a '-' or '.' saparated string and returns a string with each part title cased.
+		// IDToTitle splits a '-' or '.' separated string and returns a string with each part title cased.
 		"IDToTitle": func(s string) (string, error) {
 			parts := strings.Split(s, "-")
 			if len(parts) == 1 {
