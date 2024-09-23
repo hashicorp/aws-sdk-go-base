@@ -14,7 +14,10 @@ updates:
       - "/tools"
       - "/v2/awsv1shim"
     groups:
-      aws-sdk-go:
+      aws-sdk-go-v1:
+        patterns:
+          - "github.com/aws/aws-sdk-go"
+      aws-sdk-go-v2:
         patterns:
           - "github.com/aws/aws-sdk-go-v2"
           - "github.com/aws/aws-sdk-go-v2/*"
@@ -23,7 +26,8 @@ updates:
           - "go.opentelemetry.io/otel"
           - "go.opentelemetry.io/contrib/*"
     ignore:
+      # aws/smithy-go should only be updated via aws/aws-sdk-go-v2
+      - dependency-name: "github.com/aws/smithy-go"
       - dependency-name: "golang.org/x/tools"
-      - dependency-name: "google.golang.org/grpc"
     schedule:
       interval: "daily"
