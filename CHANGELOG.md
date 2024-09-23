@@ -1,6 +1,8 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.58 (2024-09-23)
+
 ENHANCEMENTS
 
 * Adds per-partition service endpoint metadata to the top-level `endpoints` package ([#1182](https://github.com/hashicorp/aws-sdk-go-base/pull/1182))
