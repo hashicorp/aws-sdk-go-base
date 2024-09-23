@@ -81,3 +81,30 @@ func TestPartitionRegions(t *testing.T) {
 		}
 	}
 }
+
+func TestPartitionServices(t *testing.T) {
+	t.Parallel()
+
+	testcases := map[string]struct {
+		expectedServices bool
+	}{
+		"us-east-1": {
+			expectedServices: true,
+		},
+		"us-gov-west-1": {
+			expectedServices: true,
+		},
+		"not-found": {
+			expectedServices: false,
+		},
+	}
+
+	ps := endpoints.DefaultPartitions()
+	for region, testcase := range testcases {
+		gotID, _ := endpoints.PartitionForRegion(ps, region)
+
+		if got, want := len(gotID.Services()) > 0, testcase.expectedServices; got != want {
+			t.Errorf("expected services %t for Region %q, got %t", want, region, got)
+		}
+	}
+}
