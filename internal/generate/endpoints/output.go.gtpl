@@ -12,7 +12,7 @@ import (
 // All known partition IDs.
 const (
 {{- range .Partitions }}
-    {{ .ID | KebabToTitle}}PartitionID = "{{ .ID }}" // {{ .Name }}
+    {{ .ID | IDToTitle}}PartitionID = "{{ .ID }}" // {{ .Name }}
 {{- end }}
 )
 
@@ -21,7 +21,7 @@ const (
 {{- range .Partitions }}
     // {{ .Name }} partition's Regions.
     {{- range .Regions }}
-    {{ .ID | KebabToTitle}}RegionID = "{{ .ID }}" // {{ .Description }}
+    {{ .ID | IDToTitle}}RegionID = "{{ .ID }}" // {{ .Description }}
     {{- end }}
 {{- end }}
 )
@@ -29,16 +29,23 @@ const (
 var (
 	partitions = map[string]Partition{
 {{- range .Partitions }}
-        {{ .ID | KebabToTitle}}PartitionID: {
-            id: {{ .ID | KebabToTitle}}PartitionID,
+        {{ .ID | IDToTitle}}PartitionID: {
+            id: {{ .ID | IDToTitle}}PartitionID,
             name: "{{ .Name }}",
             dnsSuffix: "{{ .DNSSuffix }}",
             regionRegex: regexp.MustCompile(`{{ .RegionRegex }}`),
             regions: map[string]Region{
             {{- range .Regions }}
-                {{ .ID | KebabToTitle}}RegionID: {
-                    id: {{ .ID | KebabToTitle}}RegionID,
+                {{ .ID | IDToTitle}}RegionID: {
+                    id: {{ .ID | IDToTitle}}RegionID,
                     description: "{{ .Description }}",
+                },
+            {{- end }}
+            },
+            services: map[string]Service{
+            {{- range .Services }}
+                "{{ .ID }}": {
+                    id: "{{ .ID }}",
                 },
             {{- end }}
             },

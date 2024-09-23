@@ -198,6 +198,959 @@ var (
 					description: "US West (Oregon)",
 				},
 			},
+			services: map[string]Service{
+				"access-analyzer": {
+					id: "access-analyzer",
+				},
+				"account": {
+					id: "account",
+				},
+				"acm": {
+					id: "acm",
+				},
+				"acm-pca": {
+					id: "acm-pca",
+				},
+				"agreement-marketplace": {
+					id: "agreement-marketplace",
+				},
+				"airflow": {
+					id: "airflow",
+				},
+				"amplify": {
+					id: "amplify",
+				},
+				"amplifybackend": {
+					id: "amplifybackend",
+				},
+				"amplifyuibuilder": {
+					id: "amplifyuibuilder",
+				},
+				"aoss": {
+					id: "aoss",
+				},
+				"api.detective": {
+					id: "api.detective",
+				},
+				"api.ecr": {
+					id: "api.ecr",
+				},
+				"api.ecr-public": {
+					id: "api.ecr-public",
+				},
+				"api.elastic-inference": {
+					id: "api.elastic-inference",
+				},
+				"api.fleethub.iot": {
+					id: "api.fleethub.iot",
+				},
+				"api.iotdeviceadvisor": {
+					id: "api.iotdeviceadvisor",
+				},
+				"api.iotwireless": {
+					id: "api.iotwireless",
+				},
+				"api.mediatailor": {
+					id: "api.mediatailor",
+				},
+				"api.pricing": {
+					id: "api.pricing",
+				},
+				"api.sagemaker": {
+					id: "api.sagemaker",
+				},
+				"api.tunneling.iot": {
+					id: "api.tunneling.iot",
+				},
+				"apigateway": {
+					id: "apigateway",
+				},
+				"app-integrations": {
+					id: "app-integrations",
+				},
+				"appconfig": {
+					id: "appconfig",
+				},
+				"appconfigdata": {
+					id: "appconfigdata",
+				},
+				"appflow": {
+					id: "appflow",
+				},
+				"application-autoscaling": {
+					id: "application-autoscaling",
+				},
+				"applicationinsights": {
+					id: "applicationinsights",
+				},
+				"appmesh": {
+					id: "appmesh",
+				},
+				"apprunner": {
+					id: "apprunner",
+				},
+				"appstream2": {
+					id: "appstream2",
+				},
+				"appsync": {
+					id: "appsync",
+				},
+				"apptest": {
+					id: "apptest",
+				},
+				"aps": {
+					id: "aps",
+				},
+				"arc-zonal-shift": {
+					id: "arc-zonal-shift",
+				},
+				"athena": {
+					id: "athena",
+				},
+				"auditmanager": {
+					id: "auditmanager",
+				},
+				"autoscaling": {
+					id: "autoscaling",
+				},
+				"autoscaling-plans": {
+					id: "autoscaling-plans",
+				},
+				"backup": {
+					id: "backup",
+				},
+				"backup-gateway": {
+					id: "backup-gateway",
+				},
+				"batch": {
+					id: "batch",
+				},
+				"bedrock": {
+					id: "bedrock",
+				},
+				"billingconductor": {
+					id: "billingconductor",
+				},
+				"braket": {
+					id: "braket",
+				},
+				"budgets": {
+					id: "budgets",
+				},
+				"cases": {
+					id: "cases",
+				},
+				"cassandra": {
+					id: "cassandra",
+				},
+				"catalog.marketplace": {
+					id: "catalog.marketplace",
+				},
+				"ce": {
+					id: "ce",
+				},
+				"chime": {
+					id: "chime",
+				},
+				"cleanrooms": {
+					id: "cleanrooms",
+				},
+				"cloud9": {
+					id: "cloud9",
+				},
+				"cloudcontrolapi": {
+					id: "cloudcontrolapi",
+				},
+				"clouddirectory": {
+					id: "clouddirectory",
+				},
+				"cloudformation": {
+					id: "cloudformation",
+				},
+				"cloudfront": {
+					id: "cloudfront",
+				},
+				"cloudhsm": {
+					id: "cloudhsm",
+				},
+				"cloudhsmv2": {
+					id: "cloudhsmv2",
+				},
+				"cloudsearch": {
+					id: "cloudsearch",
+				},
+				"cloudtrail": {
+					id: "cloudtrail",
+				},
+				"cloudtrail-data": {
+					id: "cloudtrail-data",
+				},
+				"codeartifact": {
+					id: "codeartifact",
+				},
+				"codebuild": {
+					id: "codebuild",
+				},
+				"codecatalyst": {
+					id: "codecatalyst",
+				},
+				"codecommit": {
+					id: "codecommit",
+				},
+				"codedeploy": {
+					id: "codedeploy",
+				},
+				"codeguru-reviewer": {
+					id: "codeguru-reviewer",
+				},
+				"codepipeline": {
+					id: "codepipeline",
+				},
+				"codestar-connections": {
+					id: "codestar-connections",
+				},
+				"codestar-notifications": {
+					id: "codestar-notifications",
+				},
+				"cognito-identity": {
+					id: "cognito-identity",
+				},
+				"cognito-idp": {
+					id: "cognito-idp",
+				},
+				"cognito-sync": {
+					id: "cognito-sync",
+				},
+				"comprehend": {
+					id: "comprehend",
+				},
+				"comprehendmedical": {
+					id: "comprehendmedical",
+				},
+				"compute-optimizer": {
+					id: "compute-optimizer",
+				},
+				"config": {
+					id: "config",
+				},
+				"connect": {
+					id: "connect",
+				},
+				"connect-campaigns": {
+					id: "connect-campaigns",
+				},
+				"contact-lens": {
+					id: "contact-lens",
+				},
+				"controltower": {
+					id: "controltower",
+				},
+				"cost-optimization-hub": {
+					id: "cost-optimization-hub",
+				},
+				"cur": {
+					id: "cur",
+				},
+				"data-ats.iot": {
+					id: "data-ats.iot",
+				},
+				"data.iot": {
+					id: "data.iot",
+				},
+				"data.jobs.iot": {
+					id: "data.jobs.iot",
+				},
+				"data.mediastore": {
+					id: "data.mediastore",
+				},
+				"databrew": {
+					id: "databrew",
+				},
+				"dataexchange": {
+					id: "dataexchange",
+				},
+				"datapipeline": {
+					id: "datapipeline",
+				},
+				"datasync": {
+					id: "datasync",
+				},
+				"datazone": {
+					id: "datazone",
+				},
+				"dax": {
+					id: "dax",
+				},
+				"devicefarm": {
+					id: "devicefarm",
+				},
+				"devops-guru": {
+					id: "devops-guru",
+				},
+				"directconnect": {
+					id: "directconnect",
+				},
+				"discovery": {
+					id: "discovery",
+				},
+				"dlm": {
+					id: "dlm",
+				},
+				"dms": {
+					id: "dms",
+				},
+				"docdb": {
+					id: "docdb",
+				},
+				"drs": {
+					id: "drs",
+				},
+				"ds": {
+					id: "ds",
+				},
+				"dynamodb": {
+					id: "dynamodb",
+				},
+				"ebs": {
+					id: "ebs",
+				},
+				"ec2": {
+					id: "ec2",
+				},
+				"ecs": {
+					id: "ecs",
+				},
+				"edge.sagemaker": {
+					id: "edge.sagemaker",
+				},
+				"eks": {
+					id: "eks",
+				},
+				"eks-auth": {
+					id: "eks-auth",
+				},
+				"elasticache": {
+					id: "elasticache",
+				},
+				"elasticbeanstalk": {
+					id: "elasticbeanstalk",
+				},
+				"elasticfilesystem": {
+					id: "elasticfilesystem",
+				},
+				"elasticloadbalancing": {
+					id: "elasticloadbalancing",
+				},
+				"elasticmapreduce": {
+					id: "elasticmapreduce",
+				},
+				"elastictranscoder": {
+					id: "elastictranscoder",
+				},
+				"email": {
+					id: "email",
+				},
+				"emr-containers": {
+					id: "emr-containers",
+				},
+				"emr-serverless": {
+					id: "emr-serverless",
+				},
+				"entitlement.marketplace": {
+					id: "entitlement.marketplace",
+				},
+				"es": {
+					id: "es",
+				},
+				"events": {
+					id: "events",
+				},
+				"evidently": {
+					id: "evidently",
+				},
+				"finspace": {
+					id: "finspace",
+				},
+				"finspace-api": {
+					id: "finspace-api",
+				},
+				"firehose": {
+					id: "firehose",
+				},
+				"fms": {
+					id: "fms",
+				},
+				"forecast": {
+					id: "forecast",
+				},
+				"forecastquery": {
+					id: "forecastquery",
+				},
+				"frauddetector": {
+					id: "frauddetector",
+				},
+				"fsx": {
+					id: "fsx",
+				},
+				"gamelift": {
+					id: "gamelift",
+				},
+				"geo": {
+					id: "geo",
+				},
+				"glacier": {
+					id: "glacier",
+				},
+				"globalaccelerator": {
+					id: "globalaccelerator",
+				},
+				"glue": {
+					id: "glue",
+				},
+				"grafana": {
+					id: "grafana",
+				},
+				"greengrass": {
+					id: "greengrass",
+				},
+				"groundstation": {
+					id: "groundstation",
+				},
+				"guardduty": {
+					id: "guardduty",
+				},
+				"health": {
+					id: "health",
+				},
+				"healthlake": {
+					id: "healthlake",
+				},
+				"iam": {
+					id: "iam",
+				},
+				"identity-chime": {
+					id: "identity-chime",
+				},
+				"identitystore": {
+					id: "identitystore",
+				},
+				"importexport": {
+					id: "importexport",
+				},
+				"ingest.timestream": {
+					id: "ingest.timestream",
+				},
+				"inspector": {
+					id: "inspector",
+				},
+				"inspector2": {
+					id: "inspector2",
+				},
+				"internetmonitor": {
+					id: "internetmonitor",
+				},
+				"iot": {
+					id: "iot",
+				},
+				"iotanalytics": {
+					id: "iotanalytics",
+				},
+				"iotevents": {
+					id: "iotevents",
+				},
+				"ioteventsdata": {
+					id: "ioteventsdata",
+				},
+				"iotfleetwise": {
+					id: "iotfleetwise",
+				},
+				"iotsecuredtunneling": {
+					id: "iotsecuredtunneling",
+				},
+				"iotsitewise": {
+					id: "iotsitewise",
+				},
+				"iotthingsgraph": {
+					id: "iotthingsgraph",
+				},
+				"iottwinmaker": {
+					id: "iottwinmaker",
+				},
+				"iotwireless": {
+					id: "iotwireless",
+				},
+				"ivs": {
+					id: "ivs",
+				},
+				"ivschat": {
+					id: "ivschat",
+				},
+				"ivsrealtime": {
+					id: "ivsrealtime",
+				},
+				"kafka": {
+					id: "kafka",
+				},
+				"kafkaconnect": {
+					id: "kafkaconnect",
+				},
+				"kendra": {
+					id: "kendra",
+				},
+				"kendra-ranking": {
+					id: "kendra-ranking",
+				},
+				"kinesis": {
+					id: "kinesis",
+				},
+				"kinesisanalytics": {
+					id: "kinesisanalytics",
+				},
+				"kinesisvideo": {
+					id: "kinesisvideo",
+				},
+				"kms": {
+					id: "kms",
+				},
+				"lakeformation": {
+					id: "lakeformation",
+				},
+				"lambda": {
+					id: "lambda",
+				},
+				"license-manager": {
+					id: "license-manager",
+				},
+				"license-manager-linux-subscriptions": {
+					id: "license-manager-linux-subscriptions",
+				},
+				"license-manager-user-subscriptions": {
+					id: "license-manager-user-subscriptions",
+				},
+				"lightsail": {
+					id: "lightsail",
+				},
+				"logs": {
+					id: "logs",
+				},
+				"lookoutequipment": {
+					id: "lookoutequipment",
+				},
+				"lookoutmetrics": {
+					id: "lookoutmetrics",
+				},
+				"lookoutvision": {
+					id: "lookoutvision",
+				},
+				"m2": {
+					id: "m2",
+				},
+				"machinelearning": {
+					id: "machinelearning",
+				},
+				"macie2": {
+					id: "macie2",
+				},
+				"managedblockchain": {
+					id: "managedblockchain",
+				},
+				"managedblockchain-query": {
+					id: "managedblockchain-query",
+				},
+				"marketplacecommerceanalytics": {
+					id: "marketplacecommerceanalytics",
+				},
+				"media-pipelines-chime": {
+					id: "media-pipelines-chime",
+				},
+				"mediaconnect": {
+					id: "mediaconnect",
+				},
+				"mediaconvert": {
+					id: "mediaconvert",
+				},
+				"medialive": {
+					id: "medialive",
+				},
+				"mediapackage": {
+					id: "mediapackage",
+				},
+				"mediapackage-vod": {
+					id: "mediapackage-vod",
+				},
+				"mediapackagev2": {
+					id: "mediapackagev2",
+				},
+				"mediastore": {
+					id: "mediastore",
+				},
+				"meetings-chime": {
+					id: "meetings-chime",
+				},
+				"memory-db": {
+					id: "memory-db",
+				},
+				"messaging-chime": {
+					id: "messaging-chime",
+				},
+				"metering.marketplace": {
+					id: "metering.marketplace",
+				},
+				"metrics.sagemaker": {
+					id: "metrics.sagemaker",
+				},
+				"mgh": {
+					id: "mgh",
+				},
+				"mgn": {
+					id: "mgn",
+				},
+				"migrationhub-orchestrator": {
+					id: "migrationhub-orchestrator",
+				},
+				"migrationhub-strategy": {
+					id: "migrationhub-strategy",
+				},
+				"mobileanalytics": {
+					id: "mobileanalytics",
+				},
+				"models-v2-lex": {
+					id: "models-v2-lex",
+				},
+				"models.lex": {
+					id: "models.lex",
+				},
+				"monitoring": {
+					id: "monitoring",
+				},
+				"mq": {
+					id: "mq",
+				},
+				"mturk-requester": {
+					id: "mturk-requester",
+				},
+				"neptune": {
+					id: "neptune",
+				},
+				"network-firewall": {
+					id: "network-firewall",
+				},
+				"networkmanager": {
+					id: "networkmanager",
+				},
+				"nimble": {
+					id: "nimble",
+				},
+				"oam": {
+					id: "oam",
+				},
+				"oidc": {
+					id: "oidc",
+				},
+				"omics": {
+					id: "omics",
+				},
+				"opsworks": {
+					id: "opsworks",
+				},
+				"opsworks-cm": {
+					id: "opsworks-cm",
+				},
+				"organizations": {
+					id: "organizations",
+				},
+				"osis": {
+					id: "osis",
+				},
+				"outposts": {
+					id: "outposts",
+				},
+				"participant.connect": {
+					id: "participant.connect",
+				},
+				"personalize": {
+					id: "personalize",
+				},
+				"pi": {
+					id: "pi",
+				},
+				"pinpoint": {
+					id: "pinpoint",
+				},
+				"pipes": {
+					id: "pipes",
+				},
+				"polly": {
+					id: "polly",
+				},
+				"portal.sso": {
+					id: "portal.sso",
+				},
+				"private-networks": {
+					id: "private-networks",
+				},
+				"profile": {
+					id: "profile",
+				},
+				"projects.iot1click": {
+					id: "projects.iot1click",
+				},
+				"proton": {
+					id: "proton",
+				},
+				"qbusiness": {
+					id: "qbusiness",
+				},
+				"qldb": {
+					id: "qldb",
+				},
+				"quicksight": {
+					id: "quicksight",
+				},
+				"ram": {
+					id: "ram",
+				},
+				"rbin": {
+					id: "rbin",
+				},
+				"rds": {
+					id: "rds",
+				},
+				"rds-data": {
+					id: "rds-data",
+				},
+				"redshift": {
+					id: "redshift",
+				},
+				"redshift-serverless": {
+					id: "redshift-serverless",
+				},
+				"rekognition": {
+					id: "rekognition",
+				},
+				"resiliencehub": {
+					id: "resiliencehub",
+				},
+				"resource-explorer-2": {
+					id: "resource-explorer-2",
+				},
+				"resource-groups": {
+					id: "resource-groups",
+				},
+				"robomaker": {
+					id: "robomaker",
+				},
+				"rolesanywhere": {
+					id: "rolesanywhere",
+				},
+				"route53": {
+					id: "route53",
+				},
+				"route53-recovery-control-config": {
+					id: "route53-recovery-control-config",
+				},
+				"route53domains": {
+					id: "route53domains",
+				},
+				"route53resolver": {
+					id: "route53resolver",
+				},
+				"rum": {
+					id: "rum",
+				},
+				"runtime-v2-lex": {
+					id: "runtime-v2-lex",
+				},
+				"runtime.lex": {
+					id: "runtime.lex",
+				},
+				"runtime.sagemaker": {
+					id: "runtime.sagemaker",
+				},
+				"s3": {
+					id: "s3",
+				},
+				"s3-control": {
+					id: "s3-control",
+				},
+				"s3-outposts": {
+					id: "s3-outposts",
+				},
+				"sagemaker-geospatial": {
+					id: "sagemaker-geospatial",
+				},
+				"savingsplans": {
+					id: "savingsplans",
+				},
+				"scheduler": {
+					id: "scheduler",
+				},
+				"schemas": {
+					id: "schemas",
+				},
+				"sdb": {
+					id: "sdb",
+				},
+				"secretsmanager": {
+					id: "secretsmanager",
+				},
+				"securityhub": {
+					id: "securityhub",
+				},
+				"securitylake": {
+					id: "securitylake",
+				},
+				"serverlessrepo": {
+					id: "serverlessrepo",
+				},
+				"servicecatalog": {
+					id: "servicecatalog",
+				},
+				"servicecatalog-appregistry": {
+					id: "servicecatalog-appregistry",
+				},
+				"servicediscovery": {
+					id: "servicediscovery",
+				},
+				"servicequotas": {
+					id: "servicequotas",
+				},
+				"session.qldb": {
+					id: "session.qldb",
+				},
+				"shield": {
+					id: "shield",
+				},
+				"signer": {
+					id: "signer",
+				},
+				"simspaceweaver": {
+					id: "simspaceweaver",
+				},
+				"sms": {
+					id: "sms",
+				},
+				"sms-voice": {
+					id: "sms-voice",
+				},
+				"snowball": {
+					id: "snowball",
+				},
+				"sns": {
+					id: "sns",
+				},
+				"sqs": {
+					id: "sqs",
+				},
+				"ssm": {
+					id: "ssm",
+				},
+				"ssm-contacts": {
+					id: "ssm-contacts",
+				},
+				"ssm-incidents": {
+					id: "ssm-incidents",
+				},
+				"ssm-sap": {
+					id: "ssm-sap",
+				},
+				"sso": {
+					id: "sso",
+				},
+				"states": {
+					id: "states",
+				},
+				"storagegateway": {
+					id: "storagegateway",
+				},
+				"streams.dynamodb": {
+					id: "streams.dynamodb",
+				},
+				"sts": {
+					id: "sts",
+				},
+				"support": {
+					id: "support",
+				},
+				"supportapp": {
+					id: "supportapp",
+				},
+				"swf": {
+					id: "swf",
+				},
+				"synthetics": {
+					id: "synthetics",
+				},
+				"tagging": {
+					id: "tagging",
+				},
+				"tax": {
+					id: "tax",
+				},
+				"textract": {
+					id: "textract",
+				},
+				"thinclient": {
+					id: "thinclient",
+				},
+				"tnb": {
+					id: "tnb",
+				},
+				"transcribe": {
+					id: "transcribe",
+				},
+				"transcribestreaming": {
+					id: "transcribestreaming",
+				},
+				"transfer": {
+					id: "transfer",
+				},
+				"translate": {
+					id: "translate",
+				},
+				"verifiedpermissions": {
+					id: "verifiedpermissions",
+				},
+				"voice-chime": {
+					id: "voice-chime",
+				},
+				"voiceid": {
+					id: "voiceid",
+				},
+				"vpc-lattice": {
+					id: "vpc-lattice",
+				},
+				"waf": {
+					id: "waf",
+				},
+				"waf-regional": {
+					id: "waf-regional",
+				},
+				"wafv2": {
+					id: "wafv2",
+				},
+				"wellarchitected": {
+					id: "wellarchitected",
+				},
+				"wisdom": {
+					id: "wisdom",
+				},
+				"workdocs": {
+					id: "workdocs",
+				},
+				"workmail": {
+					id: "workmail",
+				},
+				"workspaces": {
+					id: "workspaces",
+				},
+				"workspaces-web": {
+					id: "workspaces-web",
+				},
+				"xray": {
+					id: "xray",
+				},
+			},
 		},
 		AwsCnPartitionID: {
 			id:          AwsCnPartitionID,
@@ -212,6 +1165,473 @@ var (
 				CnNorthwest1RegionID: {
 					id:          CnNorthwest1RegionID,
 					description: "China (Ningxia)",
+				},
+			},
+			services: map[string]Service{
+				"access-analyzer": {
+					id: "access-analyzer",
+				},
+				"account": {
+					id: "account",
+				},
+				"acm": {
+					id: "acm",
+				},
+				"acm-pca": {
+					id: "acm-pca",
+				},
+				"airflow": {
+					id: "airflow",
+				},
+				"api.ecr": {
+					id: "api.ecr",
+				},
+				"api.pricing": {
+					id: "api.pricing",
+				},
+				"api.sagemaker": {
+					id: "api.sagemaker",
+				},
+				"api.tunneling.iot": {
+					id: "api.tunneling.iot",
+				},
+				"apigateway": {
+					id: "apigateway",
+				},
+				"appconfig": {
+					id: "appconfig",
+				},
+				"appconfigdata": {
+					id: "appconfigdata",
+				},
+				"application-autoscaling": {
+					id: "application-autoscaling",
+				},
+				"applicationinsights": {
+					id: "applicationinsights",
+				},
+				"appmesh": {
+					id: "appmesh",
+				},
+				"appsync": {
+					id: "appsync",
+				},
+				"arc-zonal-shift": {
+					id: "arc-zonal-shift",
+				},
+				"athena": {
+					id: "athena",
+				},
+				"autoscaling": {
+					id: "autoscaling",
+				},
+				"autoscaling-plans": {
+					id: "autoscaling-plans",
+				},
+				"backup": {
+					id: "backup",
+				},
+				"batch": {
+					id: "batch",
+				},
+				"budgets": {
+					id: "budgets",
+				},
+				"cassandra": {
+					id: "cassandra",
+				},
+				"ce": {
+					id: "ce",
+				},
+				"cloudcontrolapi": {
+					id: "cloudcontrolapi",
+				},
+				"cloudformation": {
+					id: "cloudformation",
+				},
+				"cloudfront": {
+					id: "cloudfront",
+				},
+				"cloudtrail": {
+					id: "cloudtrail",
+				},
+				"codebuild": {
+					id: "codebuild",
+				},
+				"codecommit": {
+					id: "codecommit",
+				},
+				"codedeploy": {
+					id: "codedeploy",
+				},
+				"codepipeline": {
+					id: "codepipeline",
+				},
+				"cognito-identity": {
+					id: "cognito-identity",
+				},
+				"compute-optimizer": {
+					id: "compute-optimizer",
+				},
+				"config": {
+					id: "config",
+				},
+				"cur": {
+					id: "cur",
+				},
+				"data-ats.iot": {
+					id: "data-ats.iot",
+				},
+				"data.iot": {
+					id: "data.iot",
+				},
+				"data.jobs.iot": {
+					id: "data.jobs.iot",
+				},
+				"databrew": {
+					id: "databrew",
+				},
+				"datasync": {
+					id: "datasync",
+				},
+				"datazone": {
+					id: "datazone",
+				},
+				"dax": {
+					id: "dax",
+				},
+				"directconnect": {
+					id: "directconnect",
+				},
+				"dlm": {
+					id: "dlm",
+				},
+				"dms": {
+					id: "dms",
+				},
+				"docdb": {
+					id: "docdb",
+				},
+				"ds": {
+					id: "ds",
+				},
+				"dynamodb": {
+					id: "dynamodb",
+				},
+				"ebs": {
+					id: "ebs",
+				},
+				"ec2": {
+					id: "ec2",
+				},
+				"ecs": {
+					id: "ecs",
+				},
+				"eks": {
+					id: "eks",
+				},
+				"eks-auth": {
+					id: "eks-auth",
+				},
+				"elasticache": {
+					id: "elasticache",
+				},
+				"elasticbeanstalk": {
+					id: "elasticbeanstalk",
+				},
+				"elasticfilesystem": {
+					id: "elasticfilesystem",
+				},
+				"elasticloadbalancing": {
+					id: "elasticloadbalancing",
+				},
+				"elasticmapreduce": {
+					id: "elasticmapreduce",
+				},
+				"emr-containers": {
+					id: "emr-containers",
+				},
+				"emr-serverless": {
+					id: "emr-serverless",
+				},
+				"entitlement.marketplace": {
+					id: "entitlement.marketplace",
+				},
+				"es": {
+					id: "es",
+				},
+				"events": {
+					id: "events",
+				},
+				"firehose": {
+					id: "firehose",
+				},
+				"fms": {
+					id: "fms",
+				},
+				"fsx": {
+					id: "fsx",
+				},
+				"gamelift": {
+					id: "gamelift",
+				},
+				"glacier": {
+					id: "glacier",
+				},
+				"glue": {
+					id: "glue",
+				},
+				"greengrass": {
+					id: "greengrass",
+				},
+				"guardduty": {
+					id: "guardduty",
+				},
+				"health": {
+					id: "health",
+				},
+				"iam": {
+					id: "iam",
+				},
+				"identitystore": {
+					id: "identitystore",
+				},
+				"inspector2": {
+					id: "inspector2",
+				},
+				"internetmonitor": {
+					id: "internetmonitor",
+				},
+				"iot": {
+					id: "iot",
+				},
+				"iotanalytics": {
+					id: "iotanalytics",
+				},
+				"iotevents": {
+					id: "iotevents",
+				},
+				"ioteventsdata": {
+					id: "ioteventsdata",
+				},
+				"iotsecuredtunneling": {
+					id: "iotsecuredtunneling",
+				},
+				"iotsitewise": {
+					id: "iotsitewise",
+				},
+				"iottwinmaker": {
+					id: "iottwinmaker",
+				},
+				"kafka": {
+					id: "kafka",
+				},
+				"kendra-ranking": {
+					id: "kendra-ranking",
+				},
+				"kinesis": {
+					id: "kinesis",
+				},
+				"kinesisanalytics": {
+					id: "kinesisanalytics",
+				},
+				"kinesisvideo": {
+					id: "kinesisvideo",
+				},
+				"kms": {
+					id: "kms",
+				},
+				"lakeformation": {
+					id: "lakeformation",
+				},
+				"lambda": {
+					id: "lambda",
+				},
+				"license-manager": {
+					id: "license-manager",
+				},
+				"license-manager-linux-subscriptions": {
+					id: "license-manager-linux-subscriptions",
+				},
+				"logs": {
+					id: "logs",
+				},
+				"mediaconvert": {
+					id: "mediaconvert",
+				},
+				"memory-db": {
+					id: "memory-db",
+				},
+				"metrics.sagemaker": {
+					id: "metrics.sagemaker",
+				},
+				"monitoring": {
+					id: "monitoring",
+				},
+				"mq": {
+					id: "mq",
+				},
+				"neptune": {
+					id: "neptune",
+				},
+				"network-firewall": {
+					id: "network-firewall",
+				},
+				"oam": {
+					id: "oam",
+				},
+				"oidc": {
+					id: "oidc",
+				},
+				"organizations": {
+					id: "organizations",
+				},
+				"personalize": {
+					id: "personalize",
+				},
+				"pi": {
+					id: "pi",
+				},
+				"pipes": {
+					id: "pipes",
+				},
+				"polly": {
+					id: "polly",
+				},
+				"portal.sso": {
+					id: "portal.sso",
+				},
+				"qbusiness": {
+					id: "qbusiness",
+				},
+				"quicksight": {
+					id: "quicksight",
+				},
+				"ram": {
+					id: "ram",
+				},
+				"rbin": {
+					id: "rbin",
+				},
+				"rds": {
+					id: "rds",
+				},
+				"redshift": {
+					id: "redshift",
+				},
+				"redshift-serverless": {
+					id: "redshift-serverless",
+				},
+				"resource-groups": {
+					id: "resource-groups",
+				},
+				"rolesanywhere": {
+					id: "rolesanywhere",
+				},
+				"route53": {
+					id: "route53",
+				},
+				"route53resolver": {
+					id: "route53resolver",
+				},
+				"runtime.sagemaker": {
+					id: "runtime.sagemaker",
+				},
+				"s3": {
+					id: "s3",
+				},
+				"s3-control": {
+					id: "s3-control",
+				},
+				"savingsplans": {
+					id: "savingsplans",
+				},
+				"schemas": {
+					id: "schemas",
+				},
+				"secretsmanager": {
+					id: "secretsmanager",
+				},
+				"securityhub": {
+					id: "securityhub",
+				},
+				"serverlessrepo": {
+					id: "serverlessrepo",
+				},
+				"servicecatalog": {
+					id: "servicecatalog",
+				},
+				"servicediscovery": {
+					id: "servicediscovery",
+				},
+				"servicequotas": {
+					id: "servicequotas",
+				},
+				"signer": {
+					id: "signer",
+				},
+				"sms": {
+					id: "sms",
+				},
+				"snowball": {
+					id: "snowball",
+				},
+				"sns": {
+					id: "sns",
+				},
+				"sqs": {
+					id: "sqs",
+				},
+				"ssm": {
+					id: "ssm",
+				},
+				"sso": {
+					id: "sso",
+				},
+				"states": {
+					id: "states",
+				},
+				"storagegateway": {
+					id: "storagegateway",
+				},
+				"streams.dynamodb": {
+					id: "streams.dynamodb",
+				},
+				"sts": {
+					id: "sts",
+				},
+				"support": {
+					id: "support",
+				},
+				"swf": {
+					id: "swf",
+				},
+				"synthetics": {
+					id: "synthetics",
+				},
+				"tagging": {
+					id: "tagging",
+				},
+				"transcribe": {
+					id: "transcribe",
+				},
+				"transcribestreaming": {
+					id: "transcribestreaming",
+				},
+				"transfer": {
+					id: "transfer",
+				},
+				"waf-regional": {
+					id: "waf-regional",
+				},
+				"wafv2": {
+					id: "wafv2",
+				},
+				"workspaces": {
+					id: "workspaces",
+				},
+				"xray": {
+					id: "xray",
 				},
 			},
 		},
@@ -230,6 +1650,245 @@ var (
 					description: "US ISO WEST",
 				},
 			},
+			services: map[string]Service{
+				"api.ecr": {
+					id: "api.ecr",
+				},
+				"api.pricing": {
+					id: "api.pricing",
+				},
+				"api.sagemaker": {
+					id: "api.sagemaker",
+				},
+				"apigateway": {
+					id: "apigateway",
+				},
+				"appconfig": {
+					id: "appconfig",
+				},
+				"appconfigdata": {
+					id: "appconfigdata",
+				},
+				"application-autoscaling": {
+					id: "application-autoscaling",
+				},
+				"arc-zonal-shift": {
+					id: "arc-zonal-shift",
+				},
+				"athena": {
+					id: "athena",
+				},
+				"autoscaling": {
+					id: "autoscaling",
+				},
+				"cloudcontrolapi": {
+					id: "cloudcontrolapi",
+				},
+				"cloudformation": {
+					id: "cloudformation",
+				},
+				"cloudtrail": {
+					id: "cloudtrail",
+				},
+				"codedeploy": {
+					id: "codedeploy",
+				},
+				"comprehend": {
+					id: "comprehend",
+				},
+				"config": {
+					id: "config",
+				},
+				"datapipeline": {
+					id: "datapipeline",
+				},
+				"datasync": {
+					id: "datasync",
+				},
+				"directconnect": {
+					id: "directconnect",
+				},
+				"dlm": {
+					id: "dlm",
+				},
+				"dms": {
+					id: "dms",
+				},
+				"ds": {
+					id: "ds",
+				},
+				"dynamodb": {
+					id: "dynamodb",
+				},
+				"ebs": {
+					id: "ebs",
+				},
+				"ec2": {
+					id: "ec2",
+				},
+				"ecs": {
+					id: "ecs",
+				},
+				"eks": {
+					id: "eks",
+				},
+				"elasticache": {
+					id: "elasticache",
+				},
+				"elasticfilesystem": {
+					id: "elasticfilesystem",
+				},
+				"elasticloadbalancing": {
+					id: "elasticloadbalancing",
+				},
+				"elasticmapreduce": {
+					id: "elasticmapreduce",
+				},
+				"es": {
+					id: "es",
+				},
+				"events": {
+					id: "events",
+				},
+				"firehose": {
+					id: "firehose",
+				},
+				"fsx": {
+					id: "fsx",
+				},
+				"glacier": {
+					id: "glacier",
+				},
+				"glue": {
+					id: "glue",
+				},
+				"guardduty": {
+					id: "guardduty",
+				},
+				"health": {
+					id: "health",
+				},
+				"iam": {
+					id: "iam",
+				},
+				"kinesis": {
+					id: "kinesis",
+				},
+				"kms": {
+					id: "kms",
+				},
+				"lambda": {
+					id: "lambda",
+				},
+				"license-manager": {
+					id: "license-manager",
+				},
+				"logs": {
+					id: "logs",
+				},
+				"medialive": {
+					id: "medialive",
+				},
+				"mediapackage": {
+					id: "mediapackage",
+				},
+				"metrics.sagemaker": {
+					id: "metrics.sagemaker",
+				},
+				"monitoring": {
+					id: "monitoring",
+				},
+				"oam": {
+					id: "oam",
+				},
+				"outposts": {
+					id: "outposts",
+				},
+				"ram": {
+					id: "ram",
+				},
+				"rbin": {
+					id: "rbin",
+				},
+				"rds": {
+					id: "rds",
+				},
+				"redshift": {
+					id: "redshift",
+				},
+				"resource-groups": {
+					id: "resource-groups",
+				},
+				"route53": {
+					id: "route53",
+				},
+				"route53resolver": {
+					id: "route53resolver",
+				},
+				"runtime.sagemaker": {
+					id: "runtime.sagemaker",
+				},
+				"s3": {
+					id: "s3",
+				},
+				"s3-control": {
+					id: "s3-control",
+				},
+				"s3-outposts": {
+					id: "s3-outposts",
+				},
+				"secretsmanager": {
+					id: "secretsmanager",
+				},
+				"snowball": {
+					id: "snowball",
+				},
+				"sns": {
+					id: "sns",
+				},
+				"sqs": {
+					id: "sqs",
+				},
+				"ssm": {
+					id: "ssm",
+				},
+				"states": {
+					id: "states",
+				},
+				"streams.dynamodb": {
+					id: "streams.dynamodb",
+				},
+				"sts": {
+					id: "sts",
+				},
+				"support": {
+					id: "support",
+				},
+				"swf": {
+					id: "swf",
+				},
+				"synthetics": {
+					id: "synthetics",
+				},
+				"tagging": {
+					id: "tagging",
+				},
+				"textract": {
+					id: "textract",
+				},
+				"transcribe": {
+					id: "transcribe",
+				},
+				"transcribestreaming": {
+					id: "transcribestreaming",
+				},
+				"translate": {
+					id: "translate",
+				},
+				"workspaces": {
+					id: "workspaces",
+				},
+			},
 		},
 		AwsIsoBPartitionID: {
 			id:          AwsIsoBPartitionID,
@@ -240,6 +1899,221 @@ var (
 				UsIsobEast1RegionID: {
 					id:          UsIsobEast1RegionID,
 					description: "US ISOB East (Ohio)",
+				},
+			},
+			services: map[string]Service{
+				"api.ecr": {
+					id: "api.ecr",
+				},
+				"api.pricing": {
+					id: "api.pricing",
+				},
+				"api.sagemaker": {
+					id: "api.sagemaker",
+				},
+				"apigateway": {
+					id: "apigateway",
+				},
+				"appconfig": {
+					id: "appconfig",
+				},
+				"appconfigdata": {
+					id: "appconfigdata",
+				},
+				"application-autoscaling": {
+					id: "application-autoscaling",
+				},
+				"arc-zonal-shift": {
+					id: "arc-zonal-shift",
+				},
+				"autoscaling": {
+					id: "autoscaling",
+				},
+				"budgets": {
+					id: "budgets",
+				},
+				"cloudcontrolapi": {
+					id: "cloudcontrolapi",
+				},
+				"cloudformation": {
+					id: "cloudformation",
+				},
+				"cloudtrail": {
+					id: "cloudtrail",
+				},
+				"codedeploy": {
+					id: "codedeploy",
+				},
+				"config": {
+					id: "config",
+				},
+				"directconnect": {
+					id: "directconnect",
+				},
+				"dlm": {
+					id: "dlm",
+				},
+				"dms": {
+					id: "dms",
+				},
+				"ds": {
+					id: "ds",
+				},
+				"dynamodb": {
+					id: "dynamodb",
+				},
+				"ebs": {
+					id: "ebs",
+				},
+				"ec2": {
+					id: "ec2",
+				},
+				"ecs": {
+					id: "ecs",
+				},
+				"eks": {
+					id: "eks",
+				},
+				"elasticache": {
+					id: "elasticache",
+				},
+				"elasticfilesystem": {
+					id: "elasticfilesystem",
+				},
+				"elasticloadbalancing": {
+					id: "elasticloadbalancing",
+				},
+				"elasticmapreduce": {
+					id: "elasticmapreduce",
+				},
+				"es": {
+					id: "es",
+				},
+				"events": {
+					id: "events",
+				},
+				"firehose": {
+					id: "firehose",
+				},
+				"glacier": {
+					id: "glacier",
+				},
+				"health": {
+					id: "health",
+				},
+				"iam": {
+					id: "iam",
+				},
+				"kinesis": {
+					id: "kinesis",
+				},
+				"kms": {
+					id: "kms",
+				},
+				"lambda": {
+					id: "lambda",
+				},
+				"license-manager": {
+					id: "license-manager",
+				},
+				"logs": {
+					id: "logs",
+				},
+				"medialive": {
+					id: "medialive",
+				},
+				"mediapackage": {
+					id: "mediapackage",
+				},
+				"metering.marketplace": {
+					id: "metering.marketplace",
+				},
+				"metrics.sagemaker": {
+					id: "metrics.sagemaker",
+				},
+				"monitoring": {
+					id: "monitoring",
+				},
+				"oam": {
+					id: "oam",
+				},
+				"outposts": {
+					id: "outposts",
+				},
+				"ram": {
+					id: "ram",
+				},
+				"rbin": {
+					id: "rbin",
+				},
+				"rds": {
+					id: "rds",
+				},
+				"redshift": {
+					id: "redshift",
+				},
+				"resource-groups": {
+					id: "resource-groups",
+				},
+				"route53": {
+					id: "route53",
+				},
+				"route53resolver": {
+					id: "route53resolver",
+				},
+				"runtime.sagemaker": {
+					id: "runtime.sagemaker",
+				},
+				"s3": {
+					id: "s3",
+				},
+				"s3-control": {
+					id: "s3-control",
+				},
+				"s3-outposts": {
+					id: "s3-outposts",
+				},
+				"secretsmanager": {
+					id: "secretsmanager",
+				},
+				"snowball": {
+					id: "snowball",
+				},
+				"sns": {
+					id: "sns",
+				},
+				"sqs": {
+					id: "sqs",
+				},
+				"ssm": {
+					id: "ssm",
+				},
+				"states": {
+					id: "states",
+				},
+				"storagegateway": {
+					id: "storagegateway",
+				},
+				"streams.dynamodb": {
+					id: "streams.dynamodb",
+				},
+				"sts": {
+					id: "sts",
+				},
+				"support": {
+					id: "support",
+				},
+				"swf": {
+					id: "swf",
+				},
+				"synthetics": {
+					id: "synthetics",
+				},
+				"tagging": {
+					id: "tagging",
+				},
+				"workspaces": {
+					id: "workspaces",
 				},
 			},
 		},
@@ -254,6 +2128,7 @@ var (
 					description: "EU ISOE West",
 				},
 			},
+			services: map[string]Service{},
 		},
 		AwsIsoFPartitionID: {
 			id:          AwsIsoFPartitionID,
@@ -261,6 +2136,7 @@ var (
 			dnsSuffix:   "csp.hci.ic.gov",
 			regionRegex: regexp.MustCompile(`^us\-isof\-\w+\-\d+$`),
 			regions:     map[string]Region{},
+			services:    map[string]Service{},
 		},
 		AwsUsGovPartitionID: {
 			id:          AwsUsGovPartitionID,
@@ -275,6 +2151,554 @@ var (
 				UsGovWest1RegionID: {
 					id:          UsGovWest1RegionID,
 					description: "AWS GovCloud (US-West)",
+				},
+			},
+			services: map[string]Service{
+				"access-analyzer": {
+					id: "access-analyzer",
+				},
+				"acm": {
+					id: "acm",
+				},
+				"acm-pca": {
+					id: "acm-pca",
+				},
+				"aoss": {
+					id: "aoss",
+				},
+				"api.detective": {
+					id: "api.detective",
+				},
+				"api.ecr": {
+					id: "api.ecr",
+				},
+				"api.sagemaker": {
+					id: "api.sagemaker",
+				},
+				"api.tunneling.iot": {
+					id: "api.tunneling.iot",
+				},
+				"apigateway": {
+					id: "apigateway",
+				},
+				"appconfig": {
+					id: "appconfig",
+				},
+				"appconfigdata": {
+					id: "appconfigdata",
+				},
+				"application-autoscaling": {
+					id: "application-autoscaling",
+				},
+				"applicationinsights": {
+					id: "applicationinsights",
+				},
+				"appstream2": {
+					id: "appstream2",
+				},
+				"arc-zonal-shift": {
+					id: "arc-zonal-shift",
+				},
+				"athena": {
+					id: "athena",
+				},
+				"autoscaling": {
+					id: "autoscaling",
+				},
+				"autoscaling-plans": {
+					id: "autoscaling-plans",
+				},
+				"backup": {
+					id: "backup",
+				},
+				"backup-gateway": {
+					id: "backup-gateway",
+				},
+				"batch": {
+					id: "batch",
+				},
+				"bedrock": {
+					id: "bedrock",
+				},
+				"cassandra": {
+					id: "cassandra",
+				},
+				"cloudcontrolapi": {
+					id: "cloudcontrolapi",
+				},
+				"clouddirectory": {
+					id: "clouddirectory",
+				},
+				"cloudformation": {
+					id: "cloudformation",
+				},
+				"cloudhsm": {
+					id: "cloudhsm",
+				},
+				"cloudhsmv2": {
+					id: "cloudhsmv2",
+				},
+				"cloudtrail": {
+					id: "cloudtrail",
+				},
+				"codebuild": {
+					id: "codebuild",
+				},
+				"codecommit": {
+					id: "codecommit",
+				},
+				"codedeploy": {
+					id: "codedeploy",
+				},
+				"codepipeline": {
+					id: "codepipeline",
+				},
+				"codestar-connections": {
+					id: "codestar-connections",
+				},
+				"cognito-identity": {
+					id: "cognito-identity",
+				},
+				"cognito-idp": {
+					id: "cognito-idp",
+				},
+				"comprehend": {
+					id: "comprehend",
+				},
+				"comprehendmedical": {
+					id: "comprehendmedical",
+				},
+				"compute-optimizer": {
+					id: "compute-optimizer",
+				},
+				"config": {
+					id: "config",
+				},
+				"connect": {
+					id: "connect",
+				},
+				"controltower": {
+					id: "controltower",
+				},
+				"data-ats.iot": {
+					id: "data-ats.iot",
+				},
+				"data.iot": {
+					id: "data.iot",
+				},
+				"data.jobs.iot": {
+					id: "data.jobs.iot",
+				},
+				"databrew": {
+					id: "databrew",
+				},
+				"datasync": {
+					id: "datasync",
+				},
+				"datazone": {
+					id: "datazone",
+				},
+				"directconnect": {
+					id: "directconnect",
+				},
+				"dlm": {
+					id: "dlm",
+				},
+				"dms": {
+					id: "dms",
+				},
+				"docdb": {
+					id: "docdb",
+				},
+				"drs": {
+					id: "drs",
+				},
+				"ds": {
+					id: "ds",
+				},
+				"dynamodb": {
+					id: "dynamodb",
+				},
+				"ebs": {
+					id: "ebs",
+				},
+				"ec2": {
+					id: "ec2",
+				},
+				"ecs": {
+					id: "ecs",
+				},
+				"eks": {
+					id: "eks",
+				},
+				"eks-auth": {
+					id: "eks-auth",
+				},
+				"elasticache": {
+					id: "elasticache",
+				},
+				"elasticbeanstalk": {
+					id: "elasticbeanstalk",
+				},
+				"elasticfilesystem": {
+					id: "elasticfilesystem",
+				},
+				"elasticloadbalancing": {
+					id: "elasticloadbalancing",
+				},
+				"elasticmapreduce": {
+					id: "elasticmapreduce",
+				},
+				"email": {
+					id: "email",
+				},
+				"emr-containers": {
+					id: "emr-containers",
+				},
+				"emr-serverless": {
+					id: "emr-serverless",
+				},
+				"es": {
+					id: "es",
+				},
+				"events": {
+					id: "events",
+				},
+				"firehose": {
+					id: "firehose",
+				},
+				"fms": {
+					id: "fms",
+				},
+				"fsx": {
+					id: "fsx",
+				},
+				"geo": {
+					id: "geo",
+				},
+				"glacier": {
+					id: "glacier",
+				},
+				"glue": {
+					id: "glue",
+				},
+				"greengrass": {
+					id: "greengrass",
+				},
+				"guardduty": {
+					id: "guardduty",
+				},
+				"health": {
+					id: "health",
+				},
+				"iam": {
+					id: "iam",
+				},
+				"identitystore": {
+					id: "identitystore",
+				},
+				"ingest.timestream": {
+					id: "ingest.timestream",
+				},
+				"inspector": {
+					id: "inspector",
+				},
+				"inspector2": {
+					id: "inspector2",
+				},
+				"internetmonitor": {
+					id: "internetmonitor",
+				},
+				"iot": {
+					id: "iot",
+				},
+				"iotevents": {
+					id: "iotevents",
+				},
+				"ioteventsdata": {
+					id: "ioteventsdata",
+				},
+				"iotsecuredtunneling": {
+					id: "iotsecuredtunneling",
+				},
+				"iotsitewise": {
+					id: "iotsitewise",
+				},
+				"iottwinmaker": {
+					id: "iottwinmaker",
+				},
+				"kafka": {
+					id: "kafka",
+				},
+				"kendra": {
+					id: "kendra",
+				},
+				"kendra-ranking": {
+					id: "kendra-ranking",
+				},
+				"kinesis": {
+					id: "kinesis",
+				},
+				"kinesisanalytics": {
+					id: "kinesisanalytics",
+				},
+				"kinesisvideo": {
+					id: "kinesisvideo",
+				},
+				"kms": {
+					id: "kms",
+				},
+				"lakeformation": {
+					id: "lakeformation",
+				},
+				"lambda": {
+					id: "lambda",
+				},
+				"license-manager": {
+					id: "license-manager",
+				},
+				"license-manager-linux-subscriptions": {
+					id: "license-manager-linux-subscriptions",
+				},
+				"license-manager-user-subscriptions": {
+					id: "license-manager-user-subscriptions",
+				},
+				"logs": {
+					id: "logs",
+				},
+				"m2": {
+					id: "m2",
+				},
+				"managedblockchain": {
+					id: "managedblockchain",
+				},
+				"mediaconvert": {
+					id: "mediaconvert",
+				},
+				"meetings-chime": {
+					id: "meetings-chime",
+				},
+				"metering.marketplace": {
+					id: "metering.marketplace",
+				},
+				"metrics.sagemaker": {
+					id: "metrics.sagemaker",
+				},
+				"mgn": {
+					id: "mgn",
+				},
+				"models-v2-lex": {
+					id: "models-v2-lex",
+				},
+				"models.lex": {
+					id: "models.lex",
+				},
+				"monitoring": {
+					id: "monitoring",
+				},
+				"mq": {
+					id: "mq",
+				},
+				"neptune": {
+					id: "neptune",
+				},
+				"network-firewall": {
+					id: "network-firewall",
+				},
+				"networkmanager": {
+					id: "networkmanager",
+				},
+				"oam": {
+					id: "oam",
+				},
+				"oidc": {
+					id: "oidc",
+				},
+				"organizations": {
+					id: "organizations",
+				},
+				"outposts": {
+					id: "outposts",
+				},
+				"participant.connect": {
+					id: "participant.connect",
+				},
+				"pi": {
+					id: "pi",
+				},
+				"pinpoint": {
+					id: "pinpoint",
+				},
+				"polly": {
+					id: "polly",
+				},
+				"portal.sso": {
+					id: "portal.sso",
+				},
+				"qbusiness": {
+					id: "qbusiness",
+				},
+				"quicksight": {
+					id: "quicksight",
+				},
+				"ram": {
+					id: "ram",
+				},
+				"rbin": {
+					id: "rbin",
+				},
+				"rds": {
+					id: "rds",
+				},
+				"redshift": {
+					id: "redshift",
+				},
+				"rekognition": {
+					id: "rekognition",
+				},
+				"resiliencehub": {
+					id: "resiliencehub",
+				},
+				"resource-groups": {
+					id: "resource-groups",
+				},
+				"robomaker": {
+					id: "robomaker",
+				},
+				"rolesanywhere": {
+					id: "rolesanywhere",
+				},
+				"route53": {
+					id: "route53",
+				},
+				"route53resolver": {
+					id: "route53resolver",
+				},
+				"runtime-v2-lex": {
+					id: "runtime-v2-lex",
+				},
+				"runtime.lex": {
+					id: "runtime.lex",
+				},
+				"runtime.sagemaker": {
+					id: "runtime.sagemaker",
+				},
+				"s3": {
+					id: "s3",
+				},
+				"s3-control": {
+					id: "s3-control",
+				},
+				"s3-outposts": {
+					id: "s3-outposts",
+				},
+				"secretsmanager": {
+					id: "secretsmanager",
+				},
+				"securityhub": {
+					id: "securityhub",
+				},
+				"securitylake": {
+					id: "securitylake",
+				},
+				"serverlessrepo": {
+					id: "serverlessrepo",
+				},
+				"servicecatalog": {
+					id: "servicecatalog",
+				},
+				"servicecatalog-appregistry": {
+					id: "servicecatalog-appregistry",
+				},
+				"servicediscovery": {
+					id: "servicediscovery",
+				},
+				"servicequotas": {
+					id: "servicequotas",
+				},
+				"signer": {
+					id: "signer",
+				},
+				"simspaceweaver": {
+					id: "simspaceweaver",
+				},
+				"sms": {
+					id: "sms",
+				},
+				"sms-voice": {
+					id: "sms-voice",
+				},
+				"snowball": {
+					id: "snowball",
+				},
+				"sns": {
+					id: "sns",
+				},
+				"sqs": {
+					id: "sqs",
+				},
+				"ssm": {
+					id: "ssm",
+				},
+				"sso": {
+					id: "sso",
+				},
+				"states": {
+					id: "states",
+				},
+				"storagegateway": {
+					id: "storagegateway",
+				},
+				"streams.dynamodb": {
+					id: "streams.dynamodb",
+				},
+				"sts": {
+					id: "sts",
+				},
+				"support": {
+					id: "support",
+				},
+				"swf": {
+					id: "swf",
+				},
+				"synthetics": {
+					id: "synthetics",
+				},
+				"tagging": {
+					id: "tagging",
+				},
+				"textract": {
+					id: "textract",
+				},
+				"transcribe": {
+					id: "transcribe",
+				},
+				"transcribestreaming": {
+					id: "transcribestreaming",
+				},
+				"transfer": {
+					id: "transfer",
+				},
+				"translate": {
+					id: "translate",
+				},
+				"verifiedpermissions": {
+					id: "verifiedpermissions",
+				},
+				"waf-regional": {
+					id: "waf-regional",
+				},
+				"wafv2": {
+					id: "wafv2",
+				},
+				"wellarchitected": {
+					id: "wellarchitected",
+				},
+				"workspaces": {
+					id: "workspaces",
+				},
+				"xray": {
+					id: "xray",
 				},
 			},
 		},
