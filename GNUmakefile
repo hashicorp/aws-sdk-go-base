@@ -12,6 +12,10 @@ cleantidy:
 fmt:
 	gofmt -s -w ./
 
+gen:
+	@echo "make: Running Go generators..."
+	@go generate ./...
+
 golangci-lint:
 	@golangci-lint run ./...
 	@cd v2/awsv1shim && golangci-lint run ./...
@@ -36,6 +40,7 @@ tools:
 .PHONY: \
 	cleantidy \
 	fmt \
+	gen \
 	golangci-lint \
 	importlint \
 	lint \

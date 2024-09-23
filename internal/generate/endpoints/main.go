@@ -28,11 +28,16 @@ type PartitionDatum struct {
 	DNSSuffix   string
 	RegionRegex string
 	Regions     []RegionDatum
+	Services    []ServiceDatum
 }
 
 type RegionDatum struct {
 	ID          string
 	Description string
+}
+
+type ServiceDatum struct {
+	ID string
 }
 
 type TemplateData struct {
@@ -68,9 +73,12 @@ func main() {
 
 	td := TemplateData{}
 	templateFuncMap := template.FuncMap{
-		// KebabToTitle splits a kebab case string and returns a string with each part title cased.
-		"KebabToTitle": func(s string) (string, error) {
+		// IDToTitle splits a '-' or '.' separated string and returns a string with each part title cased.
+		"IDToTitle": func(s string) (string, error) {
 			parts := strings.Split(s, "-")
+			if len(parts) == 1 {
+				parts = strings.Split(s, ".")
+			}
 			return strings.Join(slices.ApplyToAll(parts, func(s string) string {
 				return common.FirstUpper(s)
 			}), ""), nil
@@ -97,7 +105,16 @@ func main() {
 		        "description" : "Africa (Cape Town)"
 		      },
 			  ...
-		    }
+		    },
+		    "services" : {
+		      "access-analyzer" : {
+		        "endpoints" : {
+		          "af-south-1" : { },
+				  ...
+		        },
+		      },
+		      ...
+		    },
 			...
 		   }, ...]
 		}
@@ -134,6 +151,15 @@ func main() {
 						partitionDatum.Regions = append(partitionDatum.Regions, regionDatum)
 					}
 				}
+				if services, ok := partition["services"].(map[string]any); ok {
+					for id := range services {
+						serviceDatum := ServiceDatum{
+							ID: id,
+						}
+
+						partitionDatum.Services = append(partitionDatum.Services, serviceDatum)
+					}
+				}
 
 				td.Partitions = append(td.Partitions, partitionDatum)
 			}
@@ -147,6 +173,12 @@ func main() {
 	for i := 0; i < len(td.Partitions); i++ {
 		sort.SliceStable(td.Partitions[i].Regions, func(j, k int) bool {
 			return td.Partitions[i].Regions[j].ID < td.Partitions[i].Regions[k].ID
+		})
+	}
+
+	for i := 0; i < len(td.Partitions); i++ {
+		sort.SliceStable(td.Partitions[i].Services, func(j, k int) bool {
+			return td.Partitions[i].Services[j].ID < td.Partitions[i].Services[k].ID
 		})
 	}
 

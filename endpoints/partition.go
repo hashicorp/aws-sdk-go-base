@@ -16,6 +16,7 @@ type Partition struct {
 	dnsSuffix   string
 	regionRegex *regexp.Regexp
 	regions     map[string]Region
+	services    map[string]Service
 }
 
 // ID returns the identifier of the partition.
@@ -41,6 +42,11 @@ func (p Partition) RegionRegex() *regexp.Regexp {
 // Regions returns a map of Regions for the partition, indexed by their ID.
 func (p Partition) Regions() map[string]Region {
 	return maps.Clone(p.regions)
+}
+
+// Services returns a map of service endpoints for the partition, indexed by their ID.
+func (p Partition) Services() map[string]Service {
+	return maps.Clone(p.services)
 }
 
 // DefaultPartitions returns a list of the partitions.
