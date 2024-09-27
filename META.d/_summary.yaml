@@ -6,6 +6,7 @@ partition: tf-ecosystem
 summary:
   owner: team-terraform-aws
   description: |
-    The Terraform AWS provider is a plugin that enables Terraform to manage AWS resources.
+    An opinionated AWS SDK for Go v2 library for consistent authentication configuration between projects plus additional 
+    helper functions. Relied on by the Terraform S3 Backend, terraform-provider-aws and terraform-provider-awscc.
 
   visibility: external
