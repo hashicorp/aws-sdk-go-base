@@ -838,9 +838,6 @@ var (
 				"networkmanager": {
 					id: "networkmanager",
 				},
-				"nimble": {
-					id: "nimble",
-				},
 				"oam": {
 					id: "oam",
 				},
@@ -1050,6 +1047,9 @@ var (
 				},
 				"ssm-incidents": {
 					id: "ssm-incidents",
+				},
+				"ssm-quicksetup": {
+					id: "ssm-quicksetup",
 				},
 				"ssm-sap": {
 					id: "ssm-sap",
@@ -2115,6 +2115,9 @@ var (
 				"workspaces": {
 					id: "workspaces",
 				},
+				"xray": {
+					id: "xray",
+				},
 			},
 		},
 		AwsIsoEPartitionID: {
@@ -2553,6 +2556,9 @@ var (
 				"redshift": {
 					id: "redshift",
 				},
+				"redshift-serverless": {
+					id: "redshift-serverless",
+				},
 				"rekognition": {
 					id: "rekognition",
 				},
@@ -2591,6 +2597,9 @@ var (
 				},
 				"s3-outposts": {
 					id: "s3-outposts",
+				},
+				"schemas": {
+					id: "schemas",
 				},
 				"secretsmanager": {
 					id: "secretsmanager",
