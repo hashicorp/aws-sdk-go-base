@@ -4,5 +4,6 @@
 package endpoints
 
 const (
-	AwsGlobalRegionID = "aws-global" // AWS Standard global region.
+	// AWS Standard global region.
+	AwsGlobalRegionID = "aws-global"
 )
