@@ -12,7 +12,8 @@ import (
 // All known partition IDs.
 const (
 {{- range .Partitions }}
-    {{ .ID | IDToTitle}}PartitionID = "{{ .ID }}" // {{ .Name }}
+    // {{ .Name }}
+    {{ .ID | IDToTitle}}PartitionID = "{{ .ID }}"
 {{- end }}
 )
 
@@ -21,7 +22,8 @@ const (
 {{- range .Partitions }}
     // {{ .Name }} partition's Regions.
     {{- range .Regions }}
-    {{ .ID | IDToTitle}}RegionID = "{{ .ID }}" // {{ .Description }}
+    // {{ .Description }}
+    {{ .ID | IDToTitle}}RegionID = "{{ .ID }}"
     {{- end }}
 {{- end }}
 )
