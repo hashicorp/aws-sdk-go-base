@@ -52,7 +52,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.32.0 // indirect
 	golang.org/x/net v0.31.0 // indirect
 	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/text v0.21.0 // indirect
 )
 
 replace github.com/hashicorp/aws-sdk-go-base/v2 => ../..
