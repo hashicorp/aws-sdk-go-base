@@ -1,8 +1,8 @@
 module github.com/hashicorp/aws-sdk-go-base/tools
 
-go 1.22.1
+go 1.22.9
 
-toolchain go1.22.7
+toolchain go1.22.10
 
 require (
 	github.com/golangci/golangci-lint v1.63.4
