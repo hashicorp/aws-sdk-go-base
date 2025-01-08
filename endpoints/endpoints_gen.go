@@ -11,107 +11,62 @@ import (
 
 // All known partition IDs.
 const (
-	// AWS Standard
-	AwsPartitionID = "aws"
-	// AWS China
-	AwsCnPartitionID = "aws-cn"
-	// AWS ISO (US)
-	AwsIsoPartitionID = "aws-iso"
-	// AWS ISOB (US)
-	AwsIsoBPartitionID = "aws-iso-b"
-	// AWS ISOE (Europe)
-	AwsIsoEPartitionID = "aws-iso-e"
-	// AWS ISOF
-	AwsIsoFPartitionID = "aws-iso-f"
-	// AWS GovCloud (US)
-	AwsUsGovPartitionID = "aws-us-gov"
+	AwsPartitionID      = "aws"        // AWS Standard
+	AwsCnPartitionID    = "aws-cn"     // AWS China
+	AwsIsoPartitionID   = "aws-iso"    // AWS ISO (US)
+	AwsIsoBPartitionID  = "aws-iso-b"  // AWS ISOB (US)
+	AwsIsoEPartitionID  = "aws-iso-e"  // AWS ISOE (Europe)
+	AwsIsoFPartitionID  = "aws-iso-f"  // AWS ISOF
+	AwsUsGovPartitionID = "aws-us-gov" // AWS GovCloud (US)
 )
 
 // All known Region IDs.
 const (
 	// AWS Standard partition's Regions.
-	// Africa (Cape Town)
-	AfSouth1RegionID = "af-south-1"
-	// Asia Pacific (Hong Kong)
-	ApEast1RegionID = "ap-east-1"
-	// Asia Pacific (Tokyo)
-	ApNortheast1RegionID = "ap-northeast-1"
-	// Asia Pacific (Seoul)
-	ApNortheast2RegionID = "ap-northeast-2"
-	// Asia Pacific (Osaka)
-	ApNortheast3RegionID = "ap-northeast-3"
-	// Asia Pacific (Mumbai)
-	ApSouth1RegionID = "ap-south-1"
-	// Asia Pacific (Hyderabad)
-	ApSouth2RegionID = "ap-south-2"
-	// Asia Pacific (Singapore)
-	ApSoutheast1RegionID = "ap-southeast-1"
-	// Asia Pacific (Sydney)
-	ApSoutheast2RegionID = "ap-southeast-2"
-	// Asia Pacific (Jakarta)
-	ApSoutheast3RegionID = "ap-southeast-3"
-	// Asia Pacific (Melbourne)
-	ApSoutheast4RegionID = "ap-southeast-4"
-	// Asia Pacific (Malaysia)
-	ApSoutheast5RegionID = "ap-southeast-5"
-	// Canada (Central)
-	CaCentral1RegionID = "ca-central-1"
-	// Canada West (Calgary)
-	CaWest1RegionID = "ca-west-1"
-	// Europe (Frankfurt)
-	EuCentral1RegionID = "eu-central-1"
-	// Europe (Zurich)
-	EuCentral2RegionID = "eu-central-2"
-	// Europe (Stockholm)
-	EuNorth1RegionID = "eu-north-1"
-	// Europe (Milan)
-	EuSouth1RegionID = "eu-south-1"
-	// Europe (Spain)
-	EuSouth2RegionID = "eu-south-2"
-	// Europe (Ireland)
-	EuWest1RegionID = "eu-west-1"
-	// Europe (London)
-	EuWest2RegionID = "eu-west-2"
-	// Europe (Paris)
-	EuWest3RegionID = "eu-west-3"
-	// Israel (Tel Aviv)
-	IlCentral1RegionID = "il-central-1"
-	// Middle East (UAE)
-	MeCentral1RegionID = "me-central-1"
-	// Middle East (Bahrain)
-	MeSouth1RegionID = "me-south-1"
-	// South America (Sao Paulo)
-	SaEast1RegionID = "sa-east-1"
-	// US East (N. Virginia)
-	UsEast1RegionID = "us-east-1"
-	// US East (Ohio)
-	UsEast2RegionID = "us-east-2"
-	// US West (N. California)
-	UsWest1RegionID = "us-west-1"
-	// US West (Oregon)
-	UsWest2RegionID = "us-west-2"
+	AfSouth1RegionID     = "af-south-1"     // Africa (Cape Town)
+	ApEast1RegionID      = "ap-east-1"      // Asia Pacific (Hong Kong)
+	ApNortheast1RegionID = "ap-northeast-1" // Asia Pacific (Tokyo)
+	ApNortheast2RegionID = "ap-northeast-2" // Asia Pacific (Seoul)
+	ApNortheast3RegionID = "ap-northeast-3" // Asia Pacific (Osaka)
+	ApSouth1RegionID     = "ap-south-1"     // Asia Pacific (Mumbai)
+	ApSouth2RegionID     = "ap-south-2"     // Asia Pacific (Hyderabad)
+	ApSoutheast1RegionID = "ap-southeast-1" // Asia Pacific (Singapore)
+	ApSoutheast2RegionID = "ap-southeast-2" // Asia Pacific (Sydney)
+	ApSoutheast3RegionID = "ap-southeast-3" // Asia Pacific (Jakarta)
+	ApSoutheast4RegionID = "ap-southeast-4" // Asia Pacific (Melbourne)
+	ApSoutheast5RegionID = "ap-southeast-5" // Asia Pacific (Malaysia)
+	CaCentral1RegionID   = "ca-central-1"   // Canada (Central)
+	CaWest1RegionID      = "ca-west-1"      // Canada West (Calgary)
+	EuCentral1RegionID   = "eu-central-1"   // Europe (Frankfurt)
+	EuCentral2RegionID   = "eu-central-2"   // Europe (Zurich)
+	EuNorth1RegionID     = "eu-north-1"     // Europe (Stockholm)
+	EuSouth1RegionID     = "eu-south-1"     // Europe (Milan)
+	EuSouth2RegionID     = "eu-south-2"     // Europe (Spain)
+	EuWest1RegionID      = "eu-west-1"      // Europe (Ireland)
+	EuWest2RegionID      = "eu-west-2"      // Europe (London)
+	EuWest3RegionID      = "eu-west-3"      // Europe (Paris)
+	IlCentral1RegionID   = "il-central-1"   // Israel (Tel Aviv)
+	MeCentral1RegionID   = "me-central-1"   // Middle East (UAE)
+	MeSouth1RegionID     = "me-south-1"     // Middle East (Bahrain)
+	SaEast1RegionID      = "sa-east-1"      // South America (Sao Paulo)
+	UsEast1RegionID      = "us-east-1"      // US East (N. Virginia)
+	UsEast2RegionID      = "us-east-2"      // US East (Ohio)
+	UsWest1RegionID      = "us-west-1"      // US West (N. California)
+	UsWest2RegionID      = "us-west-2"      // US West (Oregon)
 	// AWS China partition's Regions.
-	// China (Beijing)
-	CnNorth1RegionID = "cn-north-1"
-	// China (Ningxia)
-	CnNorthwest1RegionID = "cn-northwest-1"
+	CnNorth1RegionID     = "cn-north-1"     // China (Beijing)
+	CnNorthwest1RegionID = "cn-northwest-1" // China (Ningxia)
 	// AWS ISO (US) partition's Regions.
-	// US ISO East
-	UsIsoEast1RegionID = "us-iso-east-1"
-	// US ISO WEST
-	UsIsoWest1RegionID = "us-iso-west-1"
+	UsIsoEast1RegionID = "us-iso-east-1" // US ISO East
+	UsIsoWest1RegionID = "us-iso-west-1" // US ISO WEST
 	// AWS ISOB (US) partition's Regions.
-	// US ISOB East (Ohio)
-	UsIsobEast1RegionID = "us-isob-east-1"
+	UsIsobEast1RegionID = "us-isob-east-1" // US ISOB East (Ohio)
 	// AWS ISOE (Europe) partition's Regions.
-	// EU ISOE West
-	EuIsoeWest1RegionID = "eu-isoe-west-1"
+	EuIsoeWest1RegionID = "eu-isoe-west-1" // EU ISOE West
 	// AWS ISOF partition's Regions.
 	// AWS GovCloud (US) partition's Regions.
-	// AWS GovCloud (US-East)
-	UsGovEast1RegionID = "us-gov-east-1"
-	// AWS GovCloud (US-West)
-	UsGovWest1RegionID = "us-gov-west-1"
+	UsGovEast1RegionID = "us-gov-east-1" // AWS GovCloud (US-East)
+	UsGovWest1RegionID = "us-gov-west-1" // AWS GovCloud (US-West)
 )
 
 var (
@@ -940,9 +895,6 @@ var (
 				"profile": {
 					id: "profile",
 				},
-				"projects.iot1click": {
-					id: "projects.iot1click",
-				},
 				"proton": {
 					id: "proton",
 				},
@@ -1158,6 +1110,9 @@ var (
 				},
 				"translate": {
 					id: "translate",
+				},
+				"trustedadvisor": {
+					id: "trustedadvisor",
 				},
 				"verifiedpermissions": {
 					id: "verifiedpermissions",
@@ -1705,6 +1660,9 @@ var (
 				},
 			},
 			services: map[string]Service{
+				"agreement-marketplace": {
+					id: "agreement-marketplace",
+				},
 				"api.ecr": {
 					id: "api.ecr",
 				},
@@ -1735,6 +1693,9 @@ var (
 				"autoscaling": {
 					id: "autoscaling",
 				},
+				"bedrock": {
+					id: "bedrock",
+				},
 				"cloudcontrolapi": {
 					id: "cloudcontrolapi",
 				},
@@ -1743,6 +1704,9 @@ var (
 				},
 				"cloudtrail": {
 					id: "cloudtrail",
+				},
+				"codebuild": {
+					id: "codebuild",
 				},
 				"codedeploy": {
 					id: "codedeploy",
@@ -1855,6 +1819,9 @@ var (
 				"oam": {
 					id: "oam",
 				},
+				"organizations": {
+					id: "organizations",
+				},
 				"outposts": {
 					id: "outposts",
 				},
@@ -1890,6 +1857,9 @@ var (
 				},
 				"s3-outposts": {
 					id: "s3-outposts",
+				},
+				"scheduler": {
+					id: "scheduler",
 				},
 				"secretsmanager": {
 					id: "secretsmanager",
@@ -2091,6 +2061,9 @@ var (
 				"oam": {
 					id: "oam",
 				},
+				"organizations": {
+					id: "organizations",
+				},
 				"outposts": {
 					id: "outposts",
 				},
@@ -2126,6 +2099,9 @@ var (
 				},
 				"s3-outposts": {
 					id: "s3-outposts",
+				},
+				"scheduler": {
+					id: "scheduler",
 				},
 				"secretsmanager": {
 					id: "secretsmanager",
