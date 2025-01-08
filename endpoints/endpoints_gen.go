@@ -35,6 +35,7 @@ const (
 	ApSoutheast3RegionID = "ap-southeast-3" // Asia Pacific (Jakarta)
 	ApSoutheast4RegionID = "ap-southeast-4" // Asia Pacific (Melbourne)
 	ApSoutheast5RegionID = "ap-southeast-5" // Asia Pacific (Malaysia)
+	ApSoutheast7RegionID = "ap-southeast-7" // Asia Pacific (Thailand)
 	CaCentral1RegionID   = "ca-central-1"   // Canada (Central)
 	CaWest1RegionID      = "ca-west-1"      // Canada West (Calgary)
 	EuCentral1RegionID   = "eu-central-1"   // Europe (Frankfurt)
@@ -124,6 +125,10 @@ var (
 				ApSoutheast5RegionID: {
 					id:          ApSoutheast5RegionID,
 					description: "Asia Pacific (Malaysia)",
+				},
+				ApSoutheast7RegionID: {
+					id:          ApSoutheast7RegionID,
+					description: "Asia Pacific (Thailand)",
 				},
 				CaCentral1RegionID: {
 					id:          CaCentral1RegionID,
