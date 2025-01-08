@@ -34,7 +34,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.7 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.72.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sns v1.33.7 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sqs v1.37.4 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.37.5 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.24.8 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.28.7 // indirect
 	github.com/aws/smithy-go v1.22.1 // indirect
