@@ -1,6 +1,16 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.60 (2025-01-08)
+
+ENHANCEMENTS
+
+* Adds support for AWS region `ap-southeast-7` ([#1240](https://github.com/hashicorp/aws-sdk-go-base/pull/1240))
+
+BUG FIXES
+
+* Updates dependencies.
+
 # v2.0.0-beta.59 (2024-10-28)
 
 ENHANCEMENTS
