@@ -1,6 +1,16 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.61 (2025-01-15)
+
+ENHANCEMENTS
+
+* Adds support for AWS region `mx-central-1` ([#1248](https://github.com/hashicorp/aws-sdk-go-base/pull/1248))
+
+BUG FIXES
+
+* Updates dependencies.
+
 # v2.0.0-beta.60 (2025-01-08)
 
 ENHANCEMENTS
