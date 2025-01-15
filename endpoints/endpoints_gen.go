@@ -49,6 +49,7 @@ const (
 	IlCentral1RegionID   = "il-central-1"   // Israel (Tel Aviv)
 	MeCentral1RegionID   = "me-central-1"   // Middle East (UAE)
 	MeSouth1RegionID     = "me-south-1"     // Middle East (Bahrain)
+	MxCentral1RegionID   = "mx-central-1"   // Mexico (Central)
 	SaEast1RegionID      = "sa-east-1"      // South America (Sao Paulo)
 	UsEast1RegionID      = "us-east-1"      // US East (N. Virginia)
 	UsEast2RegionID      = "us-east-2"      // US East (Ohio)
@@ -181,6 +182,10 @@ var (
 				MeSouth1RegionID: {
 					id:          MeSouth1RegionID,
 					description: "Middle East (Bahrain)",
+				},
+				MxCentral1RegionID: {
+					id:          MxCentral1RegionID,
+					description: "Mexico (Central)",
 				},
 				SaEast1RegionID: {
 					id:          SaEast1RegionID,
@@ -1700,6 +1705,9 @@ var (
 				},
 				"bedrock": {
 					id: "bedrock",
+				},
+				"budgets": {
+					id: "budgets",
 				},
 				"cloudcontrolapi": {
 					id: "cloudcontrolapi",
