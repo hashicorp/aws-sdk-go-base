@@ -5,7 +5,7 @@
 
 ENHANCEMENTS
 
-* Adds support for additional AWS regions ([#xxxx(https://github.com/hashicorp/aws-sdk-go-base/pull/xxxx))
+* Adds support for additional AWS regions ([#1262](https://github.com/hashicorp/aws-sdk-go-base/pull/1262))
 
 BUG FIXES
 
