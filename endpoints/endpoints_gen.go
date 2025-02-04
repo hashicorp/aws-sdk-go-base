@@ -66,6 +66,8 @@ const (
 	// AWS ISOE (Europe) partition's Regions.
 	EuIsoeWest1RegionID = "eu-isoe-west-1" // EU ISOE West
 	// AWS ISOF partition's Regions.
+	UsIsofEast1RegionID  = "us-isof-east-1"  // US ISOF EAST
+	UsIsofSouth1RegionID = "us-isof-south-1" // US ISOF SOUTH
 	// AWS GovCloud (US) partition's Regions.
 	UsGovEast1RegionID = "us-gov-east-1" // AWS GovCloud (US-East)
 	UsGovWest1RegionID = "us-gov-west-1" // AWS GovCloud (US-West)
@@ -2181,8 +2183,276 @@ var (
 			name:        "AWS ISOF",
 			dnsSuffix:   "csp.hci.ic.gov",
 			regionRegex: regexp.MustCompile(`^us\-isof\-\w+\-\d+$`),
-			regions:     map[string]Region{},
-			services:    map[string]Service{},
+			regions: map[string]Region{
+				UsIsofEast1RegionID: {
+					id:          UsIsofEast1RegionID,
+					description: "US ISOF EAST",
+				},
+				UsIsofSouth1RegionID: {
+					id:          UsIsofSouth1RegionID,
+					description: "US ISOF SOUTH",
+				},
+			},
+			services: map[string]Service{
+				"access-analyzer": {
+					id: "access-analyzer",
+				},
+				"acm": {
+					id: "acm",
+				},
+				"acm-pca": {
+					id: "acm-pca",
+				},
+				"api.ecr": {
+					id: "api.ecr",
+				},
+				"api.pricing": {
+					id: "api.pricing",
+				},
+				"api.sagemaker": {
+					id: "api.sagemaker",
+				},
+				"appconfig": {
+					id: "appconfig",
+				},
+				"appconfigdata": {
+					id: "appconfigdata",
+				},
+				"application-autoscaling": {
+					id: "application-autoscaling",
+				},
+				"arc-zonal-shift": {
+					id: "arc-zonal-shift",
+				},
+				"athena": {
+					id: "athena",
+				},
+				"autoscaling": {
+					id: "autoscaling",
+				},
+				"backup": {
+					id: "backup",
+				},
+				"batch": {
+					id: "batch",
+				},
+				"budgets": {
+					id: "budgets",
+				},
+				"cloudformation": {
+					id: "cloudformation",
+				},
+				"cloudtrail": {
+					id: "cloudtrail",
+				},
+				"codebuild": {
+					id: "codebuild",
+				},
+				"codedeploy": {
+					id: "codedeploy",
+				},
+				"codepipeline": {
+					id: "codepipeline",
+				},
+				"comprehend": {
+					id: "comprehend",
+				},
+				"compute-optimizer": {
+					id: "compute-optimizer",
+				},
+				"config": {
+					id: "config",
+				},
+				"cost-optimization-hub": {
+					id: "cost-optimization-hub",
+				},
+				"directconnect": {
+					id: "directconnect",
+				},
+				"dlm": {
+					id: "dlm",
+				},
+				"dms": {
+					id: "dms",
+				},
+				"ds": {
+					id: "ds",
+				},
+				"dynamodb": {
+					id: "dynamodb",
+				},
+				"ebs": {
+					id: "ebs",
+				},
+				"ec2": {
+					id: "ec2",
+				},
+				"ecs": {
+					id: "ecs",
+				},
+				"eks": {
+					id: "eks",
+				},
+				"elasticache": {
+					id: "elasticache",
+				},
+				"elasticfilesystem": {
+					id: "elasticfilesystem",
+				},
+				"elasticloadbalancing": {
+					id: "elasticloadbalancing",
+				},
+				"elasticmapreduce": {
+					id: "elasticmapreduce",
+				},
+				"es": {
+					id: "es",
+				},
+				"events": {
+					id: "events",
+				},
+				"firehose": {
+					id: "firehose",
+				},
+				"fsx": {
+					id: "fsx",
+				},
+				"glue": {
+					id: "glue",
+				},
+				"guardduty": {
+					id: "guardduty",
+				},
+				"iam": {
+					id: "iam",
+				},
+				"kinesis": {
+					id: "kinesis",
+				},
+				"kms": {
+					id: "kms",
+				},
+				"lakeformation": {
+					id: "lakeformation",
+				},
+				"lambda": {
+					id: "lambda",
+				},
+				"license-manager": {
+					id: "license-manager",
+				},
+				"logs": {
+					id: "logs",
+				},
+				"metrics.sagemaker": {
+					id: "metrics.sagemaker",
+				},
+				"monitoring": {
+					id: "monitoring",
+				},
+				"oam": {
+					id: "oam",
+				},
+				"organizations": {
+					id: "organizations",
+				},
+				"pi": {
+					id: "pi",
+				},
+				"pipes": {
+					id: "pipes",
+				},
+				"quicksight": {
+					id: "quicksight",
+				},
+				"ram": {
+					id: "ram",
+				},
+				"rbin": {
+					id: "rbin",
+				},
+				"rds": {
+					id: "rds",
+				},
+				"redshift": {
+					id: "redshift",
+				},
+				"redshift-serverless": {
+					id: "redshift-serverless",
+				},
+				"rekognition": {
+					id: "rekognition",
+				},
+				"resource-groups": {
+					id: "resource-groups",
+				},
+				"route53": {
+					id: "route53",
+				},
+				"route53resolver": {
+					id: "route53resolver",
+				},
+				"s3": {
+					id: "s3",
+				},
+				"savingsplans": {
+					id: "savingsplans",
+				},
+				"scheduler": {
+					id: "scheduler",
+				},
+				"secretsmanager": {
+					id: "secretsmanager",
+				},
+				"servicediscovery": {
+					id: "servicediscovery",
+				},
+				"servicequotas": {
+					id: "servicequotas",
+				},
+				"sns": {
+					id: "sns",
+				},
+				"sqs": {
+					id: "sqs",
+				},
+				"ssm": {
+					id: "ssm",
+				},
+				"states": {
+					id: "states",
+				},
+				"streams.dynamodb": {
+					id: "streams.dynamodb",
+				},
+				"sts": {
+					id: "sts",
+				},
+				"swf": {
+					id: "swf",
+				},
+				"synthetics": {
+					id: "synthetics",
+				},
+				"tagging": {
+					id: "tagging",
+				},
+				"textract": {
+					id: "textract",
+				},
+				"transcribe": {
+					id: "transcribe",
+				},
+				"transcribestreaming": {
+					id: "transcribestreaming",
+				},
+				"translate": {
+					id: "translate",
+				},
+				"xray": {
+					id: "xray",
+				},
+			},
 		},
 		AwsUsGovPartitionID: {
 			id:          AwsUsGovPartitionID,
