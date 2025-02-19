@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 issues:
-  max-per-linter: 0
+  max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
     - path: configtesting
