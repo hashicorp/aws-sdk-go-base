@@ -227,8 +227,6 @@ func TestErrMessageAndOrigErrContain(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := ErrMessageAndOrigErrContain(testCase.Err, testCase.Code, testCase.Message, testCase.ExtendedMessage)
 
@@ -328,8 +326,6 @@ func TestErrCodeEquals(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := ErrCodeEquals(testCase.Err, testCase.Codes...)
 
@@ -421,8 +417,6 @@ func TestErrCodeContains(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := ErrCodeContains(testCase.Err, testCase.Code)
 
@@ -594,8 +588,6 @@ func TestErrMessageContains(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := ErrMessageContains(testCase.Err, testCase.Code, testCase.Message)
 
@@ -665,8 +657,6 @@ func TestErrStatusCodeEquals(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := ErrStatusCodeEquals(testCase.Err, testCase.StatusCode)
 

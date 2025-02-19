@@ -116,8 +116,6 @@ sso_registration_scopes = sso:account:access
 	}
 
 	for name, tc := range testCases {
-		tc := tc
-
 		t.Run(name, func(t *testing.T) {
 			caseDriver := driver.TestCase()
 
@@ -223,8 +221,6 @@ region = us-east-1
 	}
 
 	for name, tc := range testCases {
-		tc := tc
-
 		t.Run(name, func(t *testing.T) {
 			caseDriver := driver.TestCase()
 

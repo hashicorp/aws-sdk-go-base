@@ -82,8 +82,6 @@ func TestErrCodeEquals(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(name, func(t *testing.T) {
 			got := ErrCodeEquals(testCase.Err, testCase.Codes...)
 
@@ -134,8 +132,6 @@ func TestErrCodeContains(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(name, func(t *testing.T) {
 			got := ErrCodeContains(testCase.Err, testCase.Code)
 
@@ -267,8 +263,6 @@ func TestErrMessageContains(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(name, func(t *testing.T) {
 			got := ErrMessageContains(testCase.Err, testCase.Code, testCase.Message)
 
@@ -327,8 +321,6 @@ func TestErrHTTPStatusCodeEquals(t *testing.T) {
 	}
 
 	for name, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(name, func(t *testing.T) {
 			got := ErrHTTPStatusCodeEquals(testCase.Err, testCase.Codes...)
 

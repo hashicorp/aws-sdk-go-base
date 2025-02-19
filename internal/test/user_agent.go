@@ -233,8 +233,6 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 	}
 
 	for name, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(name, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 

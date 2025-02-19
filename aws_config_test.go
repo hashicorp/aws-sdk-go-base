@@ -984,9 +984,6 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 	}
 
 	for testName, testCase := range testCases {
-		testName := testName
-		testCase := testCase
-
 		if testCase.ValidateDiags == nil {
 			testCase.ValidateDiags = test.ExpectNoDiags
 		}
@@ -1341,8 +1338,6 @@ region = us-west-2
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -1468,8 +1463,6 @@ max_attempts = 10
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -1601,8 +1594,6 @@ retry_mode = adaptive
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -1826,8 +1817,6 @@ use_fips_endpoint = true
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -1957,8 +1946,6 @@ func TestEC2MetadataServiceClientEnableState(t *testing.T) {
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -2144,8 +2131,6 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -2269,8 +2254,6 @@ ec2_metadata_service_endpoint_mode = IPv4
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -2394,8 +2377,6 @@ func TestCustomCABundle(t *testing.T) {
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -2670,8 +2651,6 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -2944,8 +2923,6 @@ web_identity_token_file = no-such-file
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			ctx := context.Background()
 
@@ -3307,8 +3284,6 @@ endpoint_url = %[2]s
 	}
 
 	for name, testcase := range testcases {
-		testcase := testcase
-
 		t.Run(name, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -3548,19 +3523,17 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		tc := testCase
-
-		t.Run(tc.desc, func(t *testing.T) {
-			ts := servicemocks.MockAwsApiServer("STS", tc.mockStsEndpoints)
+		t.Run(testCase.desc, func(t *testing.T) {
+			ts := servicemocks.MockAwsApiServer("STS", testCase.mockStsEndpoints)
 			defer ts.Close()
-			tc.config.StsEndpoint = ts.URL
+			testCase.config.StsEndpoint = ts.URL
 
-			ctx, awsConfig, diags := GetAwsConfig(context.Background(), tc.config)
+			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
 
-			acctID, part, diags := GetAwsAccountIDAndPartition(ctx, awsConfig, tc.config)
+			acctID, part, diags := GetAwsAccountIDAndPartition(ctx, awsConfig, testCase.config)
 
 			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
 				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
@@ -3569,12 +3542,12 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 				return
 			}
 
-			if acctID != tc.expectedAcctID {
-				t.Errorf("expected account ID (%s), got: %s", tc.expectedAcctID, acctID)
+			if acctID != testCase.expectedAcctID {
+				t.Errorf("expected account ID (%s), got: %s", testCase.expectedAcctID, acctID)
 			}
 
-			if part != tc.expectedPartition {
-				t.Errorf("expected partition (%s), got: %s", tc.expectedPartition, part)
+			if part != testCase.expectedPartition {
+				t.Errorf("expected partition (%s), got: %s", testCase.expectedPartition, part)
 			}
 		})
 	}
@@ -3812,8 +3785,6 @@ func TestRetryHandlers(t *testing.T) {
 	}
 
 	for name, testcase := range testcases {
-		testcase := testcase
-
 		t.Run(name, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
