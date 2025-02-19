@@ -61,28 +61,26 @@ func TestGetSessionOptions(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		tc := testCase
-
-		t.Run(tc.desc, func(t *testing.T) {
+		t.Run(testCase.desc, func(t *testing.T) {
 			ctx := test.Context(t)
 
-			tc.config.SkipCredsValidation = true
+			testCase.config.SkipCredsValidation = true
 
-			ctx, awsConfig, diags := awsbase.GetAwsConfig(ctx, tc.config)
+			ctx, awsConfig, diags := awsbase.GetAwsConfig(ctx, testCase.config)
 			if diags.HasError() {
 				t.Fatalf("GetAwsConfig() resulted in an error %v", diags)
 			}
 
-			opts, err := getSessionOptions(ctx, &awsConfig, tc.config)
-			if err != nil && tc.expectError == false {
+			opts, err := getSessionOptions(ctx, &awsConfig, testCase.config)
+			if err != nil && testCase.expectError == false {
 				t.Fatalf("getSessionOptions() resulted in an error %s", err)
 			}
 
-			if opts == nil && tc.expectError == false {
+			if opts == nil && testCase.expectError == false {
 				t.Error("getSessionOptions() resulted in a nil set of options")
 			}
 
-			if err == nil && tc.expectError == true {
+			if err == nil && testCase.expectError == true {
 				t.Fatal("Expected error not returned by getSessionOptions()")
 			}
 		})
@@ -1031,9 +1029,6 @@ aws_secret_access_key = DefaultSharedCredentialsSecretKey
 	}
 
 	for testName, testCase := range testCases {
-		testName := testName
-		testCase := testCase
-
 		if testCase.ValidateDiags == nil {
 			testCase.ValidateDiags = test.ExpectNoDiags
 		}
@@ -1287,8 +1282,6 @@ max_attempts = 10
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -1411,8 +1404,6 @@ func TestRetryMode(t *testing.T) {
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
@@ -1571,8 +1562,6 @@ use_fips_endpoint = true
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -1741,8 +1730,6 @@ func TestCustomCABundle(t *testing.T) {
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -2002,8 +1989,6 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -2292,8 +2277,6 @@ web_identity_token_file = no-such-file
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -2497,8 +2480,6 @@ func TestSessionRetryHandlers(t *testing.T) {
 		},
 	}
 	for _, testcase := range testcases {
-		testcase := testcase
-
 		t.Run(testcase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -2688,8 +2669,6 @@ s3_us_east_1_regional_endpoint = legacy
 	}
 
 	for testName, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testName, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 

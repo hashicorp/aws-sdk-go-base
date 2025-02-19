@@ -30,8 +30,6 @@ func TestIsCannotAssumeRoleError(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := IsCannotAssumeRoleError(testCase.Diag)
 
@@ -63,8 +61,6 @@ func TestIsNoValidCredentialSourcesError(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Name, func(t *testing.T) {
 			got := IsNoValidCredentialSourcesError(testCase.Diag)
 

@@ -35,8 +35,6 @@ func TestSupportedRegion(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Region, func(t *testing.T) {
 			err := SupportedRegion(testCase.Region)
 			if err != nil && !testCase.ExpectError {

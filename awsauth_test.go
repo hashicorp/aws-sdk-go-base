@@ -112,8 +112,6 @@ func TestGetAccountIDAndPartition(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -219,8 +217,6 @@ func TestGetAccountIDAndPartitionFromIAMGetUser(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -278,8 +274,6 @@ func TestGetAccountIDAndPartitionFromIAMListRoles(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -373,8 +367,6 @@ func TestGetAccountIDAndPartitionFromSTSGetCallerIdentity(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.Description, func(t *testing.T) {
 			ctx := test.Context(t)
 
@@ -434,8 +426,6 @@ func TestAWSParseAccountIDAndPartitionFromARN(t *testing.T) {
 	}
 
 	for _, testCase := range testCases {
-		testCase := testCase
-
 		t.Run(testCase.InputARN, func(t *testing.T) {
 			accountID, partition, err := parseAccountIDAndPartitionFromARN(testCase.InputARN)
 			if err != nil && testCase.ErrCount == 0 {
