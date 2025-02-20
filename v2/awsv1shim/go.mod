@@ -1,8 +1,6 @@
 module github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2
 
-go 1.22.0
-
-toolchain go1.22.7
+go 1.23.6
 
 require (
 	github.com/aws/aws-sdk-go v1.55.6
