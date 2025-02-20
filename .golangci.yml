@@ -2,7 +2,7 @@
 # SPDX-License-Identifier: MPL-2.0
 
 issues:
-  max-per-linter: 0
+  max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
     - path: configtesting
@@ -24,10 +24,10 @@ issues:
 linters:
   disable-all: true
   enable:
+    - copyloopvar
     - dogsled
     - errcheck
     - errname
-    - exportloopref
     - goconst
     - gofmt
     - gosimple
@@ -44,6 +44,8 @@ linters:
     - whitespace
 
 linters-settings:
+  copyloopvar:
+    check-alias: true
   goconst:
     ignore-tests: true
   mnd:

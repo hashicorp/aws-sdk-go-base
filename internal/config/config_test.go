@@ -203,8 +203,6 @@ func TestValidateProxyConfig(t *testing.T) {
 	}
 
 	for name, testcase := range testcases {
-		testcase := testcase
-
 		t.Run(name, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
