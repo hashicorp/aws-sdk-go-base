@@ -38,6 +38,7 @@ func getNormalizedOSName() (os string) {
 // cleanUserAgent removes:
 // * the "api/<whatever>" product that the AWS SDK adds to the user-agent string
 // * the "ua/<whatever>" product that contains the User-Agent string version
+// * the "m/<whatever>" product that contains the feature flags
 func cleanUserAgent(ua string) string {
 	var parts []string
 	for _, v := range strings.Split(ua, " ") {
@@ -45,6 +46,9 @@ func cleanUserAgent(ua string) string {
 			continue
 		}
 		if strings.HasPrefix(v, "ua/") {
+			continue
+		}
+		if strings.HasPrefix(v, "m/") {
 			continue
 		}
 		parts = append(parts, v)
