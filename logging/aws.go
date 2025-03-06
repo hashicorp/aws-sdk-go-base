@@ -54,7 +54,7 @@ func MaskAWSSecretKeys(in []byte) {
 	len := len(in)
 	base64Characters := 0
 
-	for i := 0; i < len; i++ {
+	for i := range len {
 		b := in[i]
 
 		if (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9') || b == '/' || b == '+' || b == '=' {

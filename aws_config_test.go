@@ -3572,7 +3572,7 @@ func TestRetryHandlers(t *testing.T) {
 			NextHandler: func() middleware.FinalizeHandler {
 				num := 0
 				reqsErrs := make([]error, maxRetries)
-				for i := 0; i < maxRetries; i++ {
+				for i := range maxRetries {
 					reqsErrs[i] = mockRetryableError{b: true}
 				}
 				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
@@ -3590,7 +3590,7 @@ func TestRetryHandlers(t *testing.T) {
 				results := retry.AttemptResults{
 					Results: make([]retry.AttemptResult, maxRetries),
 				}
-				for i := 0; i < maxRetries-1; i++ {
+				for i := range maxRetries - 1 {
 					results.Results[i] = retry.AttemptResult{
 						Err:       mockRetryableError{b: true},
 						Retryable: true,
@@ -3608,7 +3608,7 @@ func TestRetryHandlers(t *testing.T) {
 			NextHandler: func() middleware.FinalizeHandler {
 				num := 0
 				reqsErrs := make([]error, constants.MaxNetworkRetryCount)
-				for i := 0; i < constants.MaxNetworkRetryCount; i++ {
+				for i := range constants.MaxNetworkRetryCount {
 					reqsErrs[i] = &net.OpError{Op: "dial", Err: errors.New("no such host")}
 				}
 				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
@@ -3626,7 +3626,7 @@ func TestRetryHandlers(t *testing.T) {
 				results := retry.AttemptResults{
 					Results: make([]retry.AttemptResult, constants.MaxNetworkRetryCount),
 				}
-				for i := 0; i < constants.MaxNetworkRetryCount-1; i++ {
+				for i := range constants.MaxNetworkRetryCount - 1 {
 					results.Results[i] = retry.AttemptResult{
 						Err:       &net.OpError{Op: "dial", Err: errors.New("no such host")},
 						Retryable: true,
@@ -3644,7 +3644,7 @@ func TestRetryHandlers(t *testing.T) {
 			NextHandler: func() middleware.FinalizeHandler {
 				num := 0
 				reqsErrs := make([]error, constants.MaxNetworkRetryCount)
-				for i := 0; i < constants.MaxNetworkRetryCount; i++ {
+				for i := range constants.MaxNetworkRetryCount {
 					reqsErrs[i] = &net.OpError{Op: "dial", Err: errors.New("connection refused")}
 				}
 				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
@@ -3662,7 +3662,7 @@ func TestRetryHandlers(t *testing.T) {
 				results := retry.AttemptResults{
 					Results: make([]retry.AttemptResult, constants.MaxNetworkRetryCount),
 				}
-				for i := 0; i < constants.MaxNetworkRetryCount-1; i++ {
+				for i := range constants.MaxNetworkRetryCount - 1 {
 					results.Results[i] = retry.AttemptResult{
 						Err:       &net.OpError{Op: "dial", Err: errors.New("connection refused")},
 						Retryable: true,
@@ -3680,7 +3680,7 @@ func TestRetryHandlers(t *testing.T) {
 			NextHandler: func() middleware.FinalizeHandler {
 				num := 0
 				reqsErrs := make([]error, 2)
-				for i := 0; i < 2; i++ {
+				for i := range 2 {
 					reqsErrs[i] = &smithy.OperationError{
 						ServiceID:     "STS",
 						OperationName: "GetCallerIdentity",
@@ -3750,7 +3750,7 @@ func TestRetryHandlers(t *testing.T) {
 			NextHandler: func() middleware.FinalizeHandler {
 				num := 0
 				reqsErrs := make([]error, maxRetries)
-				for i := 0; i < maxRetries; i++ {
+				for i := range maxRetries {
 					reqsErrs[i] = &net.OpError{Op: "dial", Err: errors.New("other error")}
 				}
 				return middleware.FinalizeHandlerFunc(func(ctx context.Context, in middleware.FinalizeInput) (out middleware.FinalizeOutput, metadata middleware.Metadata, err error) {
@@ -3768,7 +3768,7 @@ func TestRetryHandlers(t *testing.T) {
 				results := retry.AttemptResults{
 					Results: make([]retry.AttemptResult, maxRetries),
 				}
-				for i := 0; i < maxRetries-1; i++ {
+				for i := range maxRetries - 1 {
 					results.Results[i] = retry.AttemptResult{
 						Err:       &net.OpError{Op: "dial", Err: errors.New("other error")},
 						Retryable: true,
