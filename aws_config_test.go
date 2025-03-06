@@ -2427,10 +2427,10 @@ func TestCustomCABundle(t *testing.T) {
 
 				err = os.WriteFile(
 					file.Name(),
-					[]byte(fmt.Sprintf(`
+					fmt.Appendf(nil, `
 [default]
 ca_bundle = %s
-`, pemFile)),
+`, pemFile),
 					0600)
 
 				if err != nil {

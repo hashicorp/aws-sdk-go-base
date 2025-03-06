@@ -487,11 +487,11 @@ func EcsCredentialsApiMock() func() {
 
 func SsoCredentialsApiMock() (func(), string) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Write([]byte(fmt.Sprintf( //nolint:errcheck
+		w.Write(fmt.Appendf(nil, //nolint:errcheck
 			ssoCredentialsResponse,
 			time.Now().
 				Add(15*time.Minute). //nolint:mnd
-				UnixNano()/int64(time.Millisecond))))
+				UnixNano()/int64(time.Millisecond)))
 	}))
 
 	return ts.Close, ts.URL
