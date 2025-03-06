@@ -4,6 +4,7 @@
 package tfawserr
 
 import (
+	"slices"
 	"strings"
 
 	smithy "github.com/aws/smithy-go"
@@ -16,10 +17,8 @@ import (
 //   - APIError.ErrorCode() equals one of the passed codes
 func ErrCodeEquals(err error, codes ...string) bool {
 	if apiErr, ok := errs.As[smithy.APIError](err); ok {
-		for _, code := range codes {
-			if apiErr.ErrorCode() == code {
-				return true
-			}
+		if slices.Contains(codes, apiErr.ErrorCode()) {
+			return true
 		}
 	}
 	return false
@@ -51,10 +50,8 @@ func ErrMessageContains(err error, code string, message string) bool {
 //   - ResponseError.HTTPStatusCode() equals one of the passed status codes
 func ErrHTTPStatusCodeEquals(err error, statusCodes ...int) bool {
 	if respErr, ok := errs.As[*smithyhttp.ResponseError](err); ok {
-		for _, statusCode := range statusCodes {
-			if respErr.HTTPStatusCode() == statusCode {
-				return true
-			}
+		if slices.Contains(statusCodes, respErr.HTTPStatusCode()) {
+			return true
 		}
 	}
 	return false
