@@ -26,24 +26,24 @@ func NewGenerator() *Generator {
 	return &Generator{}
 }
 
-func (g *Generator) Infof(format string, a ...interface{}) {
+func (g *Generator) Infof(format string, a ...any) {
 	g.output(os.Stdout, format, a...)
 }
 
-func (g *Generator) Warnf(format string, a ...interface{}) {
+func (g *Generator) Warnf(format string, a ...any) {
 	g.Errorf(format, a...)
 }
 
-func (g *Generator) Errorf(format string, a ...interface{}) {
+func (g *Generator) Errorf(format string, a ...any) {
 	g.output(os.Stderr, format, a...)
 }
 
-func (g *Generator) Fatalf(format string, a ...interface{}) {
+func (g *Generator) Fatalf(format string, a ...any) {
 	g.Errorf(format, a...)
 	os.Exit(1)
 }
 
-func (g *Generator) output(w io.Writer, format string, a ...interface{}) {
+func (g *Generator) output(w io.Writer, format string, a ...any) {
 	fmt.Fprintf(w, format, a...)
 	fmt.Fprint(w, "\n")
 }

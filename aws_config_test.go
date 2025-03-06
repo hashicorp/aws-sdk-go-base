@@ -1174,7 +1174,7 @@ func cancelRequestMiddleware(t *testing.T, id string, f func(t *testing.T, reque
 		})
 }
 
-func fullTypeName(i interface{}) string {
+func fullTypeName(i any) string {
 	return fullValueTypeName(reflect.ValueOf(i))
 }
 
@@ -3806,7 +3806,7 @@ func TestRetryHandlers(t *testing.T) {
 
 			am := retry.NewAttemptMiddleware(&withNoDelay{
 				Retryer: awsConfig.Retryer(),
-			}, func(i interface{}) interface{} {
+			}, func(i any) any {
 				return i
 			})
 			_, metadata, err := am.HandleFinalize(ctx, middleware.FinalizeInput{Request: nil}, testcase.NextHandler())

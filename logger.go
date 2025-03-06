@@ -35,7 +35,7 @@ type debugLogger struct {
 	ctx context.Context
 }
 
-func (l debugLogger) Logf(classification smithylogging.Classification, format string, v ...interface{}) {
+func (l debugLogger) Logf(classification smithylogging.Classification, format string, v ...any) {
 	s := fmt.Sprintf(format, v...)
 	if l.ctx != nil {
 		logger := logging.RetrieveLogger(l.ctx)

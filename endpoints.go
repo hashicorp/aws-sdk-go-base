@@ -19,7 +19,7 @@ import (
 func credentialsEndpointResolver(ctx context.Context, c *Config) aws.EndpointResolverWithOptions {
 	logger := logging.RetrieveLogger(ctx)
 
-	resolver := func(service, region string, options ...interface{}) (aws.Endpoint, error) {
+	resolver := func(service, region string, options ...any) (aws.Endpoint, error) {
 		switch service {
 		case iam.ServiceID:
 			if endpoint := c.IamEndpoint; endpoint != "" {
