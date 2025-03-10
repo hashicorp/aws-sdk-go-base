@@ -4,6 +4,7 @@
 package test
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
@@ -59,10 +60,5 @@ func expectDiagsContainsErr(diags diag.Diagnostics, ev ErrValidator) bool {
 }
 
 func expectDiagsContainsDiagFunc(diags diag.Diagnostics, dv DiagValidator) bool {
-	for _, d := range diags {
-		if dv(d) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(diags, dv)
 }

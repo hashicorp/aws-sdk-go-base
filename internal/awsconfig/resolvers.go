@@ -17,7 +17,7 @@ type UseFIPSEndpointProvider interface {
 }
 
 // Copied from https://github.com/aws/aws-sdk-go-v2/blob/main/internal/configsources/config.go
-func ResolveUseFIPSEndpoint(ctx context.Context, configSources []interface{}) (value aws.FIPSEndpointState, found bool, err error) {
+func ResolveUseFIPSEndpoint(ctx context.Context, configSources []any) (value aws.FIPSEndpointState, found bool, err error) {
 	for _, cfg := range configSources {
 		if p, ok := cfg.(UseFIPSEndpointProvider); ok {
 			value, found, err = p.GetUseFIPSEndpoint(ctx)
@@ -47,7 +47,7 @@ type UseDualStackEndpointProvider interface {
 }
 
 // Copied from https://github.com/aws/aws-sdk-go-v2/blob/main/internal/configsources/config.go
-func ResolveUseDualStackEndpoint(ctx context.Context, configSources []interface{}) (value aws.DualStackEndpointState, found bool, err error) {
+func ResolveUseDualStackEndpoint(ctx context.Context, configSources []any) (value aws.DualStackEndpointState, found bool, err error) {
 	for _, cfg := range configSources {
 		if p, ok := cfg.(UseDualStackEndpointProvider); ok {
 			value, found, err = p.GetUseDualStackEndpoint(ctx)
@@ -77,7 +77,7 @@ type EC2IMDSClientEnableStateResolver interface {
 }
 
 // Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/feature/ec2/imds/internal/config/resolvers.go
-func ResolveEC2IMDSClientEnableState(sources []interface{}) (value imds.ClientEnableState, found bool, err error) {
+func ResolveEC2IMDSClientEnableState(sources []any) (value imds.ClientEnableState, found bool, err error) {
 	for _, source := range sources {
 		if resolver, ok := source.(EC2IMDSClientEnableStateResolver); ok {
 			value, found, err = resolver.GetEC2IMDSClientEnableState()
@@ -107,7 +107,7 @@ type EC2IMDSEndpointResolver interface {
 }
 
 // Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/feature/ec2/imds/internal/config/resolvers.go
-func ResolveEC2IMDSEndpointConfig(configSources []interface{}) (value string, found bool, err error) {
+func ResolveEC2IMDSEndpointConfig(configSources []any) (value string, found bool, err error) {
 	for _, cfg := range configSources {
 		if p, ok := cfg.(EC2IMDSEndpointResolver); ok {
 			value, found, err = p.GetEC2IMDSEndpoint()
@@ -125,7 +125,7 @@ type EC2IMDSEndpointModeResolver interface {
 }
 
 // Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/feature/ec2/imds/internal/config/resolvers.go
-func ResolveEC2IMDSEndpointModeConfig(sources []interface{}) (value imds.EndpointModeState, found bool, err error) {
+func ResolveEC2IMDSEndpointModeConfig(sources []any) (value imds.EndpointModeState, found bool, err error) {
 	for _, source := range sources {
 		if resolver, ok := source.(EC2IMDSEndpointModeResolver); ok {
 			value, found, err = resolver.GetEC2IMDSEndpointMode()
@@ -155,7 +155,7 @@ type RetryMaxAttemptsProvider interface {
 }
 
 // Copied and renamed from https://github.com/aws/aws-sdk-go-v2/blob/main/config/provider.go
-func GetRetryMaxAttempts(ctx context.Context, sources []interface{}) (v int, found bool, err error) {
+func GetRetryMaxAttempts(ctx context.Context, sources []any) (v int, found bool, err error) {
 	for _, c := range sources {
 		if p, ok := c.(RetryMaxAttemptsProvider); ok {
 			v, found, err = p.GetRetryMaxAttempts(ctx)

@@ -5,6 +5,7 @@ package awsbase
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/hashicorp/aws-sdk-go-base/v2/diag"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/config"
@@ -75,10 +76,5 @@ func IsNoValidCredentialSourcesError(diag diag.Diagnostic) bool {
 
 // ContainsNoValidCredentialSourcesError returns true if the diagnostics contains a NoValidCredentialSourcesError type.
 func ContainsNoValidCredentialSourcesError(diags diag.Diagnostics) bool {
-	for _, diag := range diags {
-		if IsNoValidCredentialSourcesError(diag) {
-			return true
-		}
-	}
-	return false
+	return slices.ContainsFunc(diags, IsNoValidCredentialSourcesError)
 }

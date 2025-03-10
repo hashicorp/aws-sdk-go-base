@@ -13,7 +13,7 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 )
 
-func resolveCustomCABundle(ctx context.Context, configSources []interface{}) (value io.Reader, found bool, err error) {
+func resolveCustomCABundle(ctx context.Context, configSources []any) (value io.Reader, found bool, err error) {
 	for _, source := range configSources {
 		switch cfg := source.(type) {
 		case configv2.LoadOptions:

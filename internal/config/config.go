@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -234,20 +235,12 @@ func (c Config) ResolveSharedCredentialsFiles() ([]string, error) {
 // function will return nil.
 func (c Config) VerifyAccountIDAllowed(accountID string) error {
 	if len(c.ForbiddenAccountIds) > 0 {
-		for _, forbiddenAccountID := range c.ForbiddenAccountIds {
-			if accountID == forbiddenAccountID {
-				return fmt.Errorf("AWS account ID not allowed: %s", accountID)
-			}
+		if slices.Contains(c.ForbiddenAccountIds, accountID) {
+			return fmt.Errorf("AWS account ID not allowed: %s", accountID)
 		}
 	}
 	if len(c.AllowedAccountIds) > 0 {
-		found := false
-		for _, allowedAccountID := range c.AllowedAccountIds {
-			if accountID == allowedAccountID {
-				found = true
-				break
-			}
-		}
+		found := slices.Contains(c.AllowedAccountIds, accountID)
 		if !found {
 			return fmt.Errorf("AWS account ID not allowed: %s", accountID)
 		}
