@@ -24,8 +24,9 @@ func TestS3AttributesAbortMultipartUploadInput(t *testing.T) {
 			UploadId: aws.String("abcd"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -44,8 +45,9 @@ func TestS3AttributesCompleteMultipartUploadInput(t *testing.T) {
 			UploadId: aws.String("abcd"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -62,8 +64,9 @@ func TestS3AttributesCreateBucketInput(t *testing.T) {
 			Bucket: aws.String("test-bucket"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -79,8 +82,9 @@ func TestS3AttributesCreateMultipartUploadInput(t *testing.T) {
 			Key:    aws.String("test-key"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -96,8 +100,9 @@ func TestS3AttributesDeleteBucketInput(t *testing.T) {
 			Bucket: aws.String("test-bucket"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -113,8 +118,9 @@ func TestS3AttributesDeleteObjectInput(t *testing.T) {
 			Key:    aws.String("test-key"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -139,8 +145,9 @@ func TestS3AttributesDeleteObjectsInput(t *testing.T) {
 			},
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -157,8 +164,9 @@ func TestS3AttributesGetObjectInput(t *testing.T) {
 			Key:    aws.String("test-key"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -174,8 +182,9 @@ func TestS3AttributesHeadBucketInput(t *testing.T) {
 			Bucket: aws.String("test-bucket"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -191,8 +200,9 @@ func TestS3AttributesHeadObjectInput(t *testing.T) {
 			Key:    aws.String("test-key"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -206,8 +216,9 @@ func TestS3AttributesListBucketsInput(t *testing.T) {
 	input := middleware.InitializeInput{
 		Parameters: &s3.ListBucketsInput{},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{},
@@ -220,8 +231,9 @@ func TestS3AttributesListObjectsInput(t *testing.T) {
 			Bucket: aws.String("test-bucket"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -236,8 +248,9 @@ func TestS3AttributesListObjectsV2Input(t *testing.T) {
 			Bucket: aws.String("test-bucket"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -253,8 +266,9 @@ func TestS3AttributesPutObjectInput(t *testing.T) {
 			Key:    aws.String("test-key"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -273,8 +287,9 @@ func TestS3AttributesUploadPartInput(t *testing.T) {
 			UploadId:   aws.String("abcd"),
 		},
 	}
+	var output middleware.InitializeOutput
 
-	attributes := s3AttributeSetter(context.TODO(), input)
+	attributes := s3AttributeBuilder(context.TODO(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{

@@ -84,13 +84,13 @@ func (l *logAttributeExtractor) HandleInitialize(ctx context.Context, in middlew
 		awsSDKv2Attr(),
 	}
 
-	setters := map[string]otelaws.AttributeSetter{
-		dynamodb.ServiceID: otelaws.DynamoDBAttributeSetter,
-		s3.ServiceID:       s3AttributeSetter,
-		sqs.ServiceID:      otelaws.SQSAttributeSetter,
+	setters := map[string]otelaws.AttributeBuilder{
+		dynamodb.ServiceID: otelaws.DynamoDBAttributeBuilder,
+		s3.ServiceID:       s3AttributeBuilder,
+		sqs.ServiceID:      otelaws.SQSAttributeBuilder,
 	}
 	if setter, ok := setters[serviceID]; ok {
-		attributes = append(attributes, setter(ctx, in)...)
+		attributes = append(attributes, setter(ctx, in, out)...)
 	}
 
 	for _, attribute := range attributes {
@@ -227,7 +227,7 @@ func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response
 
 // May be contributed to go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws
 // See: https://github.com/open-telemetry/opentelemetry-go-contrib/issues/4321
-func s3AttributeSetter(ctx context.Context, in middleware.InitializeInput) []attribute.KeyValue {
+func s3AttributeBuilder(ctx context.Context, in middleware.InitializeInput, out middleware.InitializeOutput) []attribute.KeyValue {
 	s3Attributes := []attribute.KeyValue{}
 
 	switch v := in.Parameters.(type) {
