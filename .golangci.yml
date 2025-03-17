@@ -36,11 +36,11 @@ linters:
     - misspell
     - mnd
     - staticcheck
-    - tenv
+    - typecheck
     - unconvert
     - unparam
     - unused
-    - typecheck
+    - usetesting
     - whitespace
 
 linters-settings:
