@@ -53,3 +53,7 @@ linters-settings:
       - strings.SplitN
       - strings.SplitAfterN
       - os.MkdirAll
+  usetesting:
+    os-create-temp: false
+    os-mkdir-temp: false
+    os-setenv: false
