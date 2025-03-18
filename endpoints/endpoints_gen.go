@@ -250,9 +250,6 @@ var (
 				"api.ecr-public": {
 					id: "api.ecr-public",
 				},
-				"api.elastic-inference": {
-					id: "api.elastic-inference",
-				},
 				"api.fleethub.iot": {
 					id: "api.fleethub.iot",
 				},
@@ -606,6 +603,9 @@ var (
 				},
 				"gamelift": {
 					id: "gamelift",
+				},
+				"gameliftstreams": {
+					id: "gameliftstreams",
 				},
 				"geo": {
 					id: "geo",
@@ -963,6 +963,9 @@ var (
 				},
 				"route53domains": {
 					id: "route53domains",
+				},
+				"route53profiles": {
+					id: "route53profiles",
 				},
 				"route53resolver": {
 					id: "route53resolver",
@@ -1393,6 +1396,9 @@ var (
 				"gamelift": {
 					id: "gamelift",
 				},
+				"gameliftstreams": {
+					id: "gameliftstreams",
+				},
 				"glacier": {
 					id: "glacier",
 				},
@@ -1479,6 +1485,9 @@ var (
 				},
 				"memory-db": {
 					id: "memory-db",
+				},
+				"metering.marketplace": {
+					id: "metering.marketplace",
 				},
 				"metrics.sagemaker": {
 					id: "metrics.sagemaker",
@@ -1711,6 +1720,9 @@ var (
 				"budgets": {
 					id: "budgets",
 				},
+				"ce": {
+					id: "ce",
+				},
 				"cloudcontrolapi": {
 					id: "cloudcontrolapi",
 				},
@@ -1839,6 +1851,9 @@ var (
 				},
 				"outposts": {
 					id: "outposts",
+				},
+				"pi": {
+					id: "pi",
 				},
 				"ram": {
 					id: "ram",
@@ -1970,6 +1985,9 @@ var (
 				},
 				"budgets": {
 					id: "budgets",
+				},
+				"ce": {
+					id: "ce",
 				},
 				"cloudcontrolapi": {
 					id: "cloudcontrolapi",
@@ -2239,6 +2257,12 @@ var (
 				"budgets": {
 					id: "budgets",
 				},
+				"ce": {
+					id: "ce",
+				},
+				"cloudcontrolapi": {
+					id: "cloudcontrolapi",
+				},
 				"cloudformation": {
 					id: "cloudformation",
 				},
@@ -2400,6 +2424,9 @@ var (
 				},
 				"scheduler": {
 					id: "scheduler",
+				},
+				"schemas": {
+					id: "schemas",
 				},
 				"secretsmanager": {
 					id: "secretsmanager",
@@ -2689,6 +2716,9 @@ var (
 				"fsx": {
 					id: "fsx",
 				},
+				"gameliftstreams": {
+					id: "gameliftstreams",
+				},
 				"geo": {
 					id: "geo",
 				},
@@ -2895,6 +2925,9 @@ var (
 				},
 				"route53": {
 					id: "route53",
+				},
+				"route53profiles": {
+					id: "route53profiles",
 				},
 				"route53resolver": {
 					id: "route53resolver",
