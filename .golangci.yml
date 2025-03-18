@@ -36,11 +36,11 @@ linters:
     - misspell
     - mnd
     - staticcheck
-    - tenv
+    - typecheck
     - unconvert
     - unparam
     - unused
-    - typecheck
+    - usetesting
     - whitespace
 
 linters-settings:
@@ -53,3 +53,7 @@ linters-settings:
       - strings.SplitN
       - strings.SplitAfterN
       - os.MkdirAll
+  usetesting:
+    os-create-temp: false
+    os-mkdir-temp: false
+    os-setenv: false
