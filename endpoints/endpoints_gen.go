@@ -13,6 +13,7 @@ import (
 const (
 	AwsPartitionID      = "aws"        // AWS Standard
 	AwsCnPartitionID    = "aws-cn"     // AWS China
+	AwsEuscPartitionID  = "aws-eusc"   // AWS EUSC
 	AwsIsoPartitionID   = "aws-iso"    // AWS ISO (US)
 	AwsIsoBPartitionID  = "aws-iso-b"  // AWS ISOB (US)
 	AwsIsoEPartitionID  = "aws-iso-e"  // AWS ISOE (Europe)
@@ -58,6 +59,8 @@ const (
 	// AWS China partition's Regions.
 	CnNorth1RegionID     = "cn-north-1"     // China (Beijing)
 	CnNorthwest1RegionID = "cn-northwest-1" // China (Ningxia)
+	// AWS EUSC partition's Regions.
+	EuscDeEast1RegionID = "eusc-de-east-1" // EU (Germany)
 	// AWS ISO (US) partition's Regions.
 	UsIsoEast1RegionID = "us-iso-east-1" // US ISO East
 	UsIsoWest1RegionID = "us-iso-west-1" // US ISO WEST
@@ -1665,6 +1668,19 @@ var (
 				},
 			},
 		},
+		AwsEuscPartitionID: {
+			id:          AwsEuscPartitionID,
+			name:        "AWS EUSC",
+			dnsSuffix:   "amazonaws.eu",
+			regionRegex: regexp.MustCompile(`^eusc\-(de)\-\w+\-\d+$`),
+			regions: map[string]Region{
+				EuscDeEast1RegionID: {
+					id:          EuscDeEast1RegionID,
+					description: "EU (Germany)",
+				},
+			},
+			services: map[string]Service{},
+		},
 		AwsIsoPartitionID: {
 			id:          AwsIsoPartitionID,
 			name:        "AWS ISO (US)",
@@ -1997,6 +2013,9 @@ var (
 				},
 				"cloudtrail": {
 					id: "cloudtrail",
+				},
+				"codebuild": {
+					id: "codebuild",
 				},
 				"codedeploy": {
 					id: "codedeploy",
@@ -2412,6 +2431,9 @@ var (
 				},
 				"route53": {
 					id: "route53",
+				},
+				"route53profiles": {
+					id: "route53profiles",
 				},
 				"route53resolver": {
 					id: "route53resolver",
