@@ -919,6 +919,9 @@ var (
 				"qldb": {
 					id: "qldb",
 				},
+				"query.timestream": {
+					id: "query.timestream",
+				},
 				"quicksight": {
 					id: "quicksight",
 				},
@@ -1453,6 +1456,9 @@ var (
 				"kafka": {
 					id: "kafka",
 				},
+				"kafkaconnect": {
+					id: "kafkaconnect",
+				},
 				"kendra-ranking": {
 					id: "kendra-ranking",
 				},
@@ -1563,6 +1569,9 @@ var (
 				},
 				"route53": {
 					id: "route53",
+				},
+				"route53profiles": {
+					id: "route53profiles",
 				},
 				"route53resolver": {
 					id: "route53resolver",
@@ -1730,6 +1739,9 @@ var (
 				"autoscaling": {
 					id: "autoscaling",
 				},
+				"batch": {
+					id: "batch",
+				},
 				"bedrock": {
 					id: "bedrock",
 				},
@@ -1835,6 +1847,9 @@ var (
 				"kinesis": {
 					id: "kinesis",
 				},
+				"kinesisanalytics": {
+					id: "kinesisanalytics",
+				},
 				"kms": {
 					id: "kms",
 				},
@@ -1910,6 +1925,12 @@ var (
 				"secretsmanager": {
 					id: "secretsmanager",
 				},
+				"securityhub": {
+					id: "securityhub",
+				},
+				"servicediscovery": {
+					id: "servicediscovery",
+				},
 				"snowball": {
 					id: "snowball",
 				},
@@ -1924,6 +1945,9 @@ var (
 				},
 				"states": {
 					id: "states",
+				},
+				"storagegateway": {
+					id: "storagegateway",
 				},
 				"streams.dynamodb": {
 					id: "streams.dynamodb",
@@ -1957,6 +1981,9 @@ var (
 				},
 				"workspaces": {
 					id: "workspaces",
+				},
+				"xray": {
+					id: "xray",
 				},
 			},
 		},
@@ -1999,6 +2026,9 @@ var (
 				"autoscaling": {
 					id: "autoscaling",
 				},
+				"batch": {
+					id: "batch",
+				},
 				"budgets": {
 					id: "budgets",
 				},
@@ -2022,6 +2052,9 @@ var (
 				},
 				"config": {
 					id: "config",
+				},
+				"datasync": {
+					id: "datasync",
 				},
 				"directconnect": {
 					id: "directconnect",
@@ -2071,8 +2104,17 @@ var (
 				"firehose": {
 					id: "firehose",
 				},
+				"fsx": {
+					id: "fsx",
+				},
 				"glacier": {
 					id: "glacier",
+				},
+				"glue": {
+					id: "glue",
+				},
+				"guardduty": {
+					id: "guardduty",
 				},
 				"health": {
 					id: "health",
@@ -2082,6 +2124,9 @@ var (
 				},
 				"kinesis": {
 					id: "kinesis",
+				},
+				"kinesisanalytics": {
+					id: "kinesisanalytics",
 				},
 				"kms": {
 					id: "kms",
@@ -2118,6 +2163,9 @@ var (
 				},
 				"outposts": {
 					id: "outposts",
+				},
+				"pi": {
+					id: "pi",
 				},
 				"ram": {
 					id: "ram",
@@ -2157,6 +2205,12 @@ var (
 				},
 				"secretsmanager": {
 					id: "secretsmanager",
+				},
+				"securityhub": {
+					id: "securityhub",
+				},
+				"servicediscovery": {
+					id: "servicediscovery",
 				},
 				"snowball": {
 					id: "snowball",
@@ -2213,7 +2267,227 @@ var (
 					description: "EU ISOE West",
 				},
 			},
-			services: map[string]Service{},
+			services: map[string]Service{
+				"access-analyzer": {
+					id: "access-analyzer",
+				},
+				"acm": {
+					id: "acm",
+				},
+				"acm-pca": {
+					id: "acm-pca",
+				},
+				"api.ecr": {
+					id: "api.ecr",
+				},
+				"api.pricing": {
+					id: "api.pricing",
+				},
+				"appconfig": {
+					id: "appconfig",
+				},
+				"appconfigdata": {
+					id: "appconfigdata",
+				},
+				"application-autoscaling": {
+					id: "application-autoscaling",
+				},
+				"arc-zonal-shift": {
+					id: "arc-zonal-shift",
+				},
+				"athena": {
+					id: "athena",
+				},
+				"autoscaling": {
+					id: "autoscaling",
+				},
+				"batch": {
+					id: "batch",
+				},
+				"budgets": {
+					id: "budgets",
+				},
+				"cloudcontrolapi": {
+					id: "cloudcontrolapi",
+				},
+				"cloudformation": {
+					id: "cloudformation",
+				},
+				"cloudtrail": {
+					id: "cloudtrail",
+				},
+				"codedeploy": {
+					id: "codedeploy",
+				},
+				"compute-optimizer": {
+					id: "compute-optimizer",
+				},
+				"config": {
+					id: "config",
+				},
+				"cost-optimization-hub": {
+					id: "cost-optimization-hub",
+				},
+				"directconnect": {
+					id: "directconnect",
+				},
+				"dlm": {
+					id: "dlm",
+				},
+				"dms": {
+					id: "dms",
+				},
+				"ds": {
+					id: "ds",
+				},
+				"dynamodb": {
+					id: "dynamodb",
+				},
+				"ebs": {
+					id: "ebs",
+				},
+				"ec2": {
+					id: "ec2",
+				},
+				"ecs": {
+					id: "ecs",
+				},
+				"eks": {
+					id: "eks",
+				},
+				"elasticache": {
+					id: "elasticache",
+				},
+				"elasticfilesystem": {
+					id: "elasticfilesystem",
+				},
+				"elasticloadbalancing": {
+					id: "elasticloadbalancing",
+				},
+				"elasticmapreduce": {
+					id: "elasticmapreduce",
+				},
+				"emr-serverless": {
+					id: "emr-serverless",
+				},
+				"es": {
+					id: "es",
+				},
+				"events": {
+					id: "events",
+				},
+				"firehose": {
+					id: "firehose",
+				},
+				"glue": {
+					id: "glue",
+				},
+				"kinesis": {
+					id: "kinesis",
+				},
+				"kms": {
+					id: "kms",
+				},
+				"lakeformation": {
+					id: "lakeformation",
+				},
+				"lambda": {
+					id: "lambda",
+				},
+				"logs": {
+					id: "logs",
+				},
+				"monitoring": {
+					id: "monitoring",
+				},
+				"oam": {
+					id: "oam",
+				},
+				"organizations": {
+					id: "organizations",
+				},
+				"pi": {
+					id: "pi",
+				},
+				"pipes": {
+					id: "pipes",
+				},
+				"ram": {
+					id: "ram",
+				},
+				"rbin": {
+					id: "rbin",
+				},
+				"rds": {
+					id: "rds",
+				},
+				"redshift": {
+					id: "redshift",
+				},
+				"redshift-serverless": {
+					id: "redshift-serverless",
+				},
+				"resource-groups": {
+					id: "resource-groups",
+				},
+				"route53": {
+					id: "route53",
+				},
+				"route53resolver": {
+					id: "route53resolver",
+				},
+				"s3": {
+					id: "s3",
+				},
+				"savingsplans": {
+					id: "savingsplans",
+				},
+				"scheduler": {
+					id: "scheduler",
+				},
+				"secretsmanager": {
+					id: "secretsmanager",
+				},
+				"servicecatalog": {
+					id: "servicecatalog",
+				},
+				"servicediscovery": {
+					id: "servicediscovery",
+				},
+				"servicequotas": {
+					id: "servicequotas",
+				},
+				"sns": {
+					id: "sns",
+				},
+				"sqs": {
+					id: "sqs",
+				},
+				"ssm": {
+					id: "ssm",
+				},
+				"states": {
+					id: "states",
+				},
+				"streams.dynamodb": {
+					id: "streams.dynamodb",
+				},
+				"sts": {
+					id: "sts",
+				},
+				"swf": {
+					id: "swf",
+				},
+				"synthetics": {
+					id: "synthetics",
+				},
+				"tagging": {
+					id: "tagging",
+				},
+				"xray": {
+					id: "xray",
+				},
+			},
 		},
 		AwsIsoFPartitionID: {
 			id:          AwsIsoFPartitionID,
@@ -2911,6 +3185,9 @@ var (
 				},
 				"qbusiness": {
 					id: "qbusiness",
+				},
+				"query.timestream": {
+					id: "query.timestream",
 				},
 				"quicksight": {
 					id: "quicksight",
