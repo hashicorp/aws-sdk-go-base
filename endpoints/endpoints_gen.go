@@ -26,6 +26,7 @@ const (
 	// AWS Standard partition's Regions.
 	AfSouth1RegionID     = "af-south-1"     // Africa (Cape Town)
 	ApEast1RegionID      = "ap-east-1"      // Asia Pacific (Hong Kong)
+	ApEast2RegionID      = "ap-east-2"      // Asia Pacific (Taipei)
 	ApNortheast1RegionID = "ap-northeast-1" // Asia Pacific (Tokyo)
 	ApNortheast2RegionID = "ap-northeast-2" // Asia Pacific (Seoul)
 	ApNortheast3RegionID = "ap-northeast-3" // Asia Pacific (Osaka)
@@ -91,6 +92,10 @@ var (
 				ApEast1RegionID: {
 					id:          ApEast1RegionID,
 					description: "Asia Pacific (Hong Kong)",
+				},
+				ApEast2RegionID: {
+					id:          ApEast2RegionID,
+					description: "Asia Pacific (Taipei)",
 				},
 				ApNortheast1RegionID: {
 					id:          ApNortheast1RegionID,
@@ -904,9 +909,6 @@ var (
 				"portal.sso": {
 					id: "portal.sso",
 				},
-				"private-networks": {
-					id: "private-networks",
-				},
 				"profile": {
 					id: "profile",
 				},
@@ -1588,6 +1590,9 @@ var (
 				"savingsplans": {
 					id: "savingsplans",
 				},
+				"scheduler": {
+					id: "scheduler",
+				},
 				"schemas": {
 					id: "schemas",
 				},
@@ -2023,6 +2028,9 @@ var (
 				"arc-zonal-shift": {
 					id: "arc-zonal-shift",
 				},
+				"athena": {
+					id: "athena",
+				},
 				"autoscaling": {
 					id: "autoscaling",
 				},
@@ -2130,6 +2138,9 @@ var (
 				},
 				"kms": {
 					id: "kms",
+				},
+				"lakeformation": {
+					id: "lakeformation",
 				},
 				"lambda": {
 					id: "lambda",
@@ -2394,6 +2405,9 @@ var (
 				"lambda": {
 					id: "lambda",
 				},
+				"license-manager": {
+					id: "license-manager",
+				},
 				"logs": {
 					id: "logs",
 				},
@@ -2432,6 +2446,9 @@ var (
 				},
 				"route53": {
 					id: "route53",
+				},
+				"route53profiles": {
+					id: "route53profiles",
 				},
 				"route53resolver": {
 					id: "route53resolver",
