@@ -1744,6 +1744,9 @@ var (
 				"autoscaling": {
 					id: "autoscaling",
 				},
+				"backup": {
+					id: "backup",
+				},
 				"batch": {
 					id: "batch",
 				},
@@ -1857,6 +1860,9 @@ var (
 				},
 				"kms": {
 					id: "kms",
+				},
+				"lakeformation": {
+					id: "lakeformation",
 				},
 				"lambda": {
 					id: "lambda",
@@ -1984,6 +1990,9 @@ var (
 				"translate": {
 					id: "translate",
 				},
+				"wafv2": {
+					id: "wafv2",
+				},
 				"workspaces": {
 					id: "workspaces",
 				},
@@ -2033,6 +2042,9 @@ var (
 				},
 				"autoscaling": {
 					id: "autoscaling",
+				},
+				"backup": {
+					id: "backup",
 				},
 				"batch": {
 					id: "batch",
@@ -2259,6 +2271,9 @@ var (
 				"tagging": {
 					id: "tagging",
 				},
+				"wafv2": {
+					id: "wafv2",
+				},
 				"workspaces": {
 					id: "workspaces",
 				},
@@ -2462,6 +2477,9 @@ var (
 				"scheduler": {
 					id: "scheduler",
 				},
+				"schemas": {
+					id: "schemas",
+				},
 				"secretsmanager": {
 					id: "secretsmanager",
 				},
@@ -2578,6 +2596,9 @@ var (
 				},
 				"cloudtrail": {
 					id: "cloudtrail",
+				},
+				"cloudtrail-data": {
+					id: "cloudtrail-data",
 				},
 				"codebuild": {
 					id: "codebuild",
@@ -2728,6 +2749,9 @@ var (
 				},
 				"route53resolver": {
 					id: "route53resolver",
+				},
+				"runtime.sagemaker": {
+					id: "runtime.sagemaker",
 				},
 				"s3": {
 					id: "s3",
@@ -3265,6 +3289,9 @@ var (
 				},
 				"s3-outposts": {
 					id: "s3-outposts",
+				},
+				"scheduler": {
+					id: "scheduler",
 				},
 				"schemas": {
 					id: "schemas",
