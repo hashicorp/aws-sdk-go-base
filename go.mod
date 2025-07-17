@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.62.0
 	go.opentelemetry.io/otel v1.37.0
 	golang.org/x/net v0.41.0
-	golang.org/x/text v0.26.0
+	golang.org/x/text v0.27.0
 )
 
 require (
