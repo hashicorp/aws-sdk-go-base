@@ -20,6 +20,9 @@ issues:
     - linters:
         - staticcheck
       text: "SA1019: config.WithEndpointResolverWithOptions is deprecated"
+    - linters:
+        - staticcheck
+      text: "SA1019: .+ is deprecated: aws-sdk-go is deprecated"
 
 linters:
   disable-all: true
