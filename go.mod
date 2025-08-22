@@ -3,7 +3,7 @@ module github.com/hashicorp/aws-sdk-go-base/v2
 go 1.23.6
 
 require (
-	github.com/aws/aws-sdk-go-v2 v1.36.6
+	github.com/aws/aws-sdk-go-v2 v1.38.1
 	github.com/aws/aws-sdk-go-v2/config v1.29.18
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.71
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.33
@@ -13,7 +13,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.38.10
 	github.com/aws/aws-sdk-go-v2/service/sso v1.25.6
 	github.com/aws/aws-sdk-go-v2/service/sts v1.34.1
-	github.com/aws/smithy-go v1.22.4
+	github.com/aws/smithy-go v1.22.5
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/hashicorp/go-multierror v1.1.1
