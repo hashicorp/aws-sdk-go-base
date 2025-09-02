@@ -37,6 +37,7 @@ const (
 	ApSoutheast3RegionID = "ap-southeast-3" // Asia Pacific (Jakarta)
 	ApSoutheast4RegionID = "ap-southeast-4" // Asia Pacific (Melbourne)
 	ApSoutheast5RegionID = "ap-southeast-5" // Asia Pacific (Malaysia)
+	ApSoutheast6RegionID = "ap-southeast-6" // Asia Pacific (New Zealand)
 	ApSoutheast7RegionID = "ap-southeast-7" // Asia Pacific (Thailand)
 	CaCentral1RegionID   = "ca-central-1"   // Canada (Central)
 	CaWest1RegionID      = "ca-west-1"      // Canada West (Calgary)
@@ -136,6 +137,10 @@ var (
 				ApSoutheast5RegionID: {
 					id:          ApSoutheast5RegionID,
 					description: "Asia Pacific (Malaysia)",
+				},
+				ApSoutheast6RegionID: {
+					id:          ApSoutheast6RegionID,
+					description: "Asia Pacific (New Zealand)",
 				},
 				ApSoutheast7RegionID: {
 					id:          ApSoutheast7RegionID,
@@ -416,6 +421,9 @@ var (
 				},
 				"codedeploy": {
 					id: "codedeploy",
+				},
+				"codeguru-profiler": {
+					id: "codeguru-profiler",
 				},
 				"codeguru-reviewer": {
 					id: "codeguru-reviewer",
@@ -872,12 +880,6 @@ var (
 				},
 				"omics": {
 					id: "omics",
-				},
-				"opsworks": {
-					id: "opsworks",
-				},
-				"opsworks-cm": {
-					id: "opsworks-cm",
 				},
 				"organizations": {
 					id: "organizations",
@@ -1885,6 +1887,9 @@ var (
 				"monitoring": {
 					id: "monitoring",
 				},
+				"network-firewall": {
+					id: "network-firewall",
+				},
 				"oam": {
 					id: "oam",
 				},
@@ -1941,6 +1946,9 @@ var (
 				},
 				"servicediscovery": {
 					id: "servicediscovery",
+				},
+				"servicequotas": {
+					id: "servicequotas",
 				},
 				"snowball": {
 					id: "snowball",
@@ -2178,6 +2186,9 @@ var (
 				"monitoring": {
 					id: "monitoring",
 				},
+				"network-firewall": {
+					id: "network-firewall",
+				},
 				"oam": {
 					id: "oam",
 				},
@@ -2234,6 +2245,9 @@ var (
 				},
 				"servicediscovery": {
 					id: "servicediscovery",
+				},
+				"servicequotas": {
+					id: "servicequotas",
 				},
 				"snowball": {
 					id: "snowball",
@@ -2341,6 +2355,9 @@ var (
 				},
 				"cloudtrail": {
 					id: "cloudtrail",
+				},
+				"cloudtrail-data": {
+					id: "cloudtrail-data",
 				},
 				"codedeploy": {
 					id: "codedeploy",
@@ -2518,6 +2535,9 @@ var (
 				},
 				"tagging": {
 					id: "tagging",
+				},
+				"trustedadvisor": {
+					id: "trustedadvisor",
 				},
 				"xray": {
 					id: "xray",
@@ -2812,6 +2832,9 @@ var (
 				},
 				"translate": {
 					id: "translate",
+				},
+				"trustedadvisor": {
+					id: "trustedadvisor",
 				},
 				"xray": {
 					id: "xray",
@@ -3271,6 +3294,9 @@ var (
 				},
 				"route53resolver": {
 					id: "route53resolver",
+				},
+				"rum": {
+					id: "rum",
 				},
 				"runtime-v2-lex": {
 					id: "runtime-v2-lex",
