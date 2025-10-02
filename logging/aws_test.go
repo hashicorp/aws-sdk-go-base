@@ -102,7 +102,7 @@ func TestMaskAWSSensitiveValues(t *testing.T) {
 
 func BenchmarkMaskAWSAccessKey(b *testing.B) {
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		MaskAWSAccessKey([]byte(`
 {
 	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
@@ -116,7 +116,7 @@ func BenchmarkMaskAWSAccessKey(b *testing.B) {
 func BenchmarkPartialMaskString(b *testing.B) {
 	var s []byte
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		s = partialMaskString([]byte("AIDACKCEVSQ6C2EXAMPLE"), 4, 4)
 	}
 	dump = unsafe.String(unsafe.SliceData(s), len(s))
@@ -124,7 +124,7 @@ func BenchmarkPartialMaskString(b *testing.B) {
 
 func BenchmarkMaskAWSSecretKeys(b *testing.B) {
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		MaskAWSSecretKeys([]byte(`
 {
 	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
@@ -138,7 +138,7 @@ func BenchmarkMaskAWSSecretKeys(b *testing.B) {
 func BenchmarkMaskAWSSensitiveValues(b *testing.B) {
 	var s string
 	b.ReportAllocs()
-	for n := 0; n < b.N; n++ {
+	for b.Loop() {
 		s = MaskAWSSensitiveValues(`
 {
 	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",

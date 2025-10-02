@@ -41,7 +41,7 @@ func getNormalizedOSName() (os string) {
 // * the "m/<whatever>" product that contains the feature flags
 func cleanUserAgent(ua string) string {
 	var parts []string
-	for _, v := range strings.Split(ua, " ") {
+	for v := range strings.SplitSeq(ua, " ") {
 		if strings.HasPrefix(v, "api/") {
 			continue
 		}
