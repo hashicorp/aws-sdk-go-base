@@ -121,7 +121,7 @@ sso_registration_scopes = sso:account:access
 
 			servicemocks.InitSessionTestEnv(t)
 
-			ctx := context.TODO()
+			ctx := t.Context()
 
 			err := servicemocks.SsoTestSetup(t, ssoSessionName)
 			if err != nil {
@@ -226,7 +226,7 @@ region = us-east-1
 
 			servicemocks.InitSessionTestEnv(t)
 
-			ctx := context.TODO()
+			ctx := t.Context()
 
 			err := servicemocks.SsoTestSetup(t, ssoStartUrl)
 			if err != nil {

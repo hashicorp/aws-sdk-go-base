@@ -20,7 +20,7 @@ func testLoggerWarn(t *testing.T, rootName string, factory func(ctx context.Cont
 	expectedModule := rootName + "." + loggerName
 
 	var buf bytes.Buffer
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, logger := factory(ctx, loggerName, &buf)
 
 	logger.Warn(ctx, "message", map[string]any{
@@ -55,7 +55,7 @@ func testLoggerSetField(t *testing.T, rootName string, factory func(ctx context.
 	expectedModule := rootName + "." + loggerName
 
 	var buf bytes.Buffer
-	originalCtx := context.Background()
+	originalCtx := t.Context()
 	originalCtx, logger := factory(originalCtx, loggerName, &buf)
 
 	newCtx := logger.SetField(originalCtx, "key", "value")

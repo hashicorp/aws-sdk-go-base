@@ -17,13 +17,13 @@ func TestFromContext(t *testing.T) {
 	}{
 		"empty": {
 			setup: func() context.Context {
-				return context.Background()
+				return t.Context()
 			},
 			expected: "",
 		},
 		"UserAgentProducts": {
 			setup: func() context.Context {
-				return Context(context.Background(), config.UserAgentProducts{
+				return Context(t.Context(), config.UserAgentProducts{
 					{
 						Name:    "first",
 						Version: "1.2.3",
@@ -39,7 +39,7 @@ func TestFromContext(t *testing.T) {
 		},
 		"[]UserAgentProduct": {
 			setup: func() context.Context {
-				return Context(context.Background(), []config.UserAgentProduct{
+				return Context(t.Context(), []config.UserAgentProduct{
 					{
 						Name:    "first",
 						Version: "1.2.3",
