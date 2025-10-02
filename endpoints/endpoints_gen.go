@@ -1052,9 +1052,6 @@ var (
 				"simspaceweaver": {
 					id: "simspaceweaver",
 				},
-				"sms": {
-					id: "sms",
-				},
 				"sms-voice": {
 					id: "sms-voice",
 				},
@@ -1619,9 +1616,6 @@ var (
 				"signer": {
 					id: "signer",
 				},
-				"sms": {
-					id: "sms",
-				},
 				"snowball": {
 					id: "snowball",
 				},
@@ -1669,6 +1663,9 @@ var (
 				},
 				"transfer": {
 					id: "transfer",
+				},
+				"verifiedpermissions": {
+					id: "verifiedpermissions",
 				},
 				"waf-regional": {
 					id: "waf-regional",
@@ -1859,6 +1856,9 @@ var (
 				},
 				"kinesisanalytics": {
 					id: "kinesisanalytics",
+				},
+				"kinesisvideo": {
+					id: "kinesisvideo",
 				},
 				"kms": {
 					id: "kms",
@@ -2899,6 +2899,9 @@ var (
 				"appstream2": {
 					id: "appstream2",
 				},
+				"aps": {
+					id: "aps",
+				},
 				"arc-zonal-shift": {
 					id: "arc-zonal-shift",
 				},
@@ -3351,9 +3354,6 @@ var (
 				},
 				"simspaceweaver": {
 					id: "simspaceweaver",
-				},
-				"sms": {
-					id: "sms",
 				},
 				"sms-voice": {
 					id: "sms-voice",
