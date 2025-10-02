@@ -1,4 +1,6 @@
 <!-- markdownlint-disable single-title -->
+# v2.0.0 (Unreleased)
+
 # v2.0.0-beta.67 (2025-10-02)
 
 ENHANCEMENTS
