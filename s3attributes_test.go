@@ -4,7 +4,6 @@
 package awsbase
 
 import (
-	"context"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
