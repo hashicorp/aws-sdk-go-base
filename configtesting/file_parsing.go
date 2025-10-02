@@ -4,7 +4,6 @@
 package configtesting
 
 import (
-	"context"
 	"os"
 	"testing"
 
@@ -130,7 +129,7 @@ sso_start_url = https://d-123456789a.awsapps.com/start#
 
 	for name, tc := range testcases {
 		t.Run(name, func(t *testing.T) {
-			ctx := context.TODO()
+			ctx := t.Context()
 
 			caseDriver := driver.TestCase()
 

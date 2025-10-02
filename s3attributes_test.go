@@ -4,7 +4,6 @@
 package awsbase
 
 import (
-	"context"
 	"testing"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -26,7 +25,7 @@ func TestS3AttributesAbortMultipartUploadInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -47,7 +46,7 @@ func TestS3AttributesCompleteMultipartUploadInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -66,7 +65,7 @@ func TestS3AttributesCreateBucketInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -84,7 +83,7 @@ func TestS3AttributesCreateMultipartUploadInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -102,7 +101,7 @@ func TestS3AttributesDeleteBucketInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -120,7 +119,7 @@ func TestS3AttributesDeleteObjectInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -147,7 +146,7 @@ func TestS3AttributesDeleteObjectsInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -166,7 +165,7 @@ func TestS3AttributesGetObjectInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -184,7 +183,7 @@ func TestS3AttributesHeadBucketInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -202,7 +201,7 @@ func TestS3AttributesHeadObjectInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -218,7 +217,7 @@ func TestS3AttributesListBucketsInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{},
@@ -233,7 +232,7 @@ func TestS3AttributesListObjectsInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -250,7 +249,7 @@ func TestS3AttributesListObjectsV2Input(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -268,7 +267,7 @@ func TestS3AttributesPutObjectInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{
@@ -289,7 +288,7 @@ func TestS3AttributesUploadPartInput(t *testing.T) {
 	}
 	var output middleware.InitializeOutput
 
-	attributes := s3AttributeBuilder(context.TODO(), input, output)
+	attributes := s3AttributeBuilder(t.Context(), input, output)
 
 	assertAttributesMatch(t, attributes,
 		[]attribute.KeyValue{

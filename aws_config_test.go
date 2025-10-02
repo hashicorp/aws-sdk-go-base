@@ -1080,7 +1080,7 @@ aws_secret_access_key = ProfileSharedCredentialsSecretKey
 				t.Setenv(k, v)
 			}
 
-			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 
 			testCase.ValidateDiags(t, diags)
 			if diags.HasError() {
@@ -1120,7 +1120,7 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 		httpSdkAgent = request.Header.Get("X-Amz-User-Agent")
 	})
 
-	ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+	ctx, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 	if diags.HasError() {
 		t.Fatalf("error in GetAwsConfig(): %v", diags)
 	}
@@ -1375,7 +1375,7 @@ region = us-west-2
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
@@ -1490,7 +1490,7 @@ max_attempts = 10
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
@@ -1621,7 +1621,7 @@ retry_mode = adaptive
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := GetAwsConfig(t.Context(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
@@ -1844,7 +1844,7 @@ use_fips_endpoint = true
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
@@ -1973,7 +1973,7 @@ func TestEC2MetadataServiceClientEnableState(t *testing.T) {
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
@@ -2158,7 +2158,7 @@ ec2_metadata_service_endpoint = https://127.1.1.1:1111
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 
 			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
 				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
@@ -2281,7 +2281,7 @@ ec2_metadata_service_endpoint_mode = IPv4
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
@@ -2466,7 +2466,7 @@ ca_bundle = no-such-file
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
@@ -2686,7 +2686,7 @@ aws_secret_access_key = SharedConfigurationSourceSecretKey
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := GetAwsConfig(t.Context(), testCase.Config)
 
 			if diff := cmp.Diff(diags, testCase.ExpectedDiags); diff != "" {
 				t.Errorf("Unexpected response (+wanted, -got): %s", diff)
@@ -2924,7 +2924,7 @@ web_identity_token_file = no-such-file
 
 	for testName, testCase := range testCases {
 		t.Run(testName, func(t *testing.T) {
-			ctx := context.Background()
+			ctx := t.Context()
 
 			servicemocks.InitSessionTestEnv(t)
 
@@ -3287,7 +3287,7 @@ endpoint_url = %[2]s
 		t.Run(name, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 
-			ctx := context.Background()
+			ctx := t.Context()
 
 			ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
 				servicemocks.MockStsGetCallerIdentityValidEndpoint,
@@ -3528,7 +3528,7 @@ func TestGetAwsConfigWithAccountIDAndPartition(t *testing.T) {
 			defer ts.Close()
 			testCase.config.StsEndpoint = ts.URL
 
-			ctx, awsConfig, diags := GetAwsConfig(context.Background(), testCase.config)
+			ctx, awsConfig, diags := GetAwsConfig(t.Context(), testCase.config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
@@ -3795,7 +3795,7 @@ func TestRetryHandlers(t *testing.T) {
 				SecretKey:           servicemocks.MockStaticSecretKey,
 				SkipCredsValidation: true,
 			}
-			ctx, awsConfig, diags := GetAwsConfig(context.Background(), config)
+			ctx, awsConfig, diags := GetAwsConfig(t.Context(), config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}
@@ -3860,7 +3860,7 @@ func (r *withNoDelay) RetryDelay(attempt int, err error) (time.Duration, error) 
 }
 
 func TestLogger_TfLog(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var buf bytes.Buffer
 	ctx = tflogtest.RootLogger(ctx, &buf)
 
@@ -4029,7 +4029,7 @@ func TestLogger_TfLog(t *testing.T) {
 }
 
 func TestLoggerDefaultMasking_TfLog(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var buf bytes.Buffer
 	ctx = tflogtest.RootLogger(ctx, &buf)
 
@@ -4074,7 +4074,7 @@ func TestLoggerDefaultMasking_TfLog(t *testing.T) {
 }
 
 func TestLogger_HcLog(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 
 	rootName := "hc-log-test"
 	expectedName := rootName + "." + loggerName

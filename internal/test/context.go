@@ -11,5 +11,5 @@ import (
 )
 
 func Context(t *testing.T) context.Context {
-	return logging.RegisterLogger(context.Background(), logging.TfLogger(t.Name()))
+	return logging.RegisterLogger(t.Context(), logging.TfLogger(t.Name()))
 }

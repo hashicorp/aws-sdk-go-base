@@ -5,6 +5,7 @@ package tfawserr
 
 import (
 	"errors"
+	"slices"
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/awserr"
@@ -38,10 +39,8 @@ func ErrMessageAndOrigErrContain(err error, code string, message string, origErr
 func ErrCodeEquals(err error, codes ...string) bool {
 	var awsErr awserr.Error
 	if errors.As(err, &awsErr) {
-		for _, code := range codes {
-			if awsErr.Code() == code {
-				return true
-			}
+		if slices.Contains(codes, awsErr.Code()) {
+			return true
 		}
 	}
 	return false

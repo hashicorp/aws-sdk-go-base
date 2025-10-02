@@ -5,7 +5,6 @@ package awsv1shim
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -1431,7 +1430,7 @@ func TestRetryMode(t *testing.T) {
 
 			testCase.Config.SkipCredsValidation = true
 
-			_, awsConfig, err := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			_, awsConfig, err := awsbase.GetAwsConfig(t.Context(), testCase.Config)
 			if err != nil {
 				t.Fatalf("error in GetAwsConfig() '%[1]T': %[1]s", err)
 			}
@@ -1782,10 +1781,10 @@ func TestCustomCABundle(t *testing.T) {
 
 				err = os.WriteFile(
 					file.Name(),
-					[]byte(fmt.Sprintf(`
+					fmt.Appendf(nil, `
 [default]
 ca_bundle = %s
-`, pemFile)),
+`, pemFile),
 					0600)
 
 				if err != nil {
@@ -2537,7 +2536,7 @@ func TestSessionRetryHandlers(t *testing.T) {
 
 func TestLogger(t *testing.T) {
 	var buf bytes.Buffer
-	ctx := tflogtest.RootLogger(context.Background(), &buf)
+	ctx := tflogtest.RootLogger(t.Context(), &buf)
 
 	servicemocks.InitSessionTestEnv(t)
 
@@ -2696,7 +2695,7 @@ s3_us_east_1_regional_endpoint = legacy
 
 			testCase.Config.SkipCredsValidation = true
 
-			ctx, awsConfig, diags := awsbase.GetAwsConfig(context.Background(), testCase.Config)
+			ctx, awsConfig, diags := awsbase.GetAwsConfig(t.Context(), testCase.Config)
 			if diags.HasError() {
 				t.Fatalf("error in GetAwsConfig(): %v", diags)
 			}

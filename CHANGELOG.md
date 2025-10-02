@@ -1,6 +1,16 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.67 (2025-10-02)
+
+ENHANCEMENTS
+
+* Adds support for updated endpoints ([#1361](https://github.com/hashicorp/aws-sdk-go-base/pull/1361))
+
+BUG FIXES
+
+* Updates dependencies.
+
 # v2.0.0-beta.66 (2025-09-02)
 
 ENHANCEMENTS
