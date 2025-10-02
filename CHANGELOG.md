@@ -11,7 +11,6 @@ BUG FIXES
 
 * Updates dependencies.
 
-
 # v2.0.0-beta.66 (2025-09-02)
 
 ENHANCEMENTS
