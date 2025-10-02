@@ -5,7 +5,6 @@ package awsv1shim
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"net"
