@@ -68,6 +68,7 @@ const (
 	UsIsoWest1RegionID = "us-iso-west-1" // US ISO WEST
 	// AWS ISOB (US) partition's Regions.
 	UsIsobEast1RegionID = "us-isob-east-1" // US ISOB East (Ohio)
+	UsIsobWest1RegionID = "us-isob-west-1" // US ISOB West
 	// AWS ISOE (Europe) partition's Regions.
 	EuIsoeWest1RegionID = "eu-isoe-west-1" // EU ISOE West
 	// AWS ISOF partition's Regions.
@@ -263,9 +264,6 @@ var (
 				"api.ecr-public": {
 					id: "api.ecr-public",
 				},
-				"api.fleethub.iot": {
-					id: "api.fleethub.iot",
-				},
 				"api.iotdeviceadvisor": {
 					id: "api.iotdeviceadvisor",
 				},
@@ -316,9 +314,6 @@ var (
 				},
 				"appsync": {
 					id: "appsync",
-				},
-				"apptest": {
-					id: "apptest",
 				},
 				"aps": {
 					id: "aps",
@@ -764,12 +759,6 @@ var (
 				"lookoutequipment": {
 					id: "lookoutequipment",
 				},
-				"lookoutmetrics": {
-					id: "lookoutmetrics",
-				},
-				"lookoutvision": {
-					id: "lookoutvision",
-				},
 				"m2": {
 					id: "m2",
 				},
@@ -920,9 +909,6 @@ var (
 				"qbusiness": {
 					id: "qbusiness",
 				},
-				"qldb": {
-					id: "qldb",
-				},
 				"query.timestream": {
 					id: "query.timestream",
 				},
@@ -958,9 +944,6 @@ var (
 				},
 				"resource-groups": {
 					id: "resource-groups",
-				},
-				"robomaker": {
-					id: "robomaker",
 				},
 				"rolesanywhere": {
 					id: "rolesanywhere",
@@ -1039,9 +1022,6 @@ var (
 				},
 				"servicequotas": {
 					id: "servicequotas",
-				},
-				"session.qldb": {
-					id: "session.qldb",
 				},
 				"shield": {
 					id: "shield",
@@ -1710,6 +1690,9 @@ var (
 				},
 			},
 			services: map[string]Service{
+				"acm": {
+					id: "acm",
+				},
 				"agreement-marketplace": {
 					id: "agreement-marketplace",
 				},
@@ -2019,6 +2002,10 @@ var (
 					id:          UsIsobEast1RegionID,
 					description: "US ISOB East (Ohio)",
 				},
+				UsIsobWest1RegionID: {
+					id:          UsIsobWest1RegionID,
+					description: "US ISOB West",
+				},
 			},
 			services: map[string]Service{
 				"api.ecr": {
@@ -2322,6 +2309,9 @@ var (
 				},
 				"api.pricing": {
 					id: "api.pricing",
+				},
+				"apigateway": {
+					id: "apigateway",
 				},
 				"appconfig": {
 					id: "appconfig",
@@ -3282,9 +3272,6 @@ var (
 				},
 				"resource-groups": {
 					id: "resource-groups",
-				},
-				"robomaker": {
-					id: "robomaker",
 				},
 				"rolesanywhere": {
 					id: "rolesanywhere",
