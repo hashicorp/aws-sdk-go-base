@@ -5,10 +5,10 @@ go 1.24.6
 require (
 	github.com/aws/aws-sdk-go v1.55.8
 	github.com/aws/aws-sdk-go-v2 v1.39.6
-	github.com/aws/aws-sdk-go-v2/config v1.31.17
-	github.com/aws/aws-sdk-go-v2/credentials v1.18.21
+	github.com/aws/aws-sdk-go-v2/config v1.31.18
+	github.com/aws/aws-sdk-go-v2/credentials v1.18.22
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.13
-	github.com/aws/aws-sdk-go-v2/service/sts v1.39.1
+	github.com/aws/aws-sdk-go-v2/service/sts v1.40.0
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.68
 	github.com/hashicorp/go-cleanhttp v0.5.2
@@ -24,7 +24,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.4 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/v4a v1.4.13 // indirect
 	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.52.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/iam v1.49.2 // indirect
+	github.com/aws/aws-sdk-go-v2/service/iam v1.50.0 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.13.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.9.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.11.13 // indirect
