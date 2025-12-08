@@ -61,7 +61,7 @@ func TestFromSlice(t *testing.T) {
 	}
 }
 
-func Test_fromAny(t *testing.T) {
+func Test_from(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -136,9 +136,9 @@ func Test_fromAny(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := fromAny(tt.v)
+			got := from(tt.v)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("fromAny() = %+v, want %+v", got, tt.want)
+				t.Errorf("from() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}
