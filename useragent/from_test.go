@@ -61,14 +61,24 @@ func TestFromSlice(t *testing.T) {
 	}
 }
 
-func Test_fromString(t *testing.T) {
+func Test_fromAny(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
 		name string
-		s    string
+		v    any
 		want config.UserAgentProduct
 	}{
+		{
+			"nil",
+			nil,
+			config.UserAgentProduct{},
+		},
+		{
+			"non-string",
+			1,
+			config.UserAgentProduct{},
+		},
 		{
 			"empty",
 			"",
@@ -126,9 +136,9 @@ func Test_fromString(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			got := fromString(tt.s)
+			got := fromAny(tt.v)
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("fromString() = %+v, want %+v", got, tt.want)
+				t.Errorf("fromAny() = %+v, want %+v", got, tt.want)
 			}
 		})
 	}
