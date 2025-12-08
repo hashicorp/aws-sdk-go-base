@@ -99,6 +99,25 @@ func Test_fromString(t *testing.T) {
 			},
 		},
 		{
+			"comment malformed closing",
+			"my-product/v1.2.3 (a comment",
+			config.UserAgentProduct{
+				Name:    "my-product",
+				Version: "v1.2.3",
+				Comment: "a comment",
+			},
+		},
+		{
+			"comment missing parenthesis",
+			"my-product/v1.2.3 a comment",
+			// This is a known edge case, but the processed output will render identical
+			// to the original input despite the version and comment merging.
+			config.UserAgentProduct{
+				Name:    "my-product",
+				Version: "v1.2.3 a comment",
+			},
+		},
+		{
 			"all the slash",
 			"foo/bar/baz/qux",
 			config.UserAgentProduct{},
