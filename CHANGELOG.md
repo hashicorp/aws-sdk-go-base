@@ -1,6 +1,17 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.69 (2025-12-08)
+
+ENHANCEMENTS
+
+* Updates supported endpoints ([#1390](https://github.com/hashicorp/aws-sdk-go-base/pull/1390))
+* `useragent`: Add `FromSlice` function ([#1389](https://github.com/hashicorp/aws-sdk-go-base/pull/1389))
+
+BUG FIXES
+
+* Updates dependencies.
+
 # v2.0.0-beta.68 (2025-10-04)
 
 ENHANCEMENTS
