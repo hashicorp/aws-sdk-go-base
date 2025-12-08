@@ -18,7 +18,7 @@ import (
 // pattern (where version and comment are optional) return a zero value struct.
 func FromSlice[T any](sl []T) config.UserAgentProducts {
 	return slices.ApplyToAll(sl, func(v T) config.UserAgentProduct {
-		if s, ok := any(v).(string); ok && s != "" {
+		if s, ok := any(v).(string); ok {
 			return fromString(s)
 		}
 		return config.UserAgentProduct{}
