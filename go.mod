@@ -21,8 +21,8 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.64.0
 	go.opentelemetry.io/otel v1.39.0
-	golang.org/x/net v0.47.0
-	golang.org/x/text v0.31.0
+	golang.org/x/net v0.48.0
+	golang.org/x/text v0.32.0
 )
 
 require (
