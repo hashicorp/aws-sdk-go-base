@@ -11,9 +11,11 @@ This project publishes two Go modules, `aws-sdk-go-base/v2` and `aws-sdk-go-base
 The module `aws-sdk-go-base/v2` returns configuration compatible with the [AWS SDK for Go v2](https://github.com/aws/aws-sdk-go-v2).
 In order to assist with migrating large code bases using the AWS SDK for Go v1, the module `aws-sdk-go-base/v2/awsv1shim/v2` takes the AWS SDK for Go v2 configuration and returns configuration for the AWS SDK for Go v1.
 
-## Requirements
+## Go Compatibility
 
-* [Go](https://golang.org/doc/install) 1.23 or higher
+This project follows the [support policy](https://golang.org/doc/devel/release.html#policy) of Go as its support policy. The two latest major releases of Go are supported by the project.
+
+Currently, that means Go **1.24** or later must be used when including this project as a dependency.
 
 ## Development
 
