@@ -1,6 +1,17 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.70 (2025-12-23)
+
+ENHANCEMENTS
+
+* Updates supported endpoints ([#1402](https://github.com/hashicorp/aws-sdk-go-base/pull/1402))
+* `useragent`: Fix handling of product names with forward slashes in `FromSlice` ([#1401](https://github.com/hashicorp/aws-sdk-go-base/pull/1401))
+
+BUG FIXES
+
+* Updates dependencies.
+
 # v2.0.0-beta.69 (2025-12-08)
 
 ENHANCEMENTS
