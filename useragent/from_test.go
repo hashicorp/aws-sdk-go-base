@@ -39,14 +39,18 @@ func TestFromSlice(t *testing.T) {
 			},
 		},
 		{
-			"valid and invalid string",
-			[]any{"my-product/v1.2.3", "foo/bar/baz/qux"},
+			"multiple",
+			[]any{"my-product/v1.2.3", "github.com/myorg/myproject/v0.0.1 (a comment)"},
 			config.UserAgentProducts{
 				config.UserAgentProduct{
 					Name:    "my-product",
 					Version: "v1.2.3",
 				},
-				config.UserAgentProduct{},
+				config.UserAgentProduct{
+					Name:    "github.com/myorg/myproject",
+					Version: "v0.0.1",
+					Comment: "a comment",
+				},
 			},
 		},
 	}
@@ -128,9 +132,13 @@ func Test_from(t *testing.T) {
 			},
 		},
 		{
-			"all the slash",
-			"foo/bar/baz/qux",
-			config.UserAgentProduct{},
+			"name with forward slash",
+			"github.com/myorg/myproject/v0.0.1 (a comment)",
+			config.UserAgentProduct{
+				Name:    "github.com/myorg/myproject",
+				Version: "v0.0.1",
+				Comment: "a comment",
+			},
 		},
 	}
 	for _, tt := range tests {

@@ -22,19 +22,21 @@ func FromSlice[T any](sl []T) config.UserAgentProducts {
 
 func from[T any](v T) config.UserAgentProduct {
 	if s, ok := any(v).(string); ok {
-		parts := strings.Split(s, "/")
-		switch len(parts) {
-		case 1:
-			return config.UserAgentProduct{Name: parts[0]}
-		case 2: //nolint: mnd
-			subparts := strings.Split(parts[1], "(")
-			if len(subparts) == 2 { //nolint: mnd
-				version := strings.TrimSpace(subparts[0])
-				comment := strings.TrimSuffix(subparts[1], ")")
-				return config.UserAgentProduct{Name: parts[0], Version: version, Comment: comment}
+		idx := strings.LastIndex(s, "/")
+		if idx != -1 {
+			name := s[:idx]
+			version := s[idx+1:]
+
+			parts := strings.Split(version, "(")
+			if len(parts) == 2 { //nolint: mnd
+				version = strings.TrimSpace(parts[0])
+				comment := strings.TrimSuffix(parts[1], ")")
+				return config.UserAgentProduct{Name: name, Version: version, Comment: comment}
 			}
-			return config.UserAgentProduct{Name: parts[0], Version: parts[1]}
+			return config.UserAgentProduct{Name: name, Version: version}
 		}
+
+		return config.UserAgentProduct{Name: s}
 	}
 
 	return config.UserAgentProduct{}
