@@ -1,11 +1,13 @@
 module github.com/hashicorp/aws-sdk-go-base/tools
 
-go 1.24.6
+go 1.25.0
 
 require (
 	github.com/golangci/golangci-lint v1.64.8
 	github.com/pavius/impi v0.0.3
 )
+
+require golang.org/x/net v0.51.0 // indirect
 
 require (
 	4d63.com/gocheckcompilerdirectives v1.3.0 // indirect
@@ -185,7 +187,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20250911091902-df9299821621 // indirect
 	golang.org/x/mod v0.32.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	golang.org/x/tools v0.41.0 // indirect
 	golang.org/x/tools/go/expect v0.1.1-deprecated // indirect

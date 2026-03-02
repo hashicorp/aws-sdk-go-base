@@ -1,6 +1,6 @@
 module github.com/hashicorp/aws-sdk-go-base/v2/awsv1shim/v2
 
-go 1.24.6
+go 1.25.0
 
 require (
 	github.com/aws/aws-sdk-go v1.55.8
@@ -52,8 +52,8 @@ require (
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/otel/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
-	golang.org/x/net v0.49.0 // indirect
-	golang.org/x/sys v0.40.0 // indirect
+	golang.org/x/net v0.51.0 // indirect
+	golang.org/x/sys v0.41.0 // indirect
 	golang.org/x/text v0.34.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
