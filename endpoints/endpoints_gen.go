@@ -62,7 +62,7 @@ const (
 	CnNorth1RegionID     = "cn-north-1"     // China (Beijing)
 	CnNorthwest1RegionID = "cn-northwest-1" // China (Ningxia)
 	// AWS EUSC partition's Regions.
-	EuscDeEast1RegionID = "eusc-de-east-1" // EU (Germany)
+	EuscDeEast1RegionID = "eusc-de-east-1" // AWS European Sovereign Cloud (Germany)
 	// AWS ISO (US) partition's Regions.
 	UsIsoEast1RegionID = "us-iso-east-1" // US ISO East
 	UsIsoWest1RegionID = "us-iso-west-1" // US ISO WEST
@@ -564,9 +564,6 @@ var (
 				"elasticmapreduce": {
 					id: "elasticmapreduce",
 				},
-				"elastictranscoder": {
-					id: "elastictranscoder",
-				},
 				"email": {
 					id: "email",
 				},
@@ -584,9 +581,6 @@ var (
 				},
 				"events": {
 					id: "events",
-				},
-				"evidently": {
-					id: "evidently",
 				},
 				"finspace": {
 					id: "finspace",
@@ -674,9 +668,6 @@ var (
 				},
 				"iot": {
 					id: "iot",
-				},
-				"iotanalytics": {
-					id: "iotanalytics",
 				},
 				"iotevents": {
 					id: "iotevents",
@@ -1422,9 +1413,6 @@ var (
 				"iot": {
 					id: "iot",
 				},
-				"iotanalytics": {
-					id: "iotanalytics",
-				},
 				"iotevents": {
 					id: "iotevents",
 				},
@@ -1675,7 +1663,7 @@ var (
 			regions: map[string]Region{
 				EuscDeEast1RegionID: {
 					id:          EuscDeEast1RegionID,
-					description: "EU (Germany)",
+					description: "AWS European Sovereign Cloud (Germany)",
 				},
 			},
 			services: map[string]Service{
@@ -1739,11 +1727,20 @@ var (
 				"codedeploy": {
 					id: "codedeploy",
 				},
+				"cognito-identity": {
+					id: "cognito-identity",
+				},
+				"cognito-idp": {
+					id: "cognito-idp",
+				},
 				"compute-optimizer": {
 					id: "compute-optimizer",
 				},
 				"config": {
 					id: "config",
+				},
+				"controltower": {
+					id: "controltower",
 				},
 				"cost-optimization-hub": {
 					id: "cost-optimization-hub",
@@ -1810,6 +1807,9 @@ var (
 				},
 				"firehose": {
 					id: "firehose",
+				},
+				"fsx": {
+					id: "fsx",
 				},
 				"gameliftstreams": {
 					id: "gameliftstreams",
@@ -1895,8 +1895,14 @@ var (
 				"rolesanywhere": {
 					id: "rolesanywhere",
 				},
+				"route53profiles": {
+					id: "route53profiles",
+				},
 				"route53resolver": {
 					id: "route53resolver",
+				},
+				"runtime.sagemaker": {
+					id: "runtime.sagemaker",
 				},
 				"s3": {
 					id: "s3",
@@ -2326,6 +2332,9 @@ var (
 				},
 				"application-autoscaling": {
 					id: "application-autoscaling",
+				},
+				"appstream2": {
+					id: "appstream2",
 				},
 				"arc-zonal-shift": {
 					id: "arc-zonal-shift",
@@ -2860,6 +2869,9 @@ var (
 				"acm-pca": {
 					id: "acm-pca",
 				},
+				"agreement-marketplace": {
+					id: "agreement-marketplace",
+				},
 				"api.ecr": {
 					id: "api.ecr",
 				},
@@ -2892,6 +2904,9 @@ var (
 				},
 				"batch": {
 					id: "batch",
+				},
+				"bedrock": {
+					id: "bedrock",
 				},
 				"budgets": {
 					id: "budgets",
@@ -3388,6 +3403,9 @@ var (
 				"glue": {
 					id: "glue",
 				},
+				"grafana": {
+					id: "grafana",
+				},
 				"greengrass": {
 					id: "greengrass",
 				},
@@ -3435,6 +3453,9 @@ var (
 				},
 				"kafka": {
 					id: "kafka",
+				},
+				"kafkaconnect": {
+					id: "kafkaconnect",
 				},
 				"kendra": {
 					id: "kendra",

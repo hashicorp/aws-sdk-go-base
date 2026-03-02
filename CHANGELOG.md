@@ -1,6 +1,12 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.71 (2026-03-02)
+
+BUG FIXES
+
+* Updates dependencies.
+
 # v2.0.0-beta.70 (2025-12-23)
 
 ENHANCEMENTS
