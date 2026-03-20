@@ -47,9 +47,8 @@ func setAWSFields(ctx context.Context, r *request.Request) context.Context {
 
 	attributes := []attribute.KeyValue{
 		otelaws.SystemAttr(),
-		otelaws.ServiceAttr(r.ClientInfo.ServiceID),
+		otelaws.MethodAttr(r.ClientInfo.ServiceID, r.Operation.Name),
 		otelaws.RegionAttr(region),
-		otelaws.OperationAttr(r.Operation.Name),
 		awsSDKv1Attr(),
 	}
 	if signingRegion := r.ClientInfo.SigningRegion; signingRegion != region {

@@ -3945,10 +3945,9 @@ func TestLogger_TfLog(t *testing.T) {
 
 	expectedRequest := map[string]any{
 		// AWS attributes
-		string(semconv.RPCSystemKey):  otelaws.AWSSystemVal,
-		string(semconv.RPCServiceKey): sts.ServiceID,
-		string(otelaws.RegionKey):     "us-east-1",
-		string(semconv.RPCMethodKey):  "GetCallerIdentity",
+		"rpc.system.name":            otelaws.AWSSystemVal,
+		string(otelaws.RegionKey):    "us-east-1",
+		string(semconv.RPCMethodKey): "STS/GetCallerIdentity",
 		// Custom attributes
 		string(logging.AwsSdkKey):         awsSdkGoV2Val,
 		string(logging.CustomEndpointKey): true,
@@ -3992,10 +3991,9 @@ func TestLogger_TfLog(t *testing.T) {
 
 	expectedResponse := map[string]any{
 		// AWS attributes
-		string(semconv.RPCSystemKey):  otelaws.AWSSystemVal,
-		string(semconv.RPCServiceKey): sts.ServiceID,
-		string(otelaws.RegionKey):     "us-east-1",
-		string(semconv.RPCMethodKey):  "GetCallerIdentity",
+		"rpc.system.name":            otelaws.AWSSystemVal,
+		string(otelaws.RegionKey):    "us-east-1",
+		string(semconv.RPCMethodKey): "STS/GetCallerIdentity",
 		// Custom attributes
 		string(logging.AwsSdkKey):         awsSdkGoV2Val,
 		string(logging.CustomEndpointKey): true,
@@ -4161,10 +4159,9 @@ func TestLogger_HcLog(t *testing.T) {
 
 	expectedRequest := map[string]any{
 		// AWS attributes
-		string(semconv.RPCSystemKey):  otelaws.AWSSystemVal,
-		string(semconv.RPCServiceKey): sts.ServiceID,
-		string(otelaws.RegionKey):     "us-east-1",
-		string(semconv.RPCMethodKey):  "GetCallerIdentity",
+		"rpc.system.name":            otelaws.AWSSystemVal,
+		string(otelaws.RegionKey):    "us-east-1",
+		string(semconv.RPCMethodKey): "STS/GetCallerIdentity",
 		// Custom attributes
 		string(logging.AwsSdkKey):         awsSdkGoV2Val,
 		string(logging.CustomEndpointKey): true,
@@ -4208,10 +4205,9 @@ func TestLogger_HcLog(t *testing.T) {
 
 	expectedResponse := map[string]any{
 		// AWS attributes
-		string(semconv.RPCSystemKey):  otelaws.AWSSystemVal,
-		string(semconv.RPCServiceKey): sts.ServiceID,
-		string(otelaws.RegionKey):     "us-east-1",
-		string(semconv.RPCMethodKey):  "GetCallerIdentity",
+		"rpc.system.name":            otelaws.AWSSystemVal,
+		string(otelaws.RegionKey):    "us-east-1",
+		string(semconv.RPCMethodKey): "STS/GetCallerIdentity",
 		// Custom attributes
 		string(logging.AwsSdkKey):         awsSdkGoV2Val,
 		string(logging.CustomEndpointKey): true,
