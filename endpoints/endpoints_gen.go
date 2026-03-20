@@ -1865,6 +1865,9 @@ var (
 				"monitoring": {
 					id: "monitoring",
 				},
+				"network-firewall": {
+					id: "network-firewall",
+				},
 				"notifications": {
 					id: "notifications",
 				},
@@ -1900,6 +1903,9 @@ var (
 				},
 				"route53resolver": {
 					id: "route53resolver",
+				},
+				"rum": {
+					id: "rum",
 				},
 				"runtime.sagemaker": {
 					id: "runtime.sagemaker",
@@ -2742,6 +2748,9 @@ var (
 				},
 				"logs": {
 					id: "logs",
+				},
+				"metrics.sagemaker": {
+					id: "metrics.sagemaker",
 				},
 				"monitoring": {
 					id: "monitoring",
