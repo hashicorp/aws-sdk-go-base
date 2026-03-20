@@ -78,9 +78,8 @@ func (l *logAttributeExtractor) HandleInitialize(ctx context.Context, in middlew
 
 	attributes := []attribute.KeyValue{
 		otelaws.SystemAttr(),
-		otelaws.ServiceAttr(serviceID),
+		otelaws.MethodAttr(serviceID, awsmiddleware.GetOperationName(ctx)),
 		otelaws.RegionAttr(region),
-		otelaws.OperationAttr(awsmiddleware.GetOperationName(ctx)),
 		awsSDKv2Attr(),
 	}
 
