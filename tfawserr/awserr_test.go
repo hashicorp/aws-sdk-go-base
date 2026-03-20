@@ -330,7 +330,7 @@ func TestErrMessageContainsAny(t *testing.T) {
 
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
-			got := ErrMessageContainsAny(testCase.Err, testCase.Code, testCase.Messages)
+			got := ErrMessageContainsAny(testCase.Err, testCase.Code, testCase.Messages...)
 
 			if got != testCase.Expected {
 				t.Errorf("got %t, expected %t", got, testCase.Expected)

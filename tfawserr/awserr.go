@@ -49,7 +49,7 @@ func ErrMessageContains(err error, code string, message string) bool {
 //   - err is of type smithy.APIError
 //   - APIError.ErrorCode() equals code
 //   - APIError.ErrorMessage() contains one of the passed messages
-func ErrMessageContainsAny(err error, code string, messages []string) bool {
+func ErrMessageContainsAny(err error, code string, messages ...string) bool {
 	for _, message := range messages {
 		if ErrMessageContains(err, code, message) {
 			return true
