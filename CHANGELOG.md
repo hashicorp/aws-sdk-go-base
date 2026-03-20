@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+ENHANCEMENTS
+
+* `tfawserr`: Add `ErrMessageContainsAny` helper
+
 # v2.0.0-beta.71 (2026-03-02)
 
 BUG FIXES

@@ -273,6 +273,72 @@ func TestErrMessageContains(t *testing.T) {
 	}
 }
 
+func TestErrMessageContainsAny(t *testing.T) {
+	testCases := map[string]struct {
+		Err      error
+		Code     string
+		Messages []string
+		Expected bool
+	}{
+		"nil error": {
+			Err:      nil,
+			Expected: false,
+		},
+		"other error": {
+			Err:      fmt.Errorf("other error"),
+			Code:     "TestCode",
+			Messages: []string{"TestMessage"},
+			Expected: false,
+		},
+		"matching code and one matching message": {
+			Err:      &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
+			Code:     "TestCode",
+			Messages: []string{"NotMatching", "estMess"},
+			Expected: true,
+		},
+		"matching code and no matching messages": {
+			Err:      &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
+			Code:     "TestCode",
+			Messages: []string{"NotMatching", "AlsoNotMatching"},
+			Expected: false,
+		},
+		"matching message and non-matching code": {
+			Err:      &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
+			Code:     "NotMatching",
+			Messages: []string{"TestMessage", "estMess"},
+			Expected: false,
+		},
+		"matching code and no messages": {
+			Err:      &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
+			Code:     "TestCode",
+			Messages: nil,
+			Expected: false,
+		},
+		"wrapped error matches": {
+			Err:      fmt.Errorf("test: %w", &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"}),
+			Code:     "TestCode",
+			Messages: []string{"NotMatching", "TestMessage"},
+			Expected: true,
+		},
+		"sts error matches": {
+			Err:      &types.ExpiredTokenException{ErrorCodeOverride: aws.String("TestCode"), Message: aws.String("TestMessage")},
+			Code:     "TestCode",
+			Messages: []string{"NotMatching", "estMess"},
+			Expected: true,
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			got := ErrMessageContainsAny(testCase.Err, testCase.Code, testCase.Messages...)
+
+			if got != testCase.Expected {
+				t.Errorf("got %t, expected %t", got, testCase.Expected)
+			}
+		})
+	}
+}
+
 func TestErrHTTPStatusCodeEquals(t *testing.T) {
 	testCases := map[string]struct {
 		Err      error
