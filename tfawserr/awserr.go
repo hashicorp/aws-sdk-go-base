@@ -45,6 +45,20 @@ func ErrMessageContains(err error, code string, message string) bool {
 	return false
 }
 
+// ErrMessageContainsAny returns true if the error matches all these conditions:
+//   - err is of type smithy.APIError
+//   - APIError.ErrorCode() equals code
+//   - APIError.ErrorMessage() contains one of the passed messages
+func ErrMessageContainsAny(err error, code string, messages []string) bool {
+	for _, message := range messages {
+		if ErrMessageContains(err, code, message) {
+			return true
+		}
+	}
+
+	return false
+}
+
 // ErrHTTPStatusCodeEquals returns true if the error matches all these conditions:
 //   - err is of type smithyhttp.ResponseError
 //   - ResponseError.HTTPStatusCode() equals one of the passed status codes
