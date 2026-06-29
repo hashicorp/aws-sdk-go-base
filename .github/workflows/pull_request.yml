@@ -1,6 +1,9 @@
 name: Pull Request Checks
 on: [pull_request]
 
+permissions:
+  contents: read # Needed for checkout
+
 jobs:
   go_mod:
     name: go mod
