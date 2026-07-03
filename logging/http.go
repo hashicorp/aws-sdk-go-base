@@ -37,7 +37,7 @@ func DecomposeHTTPRequest(ctx context.Context, req *http.Request) (map[string]an
 	attributes = append(attributes, httpconv.ClientRequest(req)...)
 	// Remove empty `http.flavor`
 	attributes = slices.Filter(attributes, func(attr attribute.KeyValue) bool {
-		return attr.Key != semconv.HTTPFlavorKey || attr.Value.Emit() != ""
+		return attr.Key != semconv.HTTPFlavorKey || attr.Value.String() != ""
 	})
 
 	attributes = append(attributes, decomposeRequestHeaders(req)...)
