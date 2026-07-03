@@ -1508,8 +1508,8 @@ max_attempts = 10
 
 func TestRetryMode(t *testing.T) {
 	var (
-		standardRetryer = reflect.TypeOf((*retry.Standard)(nil))
-		adaptiveRetryer = reflect.TypeOf((*retry.AdaptiveMode)(nil))
+		standardRetryer = reflect.TypeFor[*retry.Standard]()
+		adaptiveRetryer = reflect.TypeFor[*retry.AdaptiveMode]()
 	)
 
 	testCases := map[string]struct {
