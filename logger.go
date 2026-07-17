@@ -132,11 +132,13 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 
 	rc := smithyRequest.Build(ctx)
 
-	requestFields, err := logging.DecomposeHTTPRequest(ctx, rc)
-	if err != nil {
-		return out, metadata, fmt.Errorf("decomposing request: %w", err)
+	if logger.IsDebug(ctx) {
+		requestFields, err := logging.DecomposeHTTPRequest(ctx, rc)
+		if err != nil {
+			return out, metadata, fmt.Errorf("decomposing request: %w", err)
+		}
+		logger.Debug(ctx, "HTTP Request Sent", requestFields)
 	}
-	logger.Debug(ctx, "HTTP Request Sent", requestFields)
 
 	smithyRequest, err = smithyRequest.SetStream(rc.Body)
 	if err != nil {
@@ -150,7 +152,7 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 
 	elapsed := time.Since(start)
 
-	if err == nil {
+	if err == nil && logger.IsDebug(ctx) {
 		smithyResponse, ok := out.RawResponse.(*smithyhttp.Response)
 		if !ok {
 			return out, metadata, fmt.Errorf("unknown response type: %T", out.RawResponse)
