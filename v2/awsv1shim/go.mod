@@ -57,4 +57,7 @@ require (
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
 
-replace github.com/hashicorp/aws-sdk-go-base/v2 => ../..
+replace (
+	github.com/hashicorp/aws-sdk-go-base/v2 => ../..
+	github.com/hashicorp/terraform-plugin-log => github.com/gdavison/terraform-plugin-log v0.0.0-20260717005304-7dddc6da765e
+)
