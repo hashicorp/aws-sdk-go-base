@@ -24,6 +24,13 @@ func (l TfLogger) SubLogger(ctx context.Context, name string) (context.Context, 
 	return ctx, logger
 }
 
+func (l TfLogger) IsDebug(ctx context.Context) bool {
+	if l == "" {
+		return tflog.IsDebug(ctx)
+	}
+	return tflog.SubsystemIsDebug(ctx, string(l))
+}
+
 func (l TfLogger) Warn(ctx context.Context, msg string, fields ...map[string]any) {
 	if l == "" {
 		tflog.Warn(ctx, msg, fields...)

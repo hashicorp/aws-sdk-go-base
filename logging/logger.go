@@ -13,6 +13,8 @@ type Logger interface {
 	Debug(ctx context.Context, msg string, fields ...map[string]any)
 	Trace(ctx context.Context, msg string, fields ...map[string]any)
 
+	IsDebug(ctx context.Context) bool
+
 	SetField(ctx context.Context, key string, value any) context.Context
 
 	SubLogger(ctx context.Context, name string) (context.Context, Logger)
