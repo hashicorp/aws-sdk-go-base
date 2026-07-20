@@ -11,7 +11,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httputil"
 	"net/textproto"
 	"regexp"
 	"strconv"
@@ -116,27 +115,25 @@ var _ RequestBodyLogger = &defaultRequestBodyLogger{}
 type defaultRequestBodyLogger struct{}
 
 func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, attrs *[]attribute.KeyValue) error {
-	reqBytes, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		return err
+	if req.Body == nil || req.Body == http.NoBody {
+		*attrs = append(*attrs, attribute.String("http.request.body", ""))
+		return nil
 	}
 
-	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(reqBytes)))
+	var original bytes.Buffer
+	tee := io.TeeReader(req.Body, &original)
 
-	if _, err = reader.ReadLine(); err != nil {
-		return err
-	}
+	scanner := bufio.NewScanner(tee)
 
-	if _, err = reader.ReadMIMEHeader(); err != nil {
-		return err
-	}
-
-	body, err := ReadTruncatedBody(reader, maxRequestBodyLen)
+	body, err := ReadTruncatedBodyNew(scanner, maxRequestBodyLen)
 	if err != nil {
 		return err
 	}
 
 	*attrs = append(*attrs, attribute.String("http.request.body", body))
+
+	// Restore the full body for the SDK serialiser.
+	req.Body = io.NopCloser(io.MultiReader(&original, req.Body))
 
 	return nil
 }
@@ -335,6 +332,26 @@ func ReadTruncatedBody(reader *textproto.Reader, len int) (string, error) {
 			fmt.Fprint(&builder, "[truncated...]")
 			break
 		}
+	}
+
+	body := builder.String()
+	body = MaskAWSSensitiveValues(body)
+
+	return body, nil
+}
+
+func ReadTruncatedBodyNew(scanner *bufio.Scanner, len int) (string, error) {
+	var builder strings.Builder
+	for scanner.Scan() {
+		line := scanner.Text()
+		fmt.Fprintln(&builder, line)
+		if builder.Len() >= len {
+			fmt.Fprint(&builder, "[truncated...]")
+			break
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
 	}
 
 	body := builder.String()
