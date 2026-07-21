@@ -11,7 +11,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/textproto"
 	"strings"
 	"time"
 
@@ -206,20 +205,18 @@ var _ logging.ResponseBodyLogger = &defaultResponseBodyLogger{}
 type defaultResponseBodyLogger struct{}
 
 func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response, attrs *[]attribute.KeyValue) error {
-	content, err := io.ReadAll(resp.Body)
+	var original bytes.Buffer
+	tee := io.TeeReader(resp.Body, &original)
+
+	scanner := bufio.NewScanner(tee)
+
+	body, err := logging.ReadTruncatedBodyNew(scanner, logging.MaxResponseBodyLen)
 	if err != nil {
 		return err
 	}
 
-	// Restore the body reader
-	resp.Body = io.NopCloser(bytes.NewBuffer(content))
-
-	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(content)))
-
-	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
-	if err != nil {
-		return err
-	}
+	// Restore the full body for the SDK deserialiser.
+	resp.Body = io.NopCloser(io.MultiReader(&original, resp.Body))
 
 	*attrs = append(*attrs, attribute.String("http.response.body", body))
 
