@@ -220,8 +220,10 @@ var _ logging.ResponseBodyLogger = &defaultResponseBodyLogger{}
 type defaultResponseBodyLogger struct{}
 
 func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response, attrs *[]attribute.KeyValue) error {
-	var original bytes.Buffer
-	tee := io.TeeReader(resp.Body, &original)
+	original := logging.BufferPool.Get()
+	defer logging.BufferPool.Put(original)
+
+	tee := io.TeeReader(resp.Body, original)
 
 	scanner := bufio.NewScanner(tee)
 
@@ -233,7 +235,7 @@ func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response
 	*attrs = append(*attrs, attribute.String("http.response.body", body))
 
 	// Restore the full body for the SDK deserialiser.
-	resp.Body = io.NopCloser(io.MultiReader(&original, resp.Body))
+	resp.Body = io.NopCloser(io.MultiReader(bytes.NewReader(original.Bytes()), resp.Body))
 
 	return nil
 }

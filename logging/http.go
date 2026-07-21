@@ -118,8 +118,10 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 		return nil
 	}
 
-	var original bytes.Buffer
-	tee := io.TeeReader(req.Body, &original)
+	original := BufferPool.Get()
+	defer BufferPool.Put(original)
+
+	tee := io.TeeReader(req.Body, original)
 
 	scanner := bufio.NewScanner(tee)
 
@@ -131,7 +133,7 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 	*attrs = append(*attrs, attribute.String("http.request.body", body))
 
 	// Restore the full body for the SDK serialiser.
-	req.Body = io.NopCloser(io.MultiReader(&original, req.Body))
+	req.Body = io.NopCloser(io.MultiReader(bytes.NewReader(original.Bytes()), req.Body))
 
 	return nil
 }
