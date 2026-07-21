@@ -318,10 +318,10 @@ func cleanUpHeaderAttributes(attrs []attribute.KeyValue) []attribute.KeyValue {
 func ReadTruncatedBody(scanner *bufio.Scanner, len int) (string, error) {
 	var builder strings.Builder
 	for scanner.Scan() {
-		line := scanner.Text()
-		fmt.Fprintln(&builder, line)
+		builder.Write(scanner.Bytes())
+		builder.WriteByte('\n')
 		if builder.Len() >= len {
-			fmt.Fprint(&builder, "[truncated...]")
+			builder.WriteString("[truncated...]")
 			break
 		}
 	}

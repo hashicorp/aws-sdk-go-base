@@ -261,9 +261,10 @@ func readTruncatedBody(reader *textproto.Reader, len int) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		fmt.Fprintln(&builder, line)
+		builder.WriteString(line)
+		builder.WriteByte('\n')
 		if builder.Len() >= len {
-			fmt.Fprint(&builder, "[truncated...]")
+			builder.WriteString("[truncated...]")
 			break
 		}
 	}
