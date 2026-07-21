@@ -114,6 +114,7 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 	out middleware.DeserializeOutput, metadata middleware.Metadata, err error,
 ) {
 	logger := logging.RetrieveLogger(ctx)
+	isDebug := logger.IsDebug(ctx)
 
 	region := awsmiddleware.GetRegion(ctx)
 
@@ -131,12 +132,10 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 
 	rc := smithyRequest.Build(ctx)
 
-	if logger.IsDebug(ctx) {
-		requestFields, err := logging.DecomposeHTTPRequest(ctx, rc)
-		if err != nil {
-			return out, metadata, fmt.Errorf("decomposing request: %w", err)
+	if isDebug {
+		if err := r.logRequest(ctx, logger, rc); err != nil {
+			return out, metadata, err
 		}
-		logger.Debug(ctx, "HTTP Request Sent", requestFields)
 	}
 
 	smithyRequest, err = smithyRequest.SetStream(rc.Body)
@@ -151,20 +150,36 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 
 	elapsed := time.Since(start)
 
-	if err == nil && logger.IsDebug(ctx) {
-		smithyResponse, ok := out.RawResponse.(*smithyhttp.Response)
-		if !ok {
-			return out, metadata, fmt.Errorf("unknown response type: %T", out.RawResponse)
+	if err == nil && isDebug {
+		if err = r.logResponse(ctx, logger, out.RawResponse, elapsed); err != nil {
+			return out, metadata, err
 		}
-
-		responseFields, err := decomposeHTTPResponse(ctx, smithyResponse.Response, elapsed)
-		if err != nil {
-			return out, metadata, fmt.Errorf("decomposing response: %w", err)
-		}
-		logger.Debug(ctx, "HTTP Response Received", responseFields)
 	}
 
 	return out, metadata, err
+}
+
+func (r *requestResponseLogger) logRequest(ctx context.Context, logger logging.Logger, rc *http.Request) error {
+	requestFields, err := logging.DecomposeHTTPRequest(ctx, rc)
+	if err != nil {
+		return fmt.Errorf("decomposing request: %w", err)
+	}
+	logger.Debug(ctx, "HTTP Request Sent", requestFields)
+	return nil
+}
+
+func (r *requestResponseLogger) logResponse(ctx context.Context, logger logging.Logger, rawResponse any, elapsed time.Duration) error {
+	smithyResponse, ok := rawResponse.(*smithyhttp.Response)
+	if !ok {
+		return fmt.Errorf("unknown response type: %T", rawResponse)
+	}
+
+	responseFields, err := decomposeHTTPResponse(ctx, smithyResponse.Response, elapsed)
+	if err != nil {
+		return fmt.Errorf("decomposing response: %w", err)
+	}
+	logger.Debug(ctx, "HTTP Response Received", responseFields)
+	return nil
 }
 
 func decomposeHTTPResponse(ctx context.Context, resp *http.Response, elapsed time.Duration) (map[string]any, error) {
