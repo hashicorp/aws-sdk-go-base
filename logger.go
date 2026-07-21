@@ -230,10 +230,10 @@ func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response
 		return err
 	}
 
+	*attrs = append(*attrs, attribute.String("http.response.body", body))
+
 	// Restore the full body for the SDK deserialiser.
 	resp.Body = io.NopCloser(io.MultiReader(&original, resp.Body))
-
-	*attrs = append(*attrs, attribute.String("http.response.body", body))
 
 	return nil
 }
