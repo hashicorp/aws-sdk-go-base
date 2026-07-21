@@ -7,11 +7,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"net/textproto"
 	"regexp"
 	"strconv"
 	"strings"
@@ -125,7 +123,7 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 
 	scanner := bufio.NewScanner(tee)
 
-	body, err := ReadTruncatedBodyNew(scanner, maxRequestBodyLen)
+	body, err := ReadTruncatedBody(scanner, maxRequestBodyLen)
 	if err != nil {
 		return err
 	}
@@ -317,30 +315,7 @@ func cleanUpHeaderAttributes(attrs []attribute.KeyValue) []attribute.KeyValue {
 	})
 }
 
-func ReadTruncatedBody(reader *textproto.Reader, len int) (string, error) {
-	var builder strings.Builder
-	for {
-		line, err := reader.ReadLine()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return "", err
-		}
-		fmt.Fprintln(&builder, line)
-		if builder.Len() >= len {
-			fmt.Fprint(&builder, "[truncated...]")
-			break
-		}
-	}
-
-	body := builder.String()
-	body = MaskAWSSensitiveValues(body)
-
-	return body, nil
-}
-
-func ReadTruncatedBodyNew(scanner *bufio.Scanner, len int) (string, error) {
+func ReadTruncatedBody(scanner *bufio.Scanner, len int) (string, error) {
 	var builder strings.Builder
 	for scanner.Scan() {
 		line := scanner.Text()

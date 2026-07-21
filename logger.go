@@ -210,7 +210,7 @@ func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response
 
 	scanner := bufio.NewScanner(tee)
 
-	body, err := logging.ReadTruncatedBodyNew(scanner, logging.MaxResponseBodyLen)
+	body, err := logging.ReadTruncatedBody(scanner, logging.MaxResponseBodyLen)
 	if err != nil {
 		return err
 	}
