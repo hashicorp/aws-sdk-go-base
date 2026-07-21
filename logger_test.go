@@ -99,9 +99,12 @@ func BenchmarkResponseBodyLogger(b *testing.B) {
 
 	b.ReportAllocs()
 	for b.Loop() {
+		b.StopTimer()
 		resp := &http.Response{
 			Body: io.NopCloser(strings.NewReader(bodyStr)),
 		}
+		b.StartTimer()
+
 		var attrs []attribute.KeyValue
 		if err := logger.Log(b.Context(), resp, &attrs); err != nil {
 			b.Fatal(err)

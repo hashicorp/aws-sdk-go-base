@@ -112,6 +112,7 @@ func BenchmarkRequestBodyLogger(b *testing.B) {
 
 	b.ReportAllocs()
 	for b.Loop() {
+		b.StopTimer()
 		req := &http.Request{
 			Method: http.MethodPost,
 			URL:    &url.URL{Scheme: "https", Host: "example.com", Path: "/"},
@@ -119,6 +120,8 @@ func BenchmarkRequestBodyLogger(b *testing.B) {
 			Body:   io.NopCloser(strings.NewReader(bodyStr)),
 		}
 		var attrs []attribute.KeyValue
+		b.StartTimer()
+
 		if err := logger.Log(b.Context(), req, &attrs); err != nil {
 			b.Fatal(err)
 		}
