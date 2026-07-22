@@ -1179,7 +1179,7 @@ func fullTypeName(i any) string {
 }
 
 func fullValueTypeName(v reflect.Value) string {
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		return "*" + fullValueTypeName(reflect.Indirect(v))
 	}
 
@@ -1508,8 +1508,8 @@ max_attempts = 10
 
 func TestRetryMode(t *testing.T) {
 	var (
-		standardRetryer = reflect.TypeOf((*retry.Standard)(nil))
-		adaptiveRetryer = reflect.TypeOf((*retry.AdaptiveMode)(nil))
+		standardRetryer = reflect.TypeFor[*retry.Standard]()
+		adaptiveRetryer = reflect.TypeFor[*retry.AdaptiveMode]()
 	)
 
 	testCases := map[string]struct {
