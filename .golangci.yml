@@ -34,6 +34,12 @@ linters:
       - path: configtesting
         linters:
           - goconst
+      - path: internal/test
+        linters:
+          - goconst
+      - path: servicemocks
+        linters:
+          - goconst
       - linters:
           - staticcheck
         text: "SA1019: aws.Endpoint is deprecated"

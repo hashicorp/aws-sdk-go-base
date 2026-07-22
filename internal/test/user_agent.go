@@ -12,6 +12,16 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/servicemocks"
 )
 
+const (
+	testRegion          = "us-east-1"
+	testPartnerName     = "partner"
+	testProductName1    = "first"
+	testProductVersion1 = "1.2.3"
+	testProductName2    = "second"
+	testProductVersion2 = "1.0.2"
+	testProductComment  = "a comment"
+)
+
 type UserAgentTestCase struct {
 	Config               *config.Config
 	Context              config.UserAgentProducts
@@ -26,7 +36,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"standard User-Agent": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			ExpectedUserAgent: awsSdkGoUserAgent(),
@@ -35,7 +45,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"customized User-Agent TF_APPEND_USER_AGENT product": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -47,7 +57,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"customized User-Agent TF_APPEND_USER_AGENT product version": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -59,7 +69,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"customized User-Agent TF_APPEND_USER_AGENT multi product": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -71,7 +81,7 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"customized User-Agent TF_APPEND_USER_AGENT with comment": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			EnvironmentVariables: map[string]string{
@@ -83,19 +93,19 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"APN User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 				APNInfo: &config.APNInfo{
-					PartnerName: "partner",
+					PartnerName: testPartnerName,
 					Products: []config.UserAgentProduct{
 						{
-							Name:    "first",
-							Version: "1.2.3",
+							Name:    testProductName1,
+							Version: testProductVersion1,
 						},
 						{
-							Name:    "second",
-							Version: "1.0.2",
-							Comment: "a comment",
+							Name:    testProductName2,
+							Version: testProductVersion2,
+							Comment: testProductComment,
 						},
 					},
 				},
@@ -106,18 +116,18 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"APN User-Agent Products and TF_APPEND_USER_AGENT": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 				APNInfo: &config.APNInfo{
-					PartnerName: "partner",
+					PartnerName: testPartnerName,
 					Products: []config.UserAgentProduct{
 						{
-							Name:    "first",
-							Version: "1.2.3",
+							Name:    testProductName1,
+							Version: testProductVersion1,
 						},
 						{
-							Name:    "second",
-							Version: "1.0.2",
+							Name:    testProductName2,
+							Version: testProductVersion2,
 						},
 					},
 				},
@@ -131,17 +141,17 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 				UserAgent: []config.UserAgentProduct{
 					{
-						Name:    "first",
-						Version: "1.2.3",
+						Name:    testProductName1,
+						Version: testProductVersion1,
 					},
 					{
-						Name:    "second",
-						Version: "1.0.2",
-						Comment: "a comment",
+						Name:    testProductName2,
+						Version: testProductVersion2,
+						Comment: testProductComment,
 					},
 				},
 			},
@@ -151,19 +161,19 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"APN and User-Agent Products": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 				APNInfo: &config.APNInfo{
-					PartnerName: "partner",
+					PartnerName: testPartnerName,
 					Products: []config.UserAgentProduct{
 						{
-							Name:    "first",
-							Version: "1.2.3",
+							Name:    testProductName1,
+							Version: testProductVersion1,
 						},
 						{
-							Name:    "second",
-							Version: "1.0.2",
-							Comment: "a comment",
+							Name:    testProductName2,
+							Version: testProductVersion2,
+							Comment: testProductComment,
 						},
 					},
 				},
@@ -184,18 +194,18 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"context": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 			},
 			Context: []config.UserAgentProduct{
 				{
-					Name:    "first",
-					Version: "1.2.3",
+					Name:    testProductName1,
+					Version: testProductVersion1,
 				},
 				{
-					Name:    "second",
-					Version: "1.0.2",
-					Comment: "a comment",
+					Name:    testProductName2,
+					Version: testProductVersion2,
+					Comment: testProductComment,
 				},
 			},
 			ExpectedUserAgent: awsSdkGoUserAgent() + " first/1.2.3 second/1.0.2 (a comment)",
@@ -204,17 +214,17 @@ func TestUserAgentProducts(t *testing.T, awsSdkGoUserAgent func() string, testUs
 		"User-Agent Products and context": {
 			Config: &config.Config{
 				AccessKey: servicemocks.MockStaticAccessKey,
-				Region:    "us-east-1",
+				Region:    testRegion,
 				SecretKey: servicemocks.MockStaticSecretKey,
 				UserAgent: []config.UserAgentProduct{
 					{
-						Name:    "first",
-						Version: "1.2.3",
+						Name:    testProductName1,
+						Version: testProductVersion1,
 					},
 					{
-						Name:    "second",
-						Version: "1.0.2",
-						Comment: "a comment",
+						Name:    testProductName2,
+						Version: testProductVersion2,
+						Comment: testProductComment,
 					},
 				},
 			},
