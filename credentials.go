@@ -93,7 +93,7 @@ func getCredentialsProvider(ctx context.Context, c *Config) (aws.CredentialsProv
 	creds, err := cfg.Credentials.Retrieve(ctx)
 	if err != nil {
 		if c.Profile != "" && os.Getenv("AWS_ACCESS_KEY_ID") != "" && os.Getenv("AWS_SECRET_ACCESS_KEY") != "" {
-			err = fmt.Errorf(`A Profile was specified along with the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY". The Profile is now used instead of the environment variable credentials.
+			err = fmt.Errorf(`a Profile was specified along with the environment variables "AWS_ACCESS_KEY_ID" and "AWS_SECRET_ACCESS_KEY". The Profile is now used instead of the environment variable credentials.
 
 AWS Error: %w`, err)
 		}

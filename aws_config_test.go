@@ -1156,7 +1156,7 @@ func testUserAgentProducts(t *testing.T, testCase test.UserAgentTestCase) {
 	}
 }
 
-var errCancelOperation = errors.New("Test: Cancelling request")
+var errCancelOperation = errors.New("test: Cancelling request")
 
 // cancelRequestMiddleware creates a Smithy middleware that intercepts the request before sending and cancels it
 func cancelRequestMiddleware(t *testing.T, id string, f func(t *testing.T, request *smithyhttp.Request)) middleware.FinalizeMiddleware {
@@ -3904,9 +3904,10 @@ func TestLogger_TfLog(t *testing.T) {
 	var requestLines []map[string]any
 	var responseLines []map[string]any
 	for _, line := range lines {
-		if line["@message"] == "HTTP Request Sent" {
+		switch line["@message"] {
+		case "HTTP Request Sent":
 			requestLines = append(requestLines, line)
-		} else if line["@message"] == "HTTP Response Received" {
+		case "HTTP Response Received":
 			responseLines = append(responseLines, line)
 		}
 	}
@@ -4118,9 +4119,10 @@ func TestLogger_HcLog(t *testing.T) {
 	var requestLines []map[string]any
 	var responseLines []map[string]any
 	for _, line := range lines {
-		if line["@message"] == "HTTP Request Sent" {
+		switch line["@message"] {
+		case "HTTP Request Sent":
 			requestLines = append(requestLines, line)
-		} else if line["@message"] == "HTTP Response Received" {
+		case "HTTP Response Received":
 			responseLines = append(responseLines, line)
 		}
 	}
