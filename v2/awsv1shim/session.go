@@ -21,6 +21,8 @@ import ( // nosemgrep: no-sdkv2-imports-in-awsv1shim
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 )
 
+const logKeyError = "error"
+
 // getSessionOptions attempts to return valid AWS Go SDK session authentication
 // options based on pre-existing credential provider, configured profile, or
 // fallback to automatically a determined session via the AWS Go SDK.
@@ -139,7 +141,7 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 
 		if r.IsErrorExpired() {
 			logger.Warn(ctx, "Disabling retries after next request due to expired credentials", map[string]any{
-				"error": r.Error,
+				logKeyError: r.Error,
 			})
 			r.Retryable = aws.Bool(false)
 		}
@@ -152,7 +154,7 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 		// caused by: Post https://FQDN/: dial tcp: lookup FQDN: no such host
 		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "no such host") {
 			logger.Warn(ctx, "Disabling retries after next request due to networking error", map[string]any{
-				"error": r.Error,
+				logKeyError: r.Error,
 			})
 			r.Retryable = aws.Bool(false)
 		}
@@ -160,7 +162,7 @@ func GetSession(ctx context.Context, awsC *awsv2.Config, c *awsbase.Config) (*se
 		// caused by: Post https://FQDN/: dial tcp IPADDRESS:443: connect: connection refused
 		if tfawserr.ErrMessageAndOrigErrContain(r.Error, request.ErrCodeRequestError, "send request failed", "connection refused") {
 			logger.Warn(ctx, "Disabling retries after next request due to networking error", map[string]any{
-				"error": r.Error,
+				logKeyError: r.Error,
 			})
 			r.Retryable = aws.Bool(false)
 		}

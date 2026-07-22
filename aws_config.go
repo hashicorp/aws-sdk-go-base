@@ -469,10 +469,11 @@ func commonLoadOptions(ctx context.Context, c *Config) ([]func(*config.LoadOptio
 	}
 
 	// This should not be needed, but https://github.com/aws/aws-sdk-go-v2/issues/1398
-	if c.EC2MetadataServiceEnableState == imds.ClientEnabled {
-		os.Setenv("AWS_EC2_METADATA_DISABLED", "false")
-	} else if c.EC2MetadataServiceEnableState == imds.ClientDisabled {
-		os.Setenv("AWS_EC2_METADATA_DISABLED", "true")
+	switch c.EC2MetadataServiceEnableState {
+	case imds.ClientEnabled:
+		os.Setenv("AWS_EC2_METADATA_DISABLED", "false") //nolint:errcheck
+	case imds.ClientDisabled:
+		os.Setenv("AWS_EC2_METADATA_DISABLED", "true") //nolint:errcheck
 	}
 
 	if c.UseDualStackEndpoint {

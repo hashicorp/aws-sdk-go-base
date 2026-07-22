@@ -1,62 +1,81 @@
 # Copyright IBM Corp. 2015, 2026
 # SPDX-License-Identifier: MPL-2.0
 
+version: "2"
+
 issues:
   max-issues-per-linter: 0
   max-same-issues: 0
-  exclude-rules:
-    - path: configtesting
-      linters:
-        - goconst
-    - linters:
-        - staticcheck
-      text: "SA1019: aws.Endpoint is deprecated"
-    - linters:
-        - staticcheck
-      text: "SA1019: aws.EndpointResolverWithOptions is deprecated"
-    - linters:
-        - staticcheck
-      text: "SA1019: aws.EndpointResolverWithOptionsFunc is deprecated"
-    - linters:
-        - staticcheck
-      text: "SA1019: config.WithEndpointResolverWithOptions is deprecated"
-    - linters:
-        - staticcheck
-      text: "SA1019: .+ is deprecated: aws-sdk-go is deprecated"
+
+formatters:
+  enable:
+    - gofmt
 
 linters:
-  disable-all: true
+  default: none
   enable:
     - copyloopvar
     - dogsled
     - errcheck
     - errname
     - goconst
-    - gofmt
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - mnd
     - staticcheck
-    - typecheck
     - unconvert
     - unparam
     - unused
     - usetesting
     - whitespace
-
-linters-settings:
-  copyloopvar:
-    check-alias: true
-  goconst:
-    ignore-tests: true
-  mnd:
-    ignored-functions:
-      - strings.SplitN
-      - strings.SplitAfterN
-      - os.MkdirAll
-  usetesting:
-    os-create-temp: false
-    os-mkdir-temp: false
-    os-setenv: false
+  exclusions:
+    rules:
+      - path: configtesting
+        linters:
+          - goconst
+      - path: internal/test
+        linters:
+          - goconst
+      - path: servicemocks
+        linters:
+          - goconst
+      - linters:
+          - staticcheck
+        text: "SA1019: aws.Endpoint is deprecated"
+      - linters:
+          - staticcheck
+        text: "SA1019: aws.EndpointResolverWithOptions is deprecated"
+      - linters:
+          - staticcheck
+        text: "SA1019: aws.EndpointResolverWithOptionsFunc is deprecated"
+      - linters:
+          - staticcheck
+        text: "SA1019: config.WithEndpointResolverWithOptions is deprecated"
+      - linters:
+          - staticcheck
+        text: "SA1019: .+ is deprecated: aws-sdk-go is deprecated"
+  settings:
+    errcheck:
+      exclude-functions:
+        - os.Remove
+        - os.Setenv
+        - os.Unsetenv
+        - (io.ReadCloser).Close
+        - (*os.File).Close
+        - fmt.Fprintf
+        - fmt.Fprint
+        - fmt.Fprintln
+    copyloopvar:
+      check-alias: true
+    goconst:
+      ignore-tests: true
+    mnd:
+      ignored-functions:
+        - strings.SplitN
+        - strings.SplitAfterN
+        - os.MkdirAll
+    usetesting:
+      os-create-temp: false
+      os-mkdir-temp: false
+      os-setenv: false

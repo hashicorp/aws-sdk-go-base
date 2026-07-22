@@ -36,7 +36,7 @@ test: ## Run unit tests
 	cd v2/awsv1shim && go test -timeout=$(TIMEOUT) -parallel=4 ./...
 
 tools: ## Install tools
-	cd tools && go install github.com/golangci/golangci-lint/cmd/golangci-lint
+	cd tools && go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint
 	cd tools && go install github.com/pavius/impi/cmd/impi
 
 # Please keep targets in alphabetical order
