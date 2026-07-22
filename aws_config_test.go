@@ -1179,7 +1179,7 @@ func fullTypeName(i any) string {
 }
 
 func fullValueTypeName(v reflect.Value) string {
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		return "*" + fullValueTypeName(reflect.Indirect(v))
 	}
 
