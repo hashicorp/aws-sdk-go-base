@@ -56,6 +56,16 @@ linters:
           - staticcheck
         text: "SA1019: .+ is deprecated: aws-sdk-go is deprecated"
   settings:
+    errcheck:
+      exclude-functions:
+        - os.Remove
+        - os.Setenv
+        - os.Unsetenv
+        - (io.ReadCloser).Close
+        - (*os.File).Close
+        - fmt.Fprintf
+        - fmt.Fprint
+        - fmt.Fprintln
     copyloopvar:
       check-alias: true
     goconst:
