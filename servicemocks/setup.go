@@ -111,19 +111,19 @@ func UnsetEnv(t *testing.T) func() {
 func SetEnv(s string, t *testing.T) func() {
 	e := getEnv()
 	// Set all the envs to a dummy value
-	if err := os.Setenv("AWS_ACCESS_KEY_ID", s); err != nil { //nolint:tenv
+	if err := os.Setenv("AWS_ACCESS_KEY_ID", s); err != nil {
 		t.Fatalf("Error setting env var AWS_ACCESS_KEY_ID: %s", err)
 	}
-	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", s); err != nil { //nolint:tenv
+	if err := os.Setenv("AWS_SECRET_ACCESS_KEY", s); err != nil {
 		t.Fatalf("Error setting env var AWS_SECRET_ACCESS_KEY: %s", err)
 	}
-	if err := os.Setenv("AWS_SESSION_TOKEN", s); err != nil { //nolint:tenv
+	if err := os.Setenv("AWS_SESSION_TOKEN", s); err != nil {
 		t.Fatalf("Error setting env var AWS_SESSION_TOKEN: %s", err)
 	}
-	if err := os.Setenv("AWS_PROFILE", s); err != nil { //nolint:tenv
+	if err := os.Setenv("AWS_PROFILE", s); err != nil {
 		t.Fatalf("Error setting env var AWS_PROFILE: %s", err)
 	}
-	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", s); err != nil { //nolint:tenv
+	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", s); err != nil {
 		t.Fatalf("Error setting env var AWS_SHARED_CREDENTIALS_FLE: %s", err)
 	}
 
