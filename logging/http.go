@@ -7,12 +7,9 @@ import (
 	"bufio"
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
-	"net/http/httputil"
-	"net/textproto"
 	"regexp"
 	"strconv"
 	"strings"
@@ -116,27 +113,27 @@ var _ RequestBodyLogger = &defaultRequestBodyLogger{}
 type defaultRequestBodyLogger struct{}
 
 func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, attrs *[]attribute.KeyValue) error {
-	reqBytes, err := httputil.DumpRequestOut(req, true)
-	if err != nil {
-		return err
+	if req.Body == nil || req.Body == http.NoBody {
+		*attrs = append(*attrs, attribute.String("http.request.body", ""))
+		return nil
 	}
 
-	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(reqBytes)))
+	original := BufferPool.Get()
+	defer BufferPool.Put(original)
 
-	if _, err = reader.ReadLine(); err != nil {
-		return err
-	}
+	tee := io.TeeReader(req.Body, original)
 
-	if _, err = reader.ReadMIMEHeader(); err != nil {
-		return err
-	}
+	scanner := bufio.NewScanner(tee)
 
-	body, err := ReadTruncatedBody(reader, maxRequestBodyLen)
+	body, err := ReadTruncatedBody(scanner, maxRequestBodyLen)
 	if err != nil {
 		return err
 	}
 
 	*attrs = append(*attrs, attribute.String("http.request.body", body))
+
+	// Restore the full body for the SDK serialiser.
+	req.Body = io.NopCloser(io.MultiReader(bytes.NewReader(original.Bytes()), req.Body))
 
 	return nil
 }
@@ -320,21 +317,18 @@ func cleanUpHeaderAttributes(attrs []attribute.KeyValue) []attribute.KeyValue {
 	})
 }
 
-func ReadTruncatedBody(reader *textproto.Reader, len int) (string, error) {
+func ReadTruncatedBody(scanner *bufio.Scanner, len int) (string, error) {
 	var builder strings.Builder
-	for {
-		line, err := reader.ReadLine()
-		if errors.Is(err, io.EOF) {
-			break
-		}
-		if err != nil {
-			return "", err
-		}
-		fmt.Fprintln(&builder, line)
+	for scanner.Scan() {
+		builder.Write(scanner.Bytes())
+		builder.WriteByte('\n')
 		if builder.Len() >= len {
-			fmt.Fprint(&builder, "[truncated...]")
+			builder.WriteString("[truncated...]")
 			break
 		}
+	}
+	if err := scanner.Err(); err != nil {
+		return "", err
 	}
 
 	body := builder.String()

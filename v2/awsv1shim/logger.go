@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -215,7 +216,7 @@ func decomposeResponseBody(bodyReader io.Reader) (kv attribute.KeyValue, err err
 
 	reader := textproto.NewReader(bufio.NewReader(bytes.NewReader(content)))
 
-	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
+	body, err := readTruncatedBody(reader, logging.MaxResponseBodyLen)
 	if err != nil {
 		return kv, err
 	}
@@ -247,4 +248,29 @@ func (w *limitedWriter) Write(p []byte) (int, error) {
 		w.N -= int64(n)
 		return n, err
 	}
+}
+
+// readTruncatedBody is equivalent to logging.ReadTruncatedBody
+func readTruncatedBody(reader *textproto.Reader, len int) (string, error) {
+	var builder strings.Builder
+	for {
+		line, err := reader.ReadLine()
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return "", err
+		}
+		builder.WriteString(line)
+		builder.WriteByte('\n')
+		if builder.Len() >= len {
+			builder.WriteString("[truncated...]")
+			break
+		}
+	}
+
+	body := builder.String()
+	body = logging.MaskAWSSensitiveValues(body)
+
+	return body, nil
 }
