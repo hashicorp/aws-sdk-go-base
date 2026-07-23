@@ -16,6 +16,10 @@ func (l NullLogger) SubLogger(ctx context.Context, name string) (context.Context
 	return ctx, l
 }
 
+func (l NullLogger) IsDebug(_ context.Context) bool {
+	return false
+}
+
 func (l NullLogger) Warn(ctx context.Context, msg string, fields ...map[string]any) {
 }
 

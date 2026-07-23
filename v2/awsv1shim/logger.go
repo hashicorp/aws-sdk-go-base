@@ -86,26 +86,28 @@ func logRequest(r *request.Request) {
 
 	ctx = setAWSFields(ctx, r)
 
-	bodySeekable := aws.IsReaderSeekable(r.Body)
+	if tflog.IsDebug(ctx) {
+		bodySeekable := aws.IsReaderSeekable(r.Body)
 
-	requestFields, err := logging.DecomposeHTTPRequest(ctx, r.HTTPRequest)
-	if err != nil {
-		tflog.Error(ctx, fmt.Sprintf("decomposing request: %s", err))
-		return
-	}
+		requestFields, err := logging.DecomposeHTTPRequest(ctx, r.HTTPRequest)
+		if err != nil {
+			tflog.Error(ctx, fmt.Sprintf("decomposing request: %s", err))
+			return
+		}
 
-	if !bodySeekable {
-		r.SetReaderBody(aws.ReadSeekCloser(r.HTTPRequest.Body))
-	}
-	// Reset the request body because dumpRequest will re-wrap the
-	// r.HTTPRequest's Body as a NoOpCloser and will not be reset after
-	// read by the HTTP client reader.
-	if err := r.Error; err != nil {
-		tflog.Error(ctx, fmt.Sprintf("decomposing request: %s", err))
-		return
-	}
+		if !bodySeekable {
+			r.SetReaderBody(aws.ReadSeekCloser(r.HTTPRequest.Body))
+		}
+		// Reset the request body because dumpRequest will re-wrap the
+		// r.HTTPRequest's Body as a NoOpCloser and will not be reset after
+		// read by the HTTP client reader.
+		if err := r.Error; err != nil {
+			tflog.Error(ctx, fmt.Sprintf("decomposing request: %s", err))
+			return
+		}
 
-	tflog.Debug(ctx, "HTTP Request Sent", requestFields)
+		tflog.Debug(ctx, "HTTP Request Sent", requestFields)
+	}
 
 	ctx = context.WithValue(ctx, durationKey, time.Now())
 
@@ -128,6 +130,10 @@ func logResponse(r *request.Request) {
 
 	if r.HTTPResponse == nil {
 		tflog.Error(ctx, "HTTP response is nil")
+		return
+	}
+
+	if !tflog.IsDebug(ctx) {
 		return
 	}
 

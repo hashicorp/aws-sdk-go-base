@@ -21,6 +21,40 @@ func TestHcLoggerSetField(t *testing.T) {
 	testLoggerSetField(t, hclogRootName, hcLoggerFactory)
 }
 
+func TestHcLoggerIsDebug(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		level    hclog.Level
+		expected bool
+	}{
+		"trace": {level: hclog.Trace, expected: true},
+		"debug": {level: hclog.Debug, expected: true},
+		"info":  {level: hclog.Info, expected: false},
+		"warn":  {level: hclog.Warn, expected: false},
+		"error": {level: hclog.Error, expected: false},
+		"off":   {level: hclog.Off, expected: false},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			hclogger := hclog.New(&hclog.LoggerOptions{
+				Name:  hclogRootName,
+				Level: tc.level,
+			})
+			ctx, logger := NewHcLogger(t.Context(), hclogger)
+
+			got := logger.IsDebug(ctx)
+
+			if got != tc.expected {
+				t.Errorf("IsDebug() = %v, want %v (level=%s)", got, tc.expected, tc.level)
+			}
+		})
+	}
+}
+
 func hcLoggerFactory(ctx context.Context, name string, output io.Writer) (context.Context, Logger) {
 	hclogger := configureHcLogger(output)
 

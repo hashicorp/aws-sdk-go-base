@@ -27,6 +27,10 @@ func (l HcLogger) SubLogger(ctx context.Context, name string) (context.Context, 
 	return ctx, HcLogger{}
 }
 
+func (l HcLogger) IsDebug(ctx context.Context) bool {
+	return hclog.FromContext(ctx).IsDebug()
+}
+
 func (l HcLogger) Warn(ctx context.Context, msg string, fields ...map[string]any) {
 	logger := hclog.FromContext(ctx)
 	logger.Warn(msg, flattenFields(fields...)...)
