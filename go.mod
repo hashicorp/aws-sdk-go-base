@@ -7,7 +7,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/config v1.32.31
 	github.com/aws/aws-sdk-go-v2/credentials v1.19.30
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.18.31
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.61.0
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.62.0
 	github.com/aws/aws-sdk-go-v2/service/iam v1.56.0
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.106.0
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.46.0
