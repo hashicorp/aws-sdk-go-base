@@ -5,7 +5,6 @@ package logging
 
 import (
 	"bufio"
-	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -118,8 +117,9 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 		return nil
 	}
 
+	// original is borrowed from the pool and teed into while scanning. Ownership
+	// is transferred to NewPooledBody, which returns it to the pool on Close.
 	original := BufferPool.Get()
-	defer BufferPool.Put(original)
 
 	tee := io.TeeReader(req.Body, original)
 
@@ -127,13 +127,14 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 
 	body, err := ReadTruncatedBody(scanner, maxRequestBodyLen)
 	if err != nil {
+		BufferPool.Put(original)
 		return err
 	}
 
 	*attrs = append(*attrs, attribute.String("http.request.body", body))
 
 	// Restore the full body for the SDK serialiser.
-	req.Body = io.NopCloser(io.MultiReader(bytes.NewReader(original.Bytes()), req.Body))
+	req.Body = NewPooledBody(BufferPool, original, req.Body)
 
 	return nil
 }
