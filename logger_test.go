@@ -112,3 +112,55 @@ func BenchmarkResponseBodyLogger(b *testing.B) {
 		resp.Body.Close()
 	}
 }
+
+// TestDefaultResponseBodyLoggerPooledBufferAliasing mirrors
+// TestDefaultRequestBodyLoggerPooledBufferAliasing in logging/http_test.go for
+// the response side: Log() must not restore resp.Body from a buffer it has
+// already handed back to BufferPool, or a later Get() corrupts a response that
+// has not been deserialised yet.
+func TestDefaultResponseBodyLoggerPooledBufferAliasing(t *testing.T) {
+	t.Parallel()
+
+	const (
+		firstBody  = `{"GetPolicyResult":{"Policy":{"PolicyName":"first"}}}`
+		secondBody = `{"GetCallerIdentityResult":{"Account":"280735953869","Arn":"arn:aws:sts::280735953869:assumed-role/second"}}`
+	)
+
+	newResponse := func(body string) *http.Response {
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Header:     http.Header{"Content-Type": []string{"application/json"}},
+			Body:       io.NopCloser(strings.NewReader(body)),
+		}
+	}
+
+	logger := &defaultResponseBodyLogger{}
+
+	first := newResponse(firstBody)
+	var firstAttrs []attribute.KeyValue
+	if err := logger.Log(t.Context(), first, &firstAttrs); err != nil {
+		t.Fatalf("Log(first) error = %v", err)
+	}
+
+	second := newResponse(secondBody)
+	var secondAttrs []attribute.KeyValue
+	if err := logger.Log(t.Context(), second, &secondAttrs); err != nil {
+		t.Fatalf("Log(second) error = %v", err)
+	}
+
+	gotFirst, err := io.ReadAll(first.Body)
+	if err != nil {
+		t.Fatalf("ReadAll(first.Body) error = %v", err)
+	}
+	if string(gotFirst) != firstBody {
+		t.Errorf("first response body corrupted after a second Log() call\n got: %q\nwant: %q", gotFirst, firstBody)
+	}
+
+	gotSecond, err := io.ReadAll(second.Body)
+	if err != nil {
+		t.Fatalf("ReadAll(second.Body) error = %v", err)
+	}
+	if string(gotSecond) != secondBody {
+		t.Errorf("second response body corrupted\n got: %q\nwant: %q", gotSecond, secondBody)
+	}
+}

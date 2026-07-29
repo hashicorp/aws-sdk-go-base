@@ -128,3 +128,68 @@ func BenchmarkRequestBodyLogger(b *testing.B) {
 		req.Body.Close()
 	}
 }
+
+// TestDefaultRequestBodyLoggerPooledBufferAliasing is a regression test for a
+// body-corruption bug: Log() restored req.Body from a buffer it had already
+// returned to BufferPool, so the next Get() handed that same buffer out and
+// overwrote the bytes the previous request was still going to send.
+//
+// The sequence below is deliberately sequential rather than concurrent -- a
+// sync.Pool Get() immediately after a Put() on the same goroutine reuses the
+// buffer from the per-P private slot, which makes the corruption deterministic
+// instead of scheduler-dependent.
+func TestDefaultRequestBodyLoggerPooledBufferAliasing(t *testing.T) {
+	t.Parallel()
+
+	const (
+		firstBody  = "Action=GetPolicy&Version=2010-05-08\n"
+		secondBody = "Action=GetCallerIdentity&Version=2011-06-15&Tag=platform-team\n"
+	)
+
+	newRequest := func(body string) *http.Request {
+		return &http.Request{
+			Method: http.MethodPost,
+			URL:    &url.URL{Scheme: "https", Host: "iam.amazonaws.com", Path: "/"},
+			Header: http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}},
+			Body:   io.NopCloser(strings.NewReader(body)),
+		}
+	}
+
+	logger := &defaultRequestBodyLogger{}
+
+	// Log the first request. Its Body is now a reader that must still yield
+	// firstBody verbatim when the SDK serialiser reads it.
+	first := newRequest(firstBody)
+	var firstAttrs []attribute.KeyValue
+	if err := logger.Log(t.Context(), first, &firstAttrs); err != nil {
+		t.Fatalf("Log(first) error = %v", err)
+	}
+
+	// Log a second request before the first one's body has been consumed. This
+	// is the ordering the SDK middleware produces under any concurrency.
+	second := newRequest(secondBody)
+	var secondAttrs []attribute.KeyValue
+	if err := logger.Log(t.Context(), second, &secondAttrs); err != nil {
+		t.Fatalf("Log(second) error = %v", err)
+	}
+
+	// Both bodies must survive intact. Before the fix, reading first.Body here
+	// returns bytes from secondBody spliced into firstBody -- which AWS rejects
+	// as SerializationException / InvalidAction, or InvalidSignatureException
+	// when the body is mutated after the request was signed.
+	gotFirst, err := io.ReadAll(first.Body)
+	if err != nil {
+		t.Fatalf("ReadAll(first.Body) error = %v", err)
+	}
+	if string(gotFirst) != firstBody {
+		t.Errorf("first request body corrupted after a second Log() call\n got: %q\nwant: %q", gotFirst, firstBody)
+	}
+
+	gotSecond, err := io.ReadAll(second.Body)
+	if err != nil {
+		t.Fatalf("ReadAll(second.Body) error = %v", err)
+	}
+	if string(gotSecond) != secondBody {
+		t.Errorf("second request body corrupted\n got: %q\nwant: %q", gotSecond, secondBody)
+	}
+}
