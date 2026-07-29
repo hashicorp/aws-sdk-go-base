@@ -1,6 +1,16 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+# v2.0.0-beta.74 (2026-07-28)
+
+ENHANCEMENTS
+
+* Reduces memory allocation in logging. ([#1496](https://github.com/hashicorp/aws-sdk-go-base/pull/1496))
+
+BUG FIXES
+
+* Updates dependencies.
+
 # v2.0.0-beta.73 (2026-05-26)
 
 BUG FIXES
