@@ -125,5 +125,6 @@ func BenchmarkRequestBodyLogger(b *testing.B) {
 		if err := logger.Log(b.Context(), req, &attrs); err != nil {
 			b.Fatal(err)
 		}
+		req.Body.Close()
 	}
 }
