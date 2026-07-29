@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BUG FIXES
+
+* Fixes error introduced in [#1496](https://github.com/hashicorp/aws-sdk-go-base/pull/1496) where API requests and responses were corrupted by shared memory buffers. ([#1503](https://github.com/hashicorp/aws-sdk-go-base/pull/1503))
+
 # v2.0.0-beta.74 (2026-07-28)
 
 ENHANCEMENTS
