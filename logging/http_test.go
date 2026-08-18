@@ -128,3 +128,56 @@ func BenchmarkRequestBodyLogger(b *testing.B) {
 		req.Body.Close()
 	}
 }
+
+func TestDefaultRequestBodyLoggerPooledBufferNotOverwritten(t *testing.T) {
+	t.Parallel()
+
+	const (
+		firstBody  = "Action=GetPolicy&Version=2010-05-08\n"
+		secondBody = "Action=GetCallerIdentity&Version=2011-06-15&Tag=platform-team\n"
+	)
+
+	newRequest := func(body string) *http.Request {
+		return &http.Request{
+			Method: http.MethodPost,
+			URL:    &url.URL{Scheme: "https", Host: "iam.amazonaws.com", Path: "/"},
+			Header: http.Header{"Content-Type": []string{"application/x-www-form-urlencoded"}},
+			Body:   io.NopCloser(strings.NewReader(body)),
+		}
+	}
+
+	logger := &defaultRequestBodyLogger{}
+
+	// The sequence below is sequential so that it will always trigger an error if the buffer returned to
+	// BufferPool by the first Log() is overwritten by the second Log() before the first request's body is consumed.
+
+	// Log the first request.
+	first := newRequest(firstBody)
+	var firstAttrs []attribute.KeyValue
+	if err := logger.Log(t.Context(), first, &firstAttrs); err != nil {
+		t.Fatalf("Log(first) error = %v", err)
+	}
+
+	// Log a second request before the first one's body has been consumed.
+	second := newRequest(secondBody)
+	var secondAttrs []attribute.KeyValue
+	if err := logger.Log(t.Context(), second, &secondAttrs); err != nil {
+		t.Fatalf("Log(second) error = %v", err)
+	}
+
+	gotFirst, err := io.ReadAll(first.Body)
+	if err != nil {
+		t.Fatalf("ReadAll(first.Body) error = %v", err)
+	}
+	if string(gotFirst) != firstBody {
+		t.Errorf("first request body corrupted after a second Log() call\n got: %q\nwant: %q", gotFirst, firstBody)
+	}
+
+	gotSecond, err := io.ReadAll(second.Body)
+	if err != nil {
+		t.Fatalf("ReadAll(second.Body) error = %v", err)
+	}
+	if string(gotSecond) != secondBody {
+		t.Errorf("second request body corrupted\n got: %q\nwant: %q", gotSecond, secondBody)
+	}
+}
