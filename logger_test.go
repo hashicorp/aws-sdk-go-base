@@ -109,5 +109,6 @@ func BenchmarkResponseBodyLogger(b *testing.B) {
 		if err := logger.Log(b.Context(), resp, &attrs); err != nil {
 			b.Fatal(err)
 		}
+		resp.Body.Close()
 	}
 }
