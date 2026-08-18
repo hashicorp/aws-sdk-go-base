@@ -113,12 +113,7 @@ func BenchmarkResponseBodyLogger(b *testing.B) {
 	}
 }
 
-// TestDefaultResponseBodyLoggerPooledBufferAliasing mirrors
-// TestDefaultRequestBodyLoggerPooledBufferAliasing in logging/http_test.go for
-// the response side: Log() must not restore resp.Body from a buffer it has
-// already handed back to BufferPool, or a later Get() corrupts a response that
-// has not been deserialised yet.
-func TestDefaultResponseBodyLoggerPooledBufferAliasing(t *testing.T) {
+func TestDefaultResponseBodyLoggerPooledBufferNotOverwritten(t *testing.T) {
 	t.Parallel()
 
 	const (
@@ -136,12 +131,17 @@ func TestDefaultResponseBodyLoggerPooledBufferAliasing(t *testing.T) {
 
 	logger := &defaultResponseBodyLogger{}
 
+	// The sequence below is sequential so that it will always trigger an error if the buffer returned to
+	// BufferPool by the first Log() is overwritten by the second Log() before the first request's body is consumed.
+
+	// Log the first response.
 	first := newResponse(firstBody)
 	var firstAttrs []attribute.KeyValue
 	if err := logger.Log(t.Context(), first, &firstAttrs); err != nil {
 		t.Fatalf("Log(first) error = %v", err)
 	}
 
+	// Log a second response before the first one's body has been consumed.
 	second := newResponse(secondBody)
 	var secondAttrs []attribute.KeyValue
 	if err := logger.Log(t.Context(), second, &secondAttrs); err != nil {
