@@ -669,12 +669,6 @@ var (
 				"iot": {
 					id: "iot",
 				},
-				"iotevents": {
-					id: "iotevents",
-				},
-				"ioteventsdata": {
-					id: "ioteventsdata",
-				},
 				"iotfleetwise": {
 					id: "iotfleetwise",
 				},
@@ -1025,9 +1019,6 @@ var (
 				},
 				"signer": {
 					id: "signer",
-				},
-				"simspaceweaver": {
-					id: "simspaceweaver",
 				},
 				"sms-voice": {
 					id: "sms-voice",
@@ -1413,12 +1404,6 @@ var (
 				"iot": {
 					id: "iot",
 				},
-				"iotevents": {
-					id: "iotevents",
-				},
-				"ioteventsdata": {
-					id: "ioteventsdata",
-				},
 				"iotsecuredtunneling": {
 					id: "iotsecuredtunneling",
 				},
@@ -1535,6 +1520,9 @@ var (
 				},
 				"redshift-serverless": {
 					id: "redshift-serverless",
+				},
+				"resource-explorer-2": {
+					id: "resource-explorer-2",
 				},
 				"resource-groups": {
 					id: "resource-groups",
@@ -1802,6 +1790,9 @@ var (
 				"email": {
 					id: "email",
 				},
+				"emr-serverless": {
+					id: "emr-serverless",
+				},
 				"entitlement.marketplace": {
 					id: "entitlement.marketplace",
 				},
@@ -1871,6 +1862,9 @@ var (
 				"monitoring": {
 					id: "monitoring",
 				},
+				"mq": {
+					id: "mq",
+				},
 				"network-firewall": {
 					id: "network-firewall",
 				},
@@ -1906,6 +1900,9 @@ var (
 				},
 				"redshift": {
 					id: "redshift",
+				},
+				"redshift-serverless": {
+					id: "redshift-serverless",
 				},
 				"resource-groups": {
 					id: "resource-groups",
@@ -2045,6 +2042,9 @@ var (
 				"application-autoscaling": {
 					id: "application-autoscaling",
 				},
+				"appstream2": {
+					id: "appstream2",
+				},
 				"arc-zonal-shift": {
 					id: "arc-zonal-shift",
 				},
@@ -2087,8 +2087,14 @@ var (
 				"comprehend": {
 					id: "comprehend",
 				},
+				"compute-optimizer": {
+					id: "compute-optimizer",
+				},
 				"config": {
 					id: "config",
+				},
+				"cost-optimization-hub": {
+					id: "cost-optimization-hub",
 				},
 				"datapipeline": {
 					id: "datapipeline",
@@ -2134,6 +2140,9 @@ var (
 				},
 				"elasticmapreduce": {
 					id: "elasticmapreduce",
+				},
+				"emr-serverless": {
+					id: "emr-serverless",
 				},
 				"es": {
 					id: "es",
@@ -2408,8 +2417,14 @@ var (
 				"codedeploy": {
 					id: "codedeploy",
 				},
+				"compute-optimizer": {
+					id: "compute-optimizer",
+				},
 				"config": {
 					id: "config",
+				},
+				"cost-optimization-hub": {
+					id: "cost-optimization-hub",
 				},
 				"datasync": {
 					id: "datasync",
@@ -2452,6 +2467,9 @@ var (
 				},
 				"elasticmapreduce": {
 					id: "elasticmapreduce",
+				},
+				"emr-serverless": {
+					id: "emr-serverless",
 				},
 				"es": {
 					id: "es",
@@ -2653,6 +2671,9 @@ var (
 				"api.pricing": {
 					id: "api.pricing",
 				},
+				"api.sagemaker": {
+					id: "api.sagemaker",
+				},
 				"apigateway": {
 					id: "apigateway",
 				},
@@ -2758,6 +2779,9 @@ var (
 				"glue": {
 					id: "glue",
 				},
+				"health": {
+					id: "health",
+				},
 				"kinesis": {
 					id: "kinesis",
 				},
@@ -2814,6 +2838,9 @@ var (
 				},
 				"resource-groups": {
 					id: "resource-groups",
+				},
+				"rolesanywhere": {
+					id: "rolesanywhere",
 				},
 				"route53": {
 					id: "route53",
@@ -3043,6 +3070,9 @@ var (
 				"guardduty": {
 					id: "guardduty",
 				},
+				"health": {
+					id: "health",
+				},
 				"iam": {
 					id: "iam",
 				},
@@ -3138,6 +3168,9 @@ var (
 				},
 				"secretsmanager": {
 					id: "secretsmanager",
+				},
+				"securityhub": {
+					id: "securityhub",
 				},
 				"servicediscovery": {
 					id: "servicediscovery",
@@ -3475,12 +3508,6 @@ var (
 				"iot": {
 					id: "iot",
 				},
-				"iotevents": {
-					id: "iotevents",
-				},
-				"ioteventsdata": {
-					id: "ioteventsdata",
-				},
 				"iotsecuredtunneling": {
 					id: "iotsecuredtunneling",
 				},
@@ -3588,6 +3615,9 @@ var (
 				},
 				"organizations": {
 					id: "organizations",
+				},
+				"osis": {
+					id: "osis",
 				},
 				"outposts": {
 					id: "outposts",
@@ -3708,9 +3738,6 @@ var (
 				},
 				"signer": {
 					id: "signer",
-				},
-				"simspaceweaver": {
-					id: "simspaceweaver",
 				},
 				"sms-voice": {
 					id: "sms-voice",
