@@ -4,6 +4,7 @@
 package tfawserr
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -394,5 +395,171 @@ func TestErrHTTPStatusCodeEquals(t *testing.T) {
 				t.Errorf("got %t, expected %t", got, testCase.Expected)
 			}
 		})
+	}
+}
+
+// nestedAPIError is a smithy.APIError which wraps another error, the shape used
+// by AWS APIs that return a generic error code with a specific one inside it.
+type nestedAPIError struct {
+	code    string
+	message string
+	err     error
+}
+
+func (e *nestedAPIError) Error() string {
+	return fmt.Sprintf("%s: %s", e.code, e.message)
+}
+
+func (e *nestedAPIError) ErrorCode() string { return e.code }
+
+func (e *nestedAPIError) ErrorMessage() string { return e.message }
+
+func (e *nestedAPIError) ErrorFault() smithy.ErrorFault { return smithy.FaultClient }
+
+func (e *nestedAPIError) Unwrap() error { return e.err }
+
+func TestErrCodeEqualsNested(t *testing.T) {
+	testCases := map[string]struct {
+		Err      error
+		Codes    []string
+		Expected bool
+	}{
+		"nil error": {
+			Err:      nil,
+			Codes:    []string{"TestCode"},
+			Expected: false,
+		},
+		"other error": {
+			Err:   fmt.Errorf("other error"),
+			Codes: []string{"TestCode"},
+		},
+		"no codes": {
+			Err: &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
+		},
+		"top-level smithy.GenericAPIError matching": {
+			Err:      &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
+			Codes:    []string{"TestCode"},
+			Expected: true,
+		},
+		"top-level smithy.GenericAPIError non-matching": {
+			Err:   &smithy.GenericAPIError{Code: "TestCode", Message: "TestMessage"},
+			Codes: []string{"NotMatching"},
+		},
+		"outer code of a nested error": {
+			Err: &nestedAPIError{
+				code:    "OuterCode",
+				message: "OuterMessage",
+				err:     &smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"},
+			},
+			Codes:    []string{"OuterCode"},
+			Expected: true,
+		},
+		"inner code of a nested error": {
+			Err: &nestedAPIError{
+				code:    "OuterCode",
+				message: "OuterMessage",
+				err:     &smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"},
+			},
+			Codes:    []string{"InnerCode"},
+			Expected: true,
+		},
+		"inner code of a nested error matching last code": {
+			Err: &nestedAPIError{
+				code:    "OuterCode",
+				message: "OuterMessage",
+				err:     &smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"},
+			},
+			Codes:    []string{"NotMatching", "InnerCode"},
+			Expected: true,
+		},
+		"nested error non-matching": {
+			Err: &nestedAPIError{
+				code:    "OuterCode",
+				message: "OuterMessage",
+				err:     &smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"},
+			},
+			Codes: []string{"NotMatching", "AlsoNotMatching"},
+		},
+		"inner code below a plain wrapper": {
+			Err: &nestedAPIError{
+				code:    "OuterCode",
+				message: "OuterMessage",
+				err:     fmt.Errorf("test: %w", &smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"}),
+			},
+			Codes:    []string{"InnerCode"},
+			Expected: true,
+		},
+		"innermost code of three levels": {
+			Err: &nestedAPIError{
+				code:    "OuterCode",
+				message: "OuterMessage",
+				err: &nestedAPIError{
+					code:    "MiddleCode",
+					message: "MiddleMessage",
+					err:     &smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"},
+				},
+			},
+			Codes:    []string{"InnerCode"},
+			Expected: true,
+		},
+		"nested error wrapped in a plain error": {
+			Err: fmt.Errorf("test: %w", &nestedAPIError{
+				code:    "OuterCode",
+				message: "OuterMessage",
+				err:     &smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"},
+			}),
+			Codes:    []string{"InnerCode"},
+			Expected: true,
+		},
+		"second error of a joined tree": {
+			Err: errors.Join(
+				fmt.Errorf("other error"),
+				&smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"},
+			),
+			Codes:    []string{"InnerCode"},
+			Expected: true,
+		},
+		"joined tree non-matching": {
+			Err: errors.Join(
+				fmt.Errorf("other error"),
+				&smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"},
+			),
+			Codes: []string{"NotMatching"},
+		},
+		"nested error with no inner error": {
+			Err: &nestedAPIError{
+				code:    "OuterCode",
+				message: "OuterMessage",
+			},
+			Codes: []string{"InnerCode"},
+		},
+	}
+
+	for name, testCase := range testCases {
+		t.Run(name, func(t *testing.T) {
+			got := ErrCodeEqualsNested(testCase.Err, testCase.Codes...)
+
+			if got != testCase.Expected {
+				t.Errorf("got %t, expected %t", got, testCase.Expected)
+			}
+		})
+	}
+}
+
+// TestErrCodeEqualsNestedDiffersFromErrCodeEquals documents the reason the
+// nested variant exists.
+func TestErrCodeEqualsNestedDiffersFromErrCodeEquals(t *testing.T) {
+	err := &nestedAPIError{
+		code:    "OuterCode",
+		message: "OuterMessage",
+		err:     &smithy.GenericAPIError{Code: "InnerCode", Message: "InnerMessage"},
+	}
+
+	if ErrCodeEquals(err, "InnerCode") {
+		t.Error("ErrCodeEquals matched a nested code, expected it not to")
+	}
+
+	if !ErrCodeEqualsNested(err, "InnerCode") {
+		t.Error("ErrCodeEqualsNested did not match a nested code")
 	}
 }

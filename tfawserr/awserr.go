@@ -59,6 +59,46 @@ func ErrMessageContainsAny(err error, code string, messages ...string) bool {
 	return false
 }
 
+// ErrCodeEqualsNested returns true if any error in err's tree is of type
+// smithy.APIError with an APIError.ErrorCode() equal to one of the passed codes.
+//
+// Some AWS APIs return a generic error code with a more specific one nested
+// inside it. ErrCodeEquals cannot match the nested code, because errors.As
+// stops at the outermost smithy.APIError in the tree and only that error's code
+// is compared.
+func ErrCodeEqualsNested(err error, codes ...string) bool {
+	return anyAPIError(err, func(apiErr smithy.APIError) bool {
+		return slices.Contains(codes, apiErr.ErrorCode())
+	})
+}
+
+// anyAPIError reports whether any error in err's tree is a smithy.APIError for
+// which f returns true. The tree is walked in the same order as errors.As,
+// following both Unwrap() error and Unwrap() []error.
+func anyAPIError(err error, f func(smithy.APIError) bool) bool {
+	for err != nil {
+		if apiErr, ok := err.(smithy.APIError); ok && f(apiErr) {
+			return true
+		}
+
+		switch x := err.(type) {
+		case interface{ Unwrap() error }:
+			err = x.Unwrap()
+		case interface{ Unwrap() []error }:
+			for _, err := range x.Unwrap() {
+				if anyAPIError(err, f) {
+					return true
+				}
+			}
+			return false
+		default:
+			return false
+		}
+	}
+
+	return false
+}
+
 // ErrHTTPStatusCodeEquals returns true if the error matches all these conditions:
 //   - err is of type smithyhttp.ResponseError
 //   - ResponseError.HTTPStatusCode() equals one of the passed status codes
