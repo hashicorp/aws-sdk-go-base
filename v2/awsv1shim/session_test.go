@@ -2549,7 +2549,6 @@ func TestLogger(t *testing.T) {
 		SecretKey: servicemocks.MockStaticSecretKey,
 	}
 
-	// config.SkipCredsValidation = true
 	ts := servicemocks.MockAwsApiServer("STS", []*servicemocks.MockEndpoint{
 		servicemocks.MockStsGetCallerIdentityValidEndpoint,
 	})
