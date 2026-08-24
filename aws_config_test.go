@@ -3421,7 +3421,7 @@ func (c *configurer) AddEndpoint(k, v string) {
 	case "sso":
 		c.SsoEndpoint = v
 	default:
-		panic(fmt.Sprintf(`invalid endpoint "%s"`, k))
+		panic(fmt.Sprintf("invalid endpoint %q", k))
 	}
 }
 
