@@ -160,7 +160,8 @@ func assumeRoleCredentialsProvider(ctx context.Context, awsConfig aws.Config, c 
 	var creds aws.CredentialsProvider
 
 	total := len(c.AssumeRole)
-	for i, ar := range c.AssumeRole {
+	for i := range c.AssumeRole {
+		ar := &c.AssumeRole[i]
 		if ar.RoleARN == "" {
 			return nil, diags.AddError(
 				"Cannot assume IAM Role",
