@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+ENHANCEMENTS
+
+* `tfawserr`: Add `ErrCodeEqualsNested` helper
+
 BUG FIXES
 
 * Fixes error introduced in [#1496](https://github.com/hashicorp/aws-sdk-go-base/pull/1496) where API requests and responses were corrupted by shared memory buffers. ([#1503](https://github.com/hashicorp/aws-sdk-go-base/pull/1503))
