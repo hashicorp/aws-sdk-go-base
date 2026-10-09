@@ -42,19 +42,19 @@ linters:
           - goconst
       - linters:
           - staticcheck
-        text: "SA1019: aws.Endpoint is deprecated"
+        text: 'SA1019: .+\.Endpoint is deprecated'
       - linters:
           - staticcheck
-        text: "SA1019: aws.EndpointResolverWithOptions is deprecated"
+        text: 'SA1019: .+\.EndpointResolverWithOptions is deprecated'
       - linters:
           - staticcheck
-        text: "SA1019: aws.EndpointResolverWithOptionsFunc is deprecated"
+        text: 'SA1019: .+\.EndpointResolverWithOptionsFunc is deprecated'
       - linters:
           - staticcheck
-        text: "SA1019: config.WithEndpointResolverWithOptions is deprecated"
+        text: 'SA1019: .+\.WithEndpointResolverWithOptions is deprecated'
       - linters:
           - staticcheck
-        text: "SA1019: .+ is deprecated: aws-sdk-go is deprecated"
+        text: 'SA1019: .+ is deprecated: aws-sdk-go is deprecated'
   settings:
     errcheck:
       exclude-functions:
