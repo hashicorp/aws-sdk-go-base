@@ -466,7 +466,7 @@ func TestDiagnosticsErrorsCount(t *testing.T) {
 			got := test.diags.ErrorsCount()
 
 			if diff := cmp.Diff(test.expected, got); diff != "" {
-				t.Fatalf("expected: %q, got: %q", test.expected, got)
+				t.Fatalf("expected: %d, got: %d", test.expected, got)
 			}
 		})
 	}
@@ -510,7 +510,7 @@ func TestDiagnosticsWarningsCount(t *testing.T) {
 			got := test.diags.WarningsCount()
 
 			if diff := cmp.Diff(test.expected, got); diff != "" {
-				t.Fatalf("expected: %q, got: %q", test.expected, got)
+				t.Fatalf("expected: %d, got: %d", test.expected, got)
 			}
 		})
 	}
