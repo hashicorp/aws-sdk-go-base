@@ -4,7 +4,9 @@
 package logging
 
 import (
+	"context"
 	"io"
+	"math"
 	"net/http"
 	"net/url"
 	"strings"
@@ -180,4 +182,154 @@ func TestDefaultRequestBodyLoggerPooledBufferNotOverwritten(t *testing.T) {
 	if string(gotSecond) != secondBody {
 		t.Errorf("second request body corrupted\n got: %q\nwant: %q", gotSecond, secondBody)
 	}
+}
+
+func TestFormatByteSize(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		size     int64
+		expected string
+	}{
+		"unknown length":         {size: -1, expected: "unknown size"},
+		"empty":                  {size: 0, expected: "0 bytes"},
+		"bytes":                  {size: 512, expected: "512 bytes"},
+		"largest in bytes":       {size: 1536, expected: "1,536 bytes"},
+		"smallest in kilobytes":  {size: 1537, expected: "1.5 KB (1,537 bytes)"},
+		"kilobytes":              {size: 2 * 1024, expected: "2.0 KB (2,048 bytes)"},
+		"megabytes":              {size: 1024 * 1024, expected: "1.0 MB (1,048,576 bytes)"},
+		"gigabytes":              {size: 1024 * 1024 * 1024, expected: "1.0 GB (1,073,741,824 bytes)"},
+		"terabytes":              {size: 1024 * 1024 * 1024 * 1024, expected: "1.0 TB (1,099,511,627,776 bytes)"},
+		"maximum S3 object size": {size: 5 * 1024 * 1024 * 1024 * 1024, expected: "5.0 TB (5,497,558,138,880 bytes)"},
+		"petabytes":              {size: 1024 * 1024 * 1024 * 1024 * 1024, expected: "1.0 PB (1,125,899,906,842,624 bytes)"},
+		"exabytes":               {size: 1024 * 1024 * 1024 * 1024 * 1024 * 1024, expected: "1.0 EB (1,152,921,504,606,846,976 bytes)"},
+		"maximum int64":          {size: math.MaxInt64, expected: "8.0 EB (9,223,372,036,854,775,807 bytes)"},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if a, e := formatByteSize(test.size), test.expected; a != e {
+				t.Errorf("expected %q, got %q", e, a)
+			}
+		})
+	}
+}
+
+func TestS3BodyRedacted(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		size        int64
+		contentType string
+		expected    string
+	}{
+		"with content type": {
+			size:        1024 * 1024,
+			contentType: "application/octet-stream",
+			expected:    "[Redacted: 1.0 MB (1,048,576 bytes), Type: application/octet-stream]",
+		},
+		"without content type": {
+			size:     1024 * 1024,
+			expected: "[Redacted: 1.0 MB (1,048,576 bytes)]",
+		},
+		"unknown length": {
+			size:        -1,
+			contentType: "application/octet-stream",
+			expected:    "[Redacted: unknown size, Type: application/octet-stream]",
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if a, e := s3BodyRedacted(test.size, test.contentType), test.expected; a != e {
+				t.Errorf("expected %q, got %q", e, a)
+			}
+		})
+	}
+}
+
+func TestOutgoingLength(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		request  *http.Request
+		expected int64
+	}{
+		"no body": {
+			request:  &http.Request{},
+			expected: 0,
+		},
+		"http.NoBody": {
+			request:  &http.Request{Body: http.NoBody},
+			expected: 0,
+		},
+		"known length": {
+			request:  &http.Request{Body: io.NopCloser(strings.NewReader("body")), ContentLength: 4},
+			expected: 4,
+		},
+		"unknown length": {
+			request:  &http.Request{Body: io.NopCloser(strings.NewReader("body"))},
+			expected: -1,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if a, e := outgoingLength(test.request), test.expected; a != e {
+				t.Errorf("expected %d, got %d", e, a)
+			}
+		})
+	}
+}
+
+func TestS3ObjectBodyLoggers(t *testing.T) {
+	t.Parallel()
+
+	t.Run("request", func(t *testing.T) {
+		t.Parallel()
+
+		req := &http.Request{
+			Body:          io.NopCloser(strings.NewReader("object contents")),
+			ContentLength: 15,
+			Header:        http.Header{"Content-Type": []string{"application/octet-stream"}},
+		}
+
+		var attrs []attribute.KeyValue
+		logger := &s3ObjectRequestBodyLogger{}
+		if err := logger.Log(context.Background(), req, &attrs); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		expected := attribute.String("http.request.body", "[Redacted: 15 bytes, Type: application/octet-stream]")
+		if len(attrs) != 1 || attrs[0] != expected {
+			t.Errorf("expected %v, got %v", []attribute.KeyValue{expected}, attrs)
+		}
+	})
+
+	t.Run("response", func(t *testing.T) {
+		t.Parallel()
+
+		resp := &http.Response{
+			Body:          io.NopCloser(strings.NewReader("object contents")),
+			ContentLength: 15,
+			Header:        http.Header{"Content-Type": []string{"application/octet-stream"}},
+		}
+
+		var attrs []attribute.KeyValue
+		logger := &S3ObjectResponseBodyLogger{}
+		if err := logger.Log(context.Background(), resp, &attrs); err != nil {
+			t.Fatalf("unexpected error: %s", err)
+		}
+
+		expected := attribute.String("http.response.body", "[Redacted: 15 bytes, Type: application/octet-stream]")
+		if len(attrs) != 1 || attrs[0] != expected {
+			t.Errorf("expected %v, got %v", []attribute.KeyValue{expected}, attrs)
+		}
+	})
 }

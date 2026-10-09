@@ -183,8 +183,20 @@ func s3BodyRedacted(length int64, contentType string) string {
 
 const byteSizeStep = 1024.0
 
+// byteSizeUnits are the units used by formatByteSize, in increasing order of
+// magnitude. The list covers the full range of int64, so that the loop in
+// formatByteSize can never run out of units and report a size using a unit
+// which is too small.
+var byteSizeUnits = []string{"KB", "MB", "GB", "TB", "PB", "EB"}
+
 func formatByteSize(size int64) string {
 	p := message.NewPrinter(message.MatchLanguage("en"))
+
+	// A negative size means the length of the body is not known, for example a
+	// request or response using chunked transfer encoding.
+	if size < 0 {
+		return "unknown size"
+	}
 
 	if size <= 1024*1.5 {
 		return p.Sprintf("%d bytes", size)
@@ -192,7 +204,7 @@ func formatByteSize(size int64) string {
 
 	sizef := float64(size) / byteSizeStep
 	var unit string
-	for _, unit = range []string{"KB", "MB", "GB"} {
+	for _, unit = range byteSizeUnits {
 		if sizef < byteSizeStep {
 			break
 		}
