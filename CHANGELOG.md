@@ -4,6 +4,7 @@
 BUG FIXES
 
 * Fixes error introduced in [#1496](https://github.com/hashicorp/aws-sdk-go-base/pull/1496) where API requests and responses were corrupted by shared memory buffers. ([#1503](https://github.com/hashicorp/aws-sdk-go-base/pull/1503))
+* Logging: Fixes redacted S3 object body sizes of 1 TiB or greater being reported in gigabytes, and bodies of unknown length being reported as `-1 bytes`.
 
 # v2.0.0-beta.74 (2026-07-28)
 
