@@ -1,6 +1,6 @@
 module github.com/hashicorp/aws-sdk-go-base/v2
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
@@ -22,7 +22,7 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.70.0
 	go.opentelemetry.io/otel v1.45.0
 	golang.org/x/net v0.58.0
-	golang.org/x/text v0.41.0
+	golang.org/x/text v0.42.0
 )
 
 require (

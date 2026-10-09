@@ -15,7 +15,7 @@ In order to assist with migrating large code bases using the AWS SDK for Go v1, 
 
 This project follows the [support policy](https://golang.org/doc/devel/release.html#policy) of Go as its support policy. The two latest major releases of Go are supported by the project.
 
-Currently, that means Go **1.24** or later must be used when including this project as a dependency.
+Currently, that means Go **1.26** or later must be used when including this project as a dependency.
 
 ## Development
 
