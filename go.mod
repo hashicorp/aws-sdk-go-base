@@ -4,15 +4,15 @@ go 1.26.0
 
 require (
 	github.com/aws/aws-sdk-go-v2 v1.47.1
-	github.com/aws/aws-sdk-go-v2/config v1.33.6
-	github.com/aws/aws-sdk-go-v2/credentials v1.20.6
+	github.com/aws/aws-sdk-go-v2/config v1.33.7
+	github.com/aws/aws-sdk-go-v2/credentials v1.20.7
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.20.1
-	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.70.0
-	github.com/aws/aws-sdk-go-v2/service/iam v1.64.1
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.0
-	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.1
-	github.com/aws/aws-sdk-go-v2/service/sso v1.38.1
-	github.com/aws/aws-sdk-go-v2/service/sts v1.51.1
+	github.com/aws/aws-sdk-go-v2/service/dynamodb v1.70.1
+	github.com/aws/aws-sdk-go-v2/service/iam v1.64.2
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.1
+	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.2
+	github.com/aws/aws-sdk-go-v2/service/sso v1.38.2
+	github.com/aws/aws-sdk-go-v2/service/sts v1.51.2
 	github.com/aws/smithy-go v1.28.1
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/go-hclog v1.6.3
@@ -35,9 +35,9 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/endpoint-discovery v1.13.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.14.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/signin v1.10.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/signin v1.10.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sns v1.42.3 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.2 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/fatih/color v1.19.0 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
