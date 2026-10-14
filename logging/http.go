@@ -123,9 +123,9 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 
 	tee := io.TeeReader(req.Body, original)
 
-	scanner := bufio.NewScanner(tee)
+	reader := bufio.NewReader(tee)
 
-	body, err := ReadTruncatedBody(scanner, maxRequestBodyLen)
+	body, err := ReadTruncatedBody(reader, maxRequestBodyLen)
 	if err != nil {
 		BufferPool.Put(original)
 		return err
@@ -330,22 +330,75 @@ func cleanUpHeaderAttributes(attrs []attribute.KeyValue) []attribute.KeyValue {
 	})
 }
 
-func ReadTruncatedBody(scanner *bufio.Scanner, len int) (string, error) {
+func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 	var builder strings.Builder
-	for scanner.Scan() {
-		builder.Write(scanner.Bytes())
-		builder.WriteByte('\n')
-		if builder.Len() >= len {
+	pendingCR := false
+	lineStarted := false
+	lineLen := 0
+	appendLine := func(line []byte) bool {
+		remaining := length - lineLen
+		if len(line) > remaining {
+			builder.Write(line[:remaining])
 			builder.WriteString("[truncated...]")
-			break
+			return true
+		}
+		builder.Write(line)
+		lineLen += len(line)
+		lineStarted = lineStarted || len(line) > 0
+		return false
+	}
+	for {
+		line, err := reader.ReadSlice('\n')
+		startsNewline := len(line) > 0 && line[0] == '\n'
+		endsLine := len(line) > 0 && line[len(line)-1] == '\n'
+		if endsLine {
+			line = line[:len(line)-1]
+		}
+
+		if pendingCR {
+			pendingCR = false
+			if !startsNewline && appendLine([]byte{'\r'}) {
+				return MaskAWSSensitiveValues(builder.String()), nil
+			}
+		}
+
+		if endsLine && len(line) > 0 && line[len(line)-1] == '\r' {
+			line = line[:len(line)-1]
+		} else if err == bufio.ErrBufferFull && len(line) > 0 && line[len(line)-1] == '\r' {
+			line = line[:len(line)-1]
+			pendingCR = true
+		}
+
+		if appendLine(line) {
+			return MaskAWSSensitiveValues(builder.String()), nil
+		}
+
+		if endsLine {
+			builder.WriteByte('\n')
+			if builder.Len() >= length {
+				builder.WriteString("[truncated...]")
+				return MaskAWSSensitiveValues(builder.String()), nil
+			}
+			lineStarted = false
+			lineLen = 0
+		}
+
+		switch err {
+		case nil, bufio.ErrBufferFull:
+			continue
+		case io.EOF:
+			if pendingCR && appendLine([]byte{'\r'}) {
+				return MaskAWSSensitiveValues(builder.String()), nil
+			}
+			if lineStarted {
+				builder.WriteByte('\n')
+				if builder.Len() >= length {
+					builder.WriteString("[truncated...]")
+				}
+			}
+			return MaskAWSSensitiveValues(builder.String()), nil
+		default:
+			return "", err
 		}
 	}
-	if err := scanner.Err(); err != nil {
-		return "", err
-	}
-
-	body := builder.String()
-	body = MaskAWSSensitiveValues(body)
-
-	return body, nil
 }

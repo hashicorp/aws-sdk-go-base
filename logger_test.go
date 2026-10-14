@@ -9,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"go.opentelemetry.io/otel/attribute"
 )
 
@@ -31,6 +32,7 @@ func TestDefaultResponseBodyLogger(t *testing.T) {
 	}
 	largeTruncatedBuilder.WriteString("[truncated...]")
 	largeTruncated := largeTruncatedBuilder.String()
+	longLineBody := strings.Repeat("a", 128*1024)
 
 	tests := map[string]struct {
 		responseBody    string
@@ -43,6 +45,10 @@ func TestDefaultResponseBodyLogger(t *testing.T) {
 		"large_body": {
 			responseBody:    largeBody,
 			expectedLogBody: largeTruncated,
+		},
+		"long_line": {
+			responseBody:    longLineBody,
+			expectedLogBody: strings.Repeat("a", logging.MaxResponseBodyLen) + "[truncated...]",
 		},
 	}
 

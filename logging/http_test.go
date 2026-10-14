@@ -35,6 +35,7 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 	}
 	largeTruncatedBuilder.WriteString("[truncated...]")
 	largeTruncated := largeTruncatedBuilder.String()
+	longLineBody := strings.Repeat("a", 128*1024)
 
 	tests := map[string]struct {
 		requestBody     string
@@ -51,6 +52,10 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 		"large_body": {
 			requestBody:     largeBody,
 			expectedLogBody: largeTruncated,
+		},
+		"long_line": {
+			requestBody:     longLineBody,
+			expectedLogBody: strings.Repeat("a", maxRequestBodyLen) + "[truncated...]",
 		},
 	}
 

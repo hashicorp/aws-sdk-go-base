@@ -225,9 +225,9 @@ func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response
 
 	tee := io.TeeReader(resp.Body, original)
 
-	scanner := bufio.NewScanner(tee)
+	reader := bufio.NewReader(tee)
 
-	body, err := logging.ReadTruncatedBody(scanner, logging.MaxResponseBodyLen)
+	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
 	if err != nil {
 		logging.BufferPool.Put(original)
 		return err
