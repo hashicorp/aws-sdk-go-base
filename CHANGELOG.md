@@ -1,6 +1,10 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BUG FIXES
+
+* Fixes error when logging long request or response lines in payload. ([#1539](https://github.com/hashicorp/aws-sdk-go-base/pull/1539))
+
 # v2.0.0-beta.75 (2026-10-09)
 
 NOTES
