@@ -140,7 +140,6 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 	t.Parallel()
 
 	// Build a large body well over maxRequestBodyLen (1024 bytes).
-	// bufio.Scanner has a default buffer size of 4,096 bytes.
 	// Each line is "abcdefgh\n" (9 bytes). 12,000 lines = 108,000 bytes.
 	var largeBodyBuilder strings.Builder
 	for range 12_000 {
