@@ -6,6 +6,7 @@ package logging
 import (
 	"bufio"
 	"context"
+	"errors"
 	"io"
 	"math"
 	"net/http"
@@ -15,6 +16,20 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 )
+
+type readerWithError struct {
+	data []byte
+	err  error
+}
+
+func (r *readerWithError) Read(p []byte) (int, error) {
+	if len(r.data) == 0 {
+		return 0, r.err
+	}
+	n := copy(p, r.data)
+	r.data = r.data[n:]
+	return n, r.err
+}
 
 func TestReadTruncatedBodySmallLimit(t *testing.T) {
 	t.Parallel()
@@ -58,6 +73,21 @@ func TestReadTruncatedBodySmallLimit(t *testing.T) {
 				t.Errorf("ReadTruncatedBody() = %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
+	t.Parallel()
+
+	want := errors.New("read body")
+	reader := bufio.NewReaderSize(&readerWithError{
+		data: []byte(strings.Repeat("a", maxRequestBodyLen+sensitiveValueLookahead)),
+		err:  want,
+	}, bodyLogBufferSize(maxRequestBodyLen))
+
+	_, err := ReadTruncatedBody(reader, maxRequestBodyLen)
+	if !errors.Is(err, want) {
+		t.Fatalf("ReadTruncatedBody() error = %v, want %v", err, want)
 	}
 }
 

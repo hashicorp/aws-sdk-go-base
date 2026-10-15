@@ -377,6 +377,10 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 	}
 	for {
 		line, err := reader.ReadSlice('\n')
+		if err != nil && err != io.EOF && err != bufio.ErrBufferFull {
+			return "", err
+		}
+
 		startsNewline := len(line) > 0 && line[0] == '\n'
 		endsLine := len(line) > 0 && line[len(line)-1] == '\n'
 		if endsLine {
