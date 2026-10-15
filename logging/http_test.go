@@ -131,6 +131,10 @@ func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
 			[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1)),
 			'\n',
 		),
+		"terminated_with_trailing_data": append(
+			[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-2)),
+			'\n', 'x',
+		),
 	}
 
 	for name, data := range tests {
