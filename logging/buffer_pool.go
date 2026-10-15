@@ -9,17 +9,20 @@ import (
 	"sync"
 )
 
-var BufferPool = newBufferPool()
+var (
+	ResponseBufferPool = newBufferPool(bodyLogBufferSize(MaxResponseBodyLen))
+	requestBufferPool  = newBufferPool(bodyLogBufferSize(maxRequestBodyLen))
+)
 
 type BufferPoolType struct {
 	sync.Pool
 }
 
-func newBufferPool() *BufferPoolType {
+func newBufferPool(size int) *BufferPoolType {
 	return &BufferPoolType{
 		Pool: sync.Pool{
 			New: func() any {
-				return bytes.NewBuffer(make([]byte, 0, MaxResponseBodyLen))
+				return bytes.NewBuffer(make([]byte, 0, size))
 			},
 		},
 	}

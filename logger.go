@@ -4,7 +4,6 @@
 package awsbase
 
 import (
-	"bufio"
 	"context"
 	"fmt"
 	"io"
@@ -221,22 +220,22 @@ type defaultResponseBodyLogger struct{}
 func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response, attrs *[]attribute.KeyValue) error {
 	// original is borrowed from the pool and teed into while scanning. Ownership
 	// is transferred to NewPooledBody, which returns it to the pool on Close.
-	original := logging.BufferPool.Get()
+	original := logging.ResponseBufferPool.Get()
 
 	tee := io.TeeReader(resp.Body, original)
 
-	reader := bufio.NewReader(tee)
+	reader := logging.NewBodyReader(tee, logging.MaxResponseBodyLen)
 
 	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
 	if err != nil {
-		logging.BufferPool.Put(original)
+		logging.ResponseBufferPool.Put(original)
 		return err
 	}
 
 	*attrs = append(*attrs, attribute.String("http.response.body", body))
 
 	// Restore the full body for the SDK deserialiser.
-	resp.Body = logging.NewPooledBody(logging.BufferPool, original, resp.Body)
+	resp.Body = logging.NewPooledBody(logging.ResponseBufferPool, original, resp.Body)
 
 	return nil
 }

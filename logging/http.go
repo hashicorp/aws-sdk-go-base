@@ -119,22 +119,22 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 
 	// original is borrowed from the pool and teed into while scanning. Ownership
 	// is transferred to NewPooledBody, which returns it to the pool on Close.
-	original := BufferPool.Get()
+	original := requestBufferPool.Get()
 
 	tee := io.TeeReader(req.Body, original)
 
-	reader := bufio.NewReader(tee)
+	reader := NewBodyReader(tee, maxRequestBodyLen)
 
 	body, err := ReadTruncatedBody(reader, maxRequestBodyLen)
 	if err != nil {
-		BufferPool.Put(original)
+		requestBufferPool.Put(original)
 		return err
 	}
 
 	*attrs = append(*attrs, attribute.String("http.request.body", body))
 
 	// Restore the full body for the SDK serialiser.
-	req.Body = NewPooledBody(BufferPool, original, req.Body)
+	req.Body = NewPooledBody(requestBufferPool, original, req.Body)
 
 	return nil
 }
@@ -330,16 +330,29 @@ func cleanUpHeaderAttributes(attrs []attribute.KeyValue) []attribute.KeyValue {
 	})
 }
 
+const sensitiveValueLookahead = 40
+const truncationMarker = "[truncated...]"
+
+func bodyLogBufferSize(length int) int {
+	return length + sensitiveValueLookahead + 1
+}
+
+func NewBodyReader(reader io.Reader, length int) *bufio.Reader {
+	return bufio.NewReaderSize(reader, bodyLogBufferSize(length))
+}
+
 func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 	var builder strings.Builder
+	visibleLimit := length - len(truncationMarker)
 	pendingCR := false
 	lineStarted := false
 	lineLen := 0
+	truncated := false
+	visibleLen := 0
 	appendLine := func(line []byte) bool {
-		remaining := length - lineLen
+		remaining := visibleLimit - lineLen
 		if len(line) > remaining {
 			builder.Write(line[:remaining])
-			builder.WriteString("[truncated...]")
 			return true
 		}
 		builder.Write(line)
@@ -358,7 +371,8 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		if pendingCR {
 			pendingCR = false
 			if !startsNewline && appendLine([]byte{'\r'}) {
-				return MaskAWSSensitiveValues(builder.String()), nil
+				truncated = true
+				visibleLen = builder.Len()
 			}
 		}
 
@@ -369,32 +383,58 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 			pendingCR = true
 		}
 
-		if appendLine(line) {
-			return MaskAWSSensitiveValues(builder.String()), nil
+		if !truncated {
+			remaining := visibleLimit - lineLen
+			if appendLine(line) {
+				truncated = true
+				visibleLen = builder.Len()
+				lookahead := line[remaining:]
+				if len(lookahead) > sensitiveValueLookahead {
+					lookahead = lookahead[:sensitiveValueLookahead]
+				}
+				builder.Write(lookahead)
+			}
+		} else {
+			remaining := visibleLen + sensitiveValueLookahead - builder.Len()
+			if len(line) > remaining {
+				line = line[:remaining]
+			}
+			builder.Write(line)
 		}
 
 		if endsLine {
 			builder.WriteByte('\n')
-			if builder.Len() >= length {
-				builder.WriteString("[truncated...]")
-				return MaskAWSSensitiveValues(builder.String()), nil
-			}
 			lineStarted = false
 			lineLen = 0
+			if !truncated && builder.Len() >= visibleLimit {
+				truncated = true
+				visibleLen = visibleLimit
+			}
+		}
+
+		if truncated && builder.Len() >= visibleLen+sensitiveValueLookahead {
+			masked := MaskAWSSensitiveValues(builder.String())
+			return masked[:visibleLen] + truncationMarker, nil
 		}
 
 		switch err {
 		case nil, bufio.ErrBufferFull:
 			continue
 		case io.EOF:
-			if pendingCR && appendLine([]byte{'\r'}) {
-				return MaskAWSSensitiveValues(builder.String()), nil
+			if pendingCR {
+				if !truncated && appendLine([]byte{'\r'}) {
+					truncated = true
+					visibleLen = builder.Len()
+				} else if truncated {
+					builder.WriteByte('\r')
+				}
 			}
 			if lineStarted {
 				builder.WriteByte('\n')
-				if builder.Len() >= length {
-					builder.WriteString("[truncated...]")
-				}
+			}
+			if truncated {
+				masked := MaskAWSSensitiveValues(builder.String())
+				return masked[:visibleLen] + truncationMarker, nil
 			}
 			return MaskAWSSensitiveValues(builder.String()), nil
 		default:

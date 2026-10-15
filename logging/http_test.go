@@ -27,15 +27,14 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 	}
 	largeBody := largeBodyBuilder.String()
 
-	// ReadTruncatedBody writes lines until builder.Len() >= 1024, then appends
-	// [truncated...].  9-byte lines: 114 lines = 1026 bytes ≥ 1024.
-	var largeTruncatedBuilder strings.Builder
-	for range 114 {
-		largeTruncatedBuilder.WriteString("abcdefgh\n")
-	}
-	largeTruncatedBuilder.WriteString("[truncated...]")
-	largeTruncated := largeTruncatedBuilder.String()
+	largeTruncated := largeBody[:maxRequestBodyLen-len(truncationMarker)] + truncationMarker
 	longLineBody := strings.Repeat("a", 128*1024)
+	const (
+		secretKey = "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8"
+		accessKey = "AKIA5PX2H2S3LHEXAMPLE"
+	)
+	secretAtBoundary := strings.Repeat(".", maxRequestBodyLen-len(truncationMarker)-8) + secretKey + ";"
+	accessKeyAtBoundary := strings.Repeat(".", maxRequestBodyLen-len(truncationMarker)-8) + accessKey + ";"
 
 	tests := map[string]struct {
 		requestBody     string
@@ -55,7 +54,15 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 		},
 		"long_line": {
 			requestBody:     longLineBody,
-			expectedLogBody: strings.Repeat("a", maxRequestBodyLen) + "[truncated...]",
+			expectedLogBody: strings.Repeat("a", maxRequestBodyLen-len(truncationMarker)) + truncationMarker,
+		},
+		"secret_key_crosses_truncation_boundary": {
+			requestBody:     secretAtBoundary,
+			expectedLogBody: strings.Repeat(".", maxRequestBodyLen-len(truncationMarker)-8) + "MfP3****" + truncationMarker,
+		},
+		"access_key_crosses_truncation_boundary": {
+			requestBody:     accessKeyAtBoundary,
+			expectedLogBody: strings.Repeat(".", maxRequestBodyLen-len(truncationMarker)-8) + "AKIA****" + truncationMarker,
 		},
 	}
 
