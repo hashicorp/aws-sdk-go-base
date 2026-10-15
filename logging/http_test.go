@@ -4,6 +4,7 @@
 package logging
 
 import (
+	"bufio"
 	"context"
 	"io"
 	"math"
@@ -14,6 +15,51 @@ import (
 
 	"go.opentelemetry.io/otel/attribute"
 )
+
+func TestReadTruncatedBodySmallLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		body   string
+		length int
+		want   string
+	}{
+		"zero": {
+			body:   "body",
+			length: 0,
+			want:   "",
+		},
+		"less_than_marker": {
+			body:   strings.Repeat("a", len(truncationMarker)),
+			length: len(truncationMarker) - 1,
+			want:   truncationMarker[:len(truncationMarker)-1],
+		},
+		"marker_length": {
+			body:   strings.Repeat("a", len(truncationMarker)+1),
+			length: len(truncationMarker),
+			want:   truncationMarker,
+		},
+		"full_body_fits": {
+			body:   "body",
+			length: len(truncationMarker) - 1,
+			want:   "body\n",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := ReadTruncatedBody(bufio.NewReader(strings.NewReader(tc.body)), tc.length)
+			if err != nil {
+				t.Fatalf("ReadTruncatedBody() error = %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("ReadTruncatedBody() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
 
 func TestDefaultRequestBodyLogger(t *testing.T) {
 	t.Parallel()

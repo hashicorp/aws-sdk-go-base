@@ -342,6 +342,21 @@ func NewBodyReader(reader io.Reader, length int) *bufio.Reader {
 }
 
 func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
+	if length <= 0 {
+		return "", nil
+	}
+
+	if length < len(truncationMarker) {
+		body, err := io.ReadAll(reader)
+		if err != nil {
+			return "", err
+		}
+		if len(body) < length {
+			return MaskAWSSensitiveValues(string(body)) + "\n", nil
+		}
+		return truncationMarker[:length], nil
+	}
+
 	var builder strings.Builder
 	visibleLimit := length - len(truncationMarker)
 	pendingCR := false
