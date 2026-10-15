@@ -435,10 +435,7 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 			if lineStarted {
 				appendPart([]byte{'\n'})
 			}
-			if truncated {
-				if builder.Len() <= length {
-					return MaskAWSSensitiveValues(builder.String()), nil
-				}
+			if truncated && builder.Len() > length {
 				return truncatedResult(), nil
 			}
 			return MaskAWSSensitiveValues(builder.String()), nil

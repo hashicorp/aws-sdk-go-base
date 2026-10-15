@@ -150,6 +150,12 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 
 	largeTruncated := largeBody[:maxRequestBodyLen-len(truncationMarker)] + truncationMarker
 	longLineBody := strings.Repeat("a", 128*1024)
+	nearLimitBody := strings.Repeat("a", maxRequestBodyLen-3) + "\n"
+	exactLimitTerminatedBody := strings.Repeat("a", maxRequestBodyLen-1) + "\n"
+	exactLimitUnterminatedBody := strings.Repeat("a", maxRequestBodyLen-1)
+	oneByteOverTerminatedBody := strings.Repeat("a", maxRequestBodyLen) + "\n"
+	oneByteOverUnterminatedBody := strings.Repeat("a", maxRequestBodyLen)
+	truncatedLimitBody := strings.Repeat("a", maxRequestBodyLen-len(truncationMarker)) + truncationMarker
 	const (
 		secretKey = "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8"
 		accessKey = "AKIA5PX2H2S3LHEXAMPLE"
@@ -168,6 +174,26 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 		"small_body": {
 			requestBody:     "Action=ListUsers&Version=2010-05-08\n",
 			expectedLogBody: "Action=ListUsers&Version=2010-05-08\n",
+		},
+		"near_limit_body": {
+			requestBody:     nearLimitBody,
+			expectedLogBody: nearLimitBody,
+		},
+		"exact_limit_terminated_body": {
+			requestBody:     exactLimitTerminatedBody,
+			expectedLogBody: exactLimitTerminatedBody,
+		},
+		"exact_limit_unterminated_body": {
+			requestBody:     exactLimitUnterminatedBody,
+			expectedLogBody: exactLimitTerminatedBody,
+		},
+		"one_byte_over_terminated_body": {
+			requestBody:     oneByteOverTerminatedBody,
+			expectedLogBody: truncatedLimitBody,
+		},
+		"one_byte_over_unterminated_body": {
+			requestBody:     oneByteOverUnterminatedBody,
+			expectedLogBody: truncatedLimitBody,
 		},
 		"large_body": {
 			requestBody:     largeBody,

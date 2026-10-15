@@ -27,6 +27,12 @@ func TestDefaultResponseBodyLogger(t *testing.T) {
 	const truncationMarker = "[truncated...]"
 	largeTruncated := largeBody[:logging.MaxResponseBodyLen-len(truncationMarker)] + truncationMarker
 	longLineBody := strings.Repeat("a", 128*1024)
+	nearLimitBody := strings.Repeat("a", logging.MaxResponseBodyLen-3) + "\n"
+	exactLimitTerminatedBody := strings.Repeat("a", logging.MaxResponseBodyLen-1) + "\n"
+	exactLimitUnterminatedBody := strings.Repeat("a", logging.MaxResponseBodyLen-1)
+	oneByteOverTerminatedBody := strings.Repeat("a", logging.MaxResponseBodyLen) + "\n"
+	oneByteOverUnterminatedBody := strings.Repeat("a", logging.MaxResponseBodyLen)
+	truncatedLimitBody := strings.Repeat("a", logging.MaxResponseBodyLen-len(truncationMarker)) + truncationMarker
 	const (
 		secretKey = "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8"
 		accessKey = "AKIA5PX2H2S3LHEXAMPLE"
@@ -41,6 +47,26 @@ func TestDefaultResponseBodyLogger(t *testing.T) {
 		"small_body": {
 			responseBody:    "Action=ListUsers&Version=2010-05-08\n",
 			expectedLogBody: "Action=ListUsers&Version=2010-05-08\n",
+		},
+		"near_limit_body": {
+			responseBody:    nearLimitBody,
+			expectedLogBody: nearLimitBody,
+		},
+		"exact_limit_terminated_body": {
+			responseBody:    exactLimitTerminatedBody,
+			expectedLogBody: exactLimitTerminatedBody,
+		},
+		"exact_limit_unterminated_body": {
+			responseBody:    exactLimitUnterminatedBody,
+			expectedLogBody: exactLimitTerminatedBody,
+		},
+		"one_byte_over_terminated_body": {
+			responseBody:    oneByteOverTerminatedBody,
+			expectedLogBody: truncatedLimitBody,
+		},
+		"one_byte_over_unterminated_body": {
+			responseBody:    oneByteOverUnterminatedBody,
+			expectedLogBody: truncatedLimitBody,
 		},
 		"large_body": {
 			responseBody:    largeBody,
