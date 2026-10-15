@@ -376,7 +376,7 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		}
 		builder.Write(part)
 	}
-	result := func() string {
+	truncatedResult := func() string {
 		if length < len(truncationMarker) {
 			return truncationMarker[:length]
 		}
@@ -421,7 +421,7 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		}
 
 		if truncated && builder.Len() >= visibleLen+sensitiveValueLookahead {
-			return result(), nil
+			return truncatedResult(), nil
 		}
 
 		switch err {
@@ -436,7 +436,10 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 				appendPart([]byte{'\n'})
 			}
 			if truncated {
-				return result(), nil
+				if builder.Len() <= length {
+					return MaskAWSSensitiveValues(builder.String()), nil
+				}
+				return truncatedResult(), nil
 			}
 			return MaskAWSSensitiveValues(builder.String()), nil
 		default:
