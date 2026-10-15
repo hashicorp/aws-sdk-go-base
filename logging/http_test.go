@@ -76,6 +76,51 @@ func TestReadTruncatedBodySmallLimit(t *testing.T) {
 	}
 }
 
+func TestReadTruncatedBodyCumulativeLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		body   string
+		length int
+	}{
+		"request_mixed_lines": {
+			body:   strings.Repeat("a", 20) + "\n" + strings.Repeat("b", 2*maxRequestBodyLen),
+			length: maxRequestBodyLen,
+		},
+		"response_mixed_lines": {
+			body:   strings.Repeat("a", 20) + "\n" + strings.Repeat("b", 2*MaxResponseBodyLen),
+			length: MaxResponseBodyLen,
+		},
+		"request_unterminated_final_line": {
+			body:   strings.Repeat("a", maxRequestBodyLen-10) + "\n" + "short-final-line",
+			length: maxRequestBodyLen,
+		},
+		"response_unterminated_final_line": {
+			body:   strings.Repeat("a", MaxResponseBodyLen-10) + "\n" + "short-final-line",
+			length: MaxResponseBodyLen,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := ReadTruncatedBody(bufio.NewReader(strings.NewReader(tc.body)), tc.length)
+			if err != nil {
+				t.Fatalf("ReadTruncatedBody() error = %v", err)
+			}
+
+			want := tc.body[:tc.length-len(truncationMarker)] + truncationMarker
+			if got != want {
+				t.Errorf("ReadTruncatedBody() = %q, want %q", got, want)
+			}
+			if len(got) != tc.length {
+				t.Errorf("ReadTruncatedBody() length = %d, want %d", len(got), tc.length)
+			}
+		})
+	}
+}
+
 func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
 	t.Parallel()
 

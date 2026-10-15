@@ -353,19 +353,35 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 	}
 	pendingCR := false
 	lineStarted := false
-	lineLen := 0
 	truncated := false
 	visibleLen := 0
-	appendLine := func(line []byte) bool {
-		remaining := visibleLimit - lineLen
-		if len(line) > remaining {
-			builder.Write(line[:remaining])
-			return true
+	appendPart := func(part []byte) {
+		if !truncated {
+			remaining := visibleLimit - visibleLen
+			if len(part) <= remaining {
+				builder.Write(part)
+				visibleLen += len(part)
+				return
+			}
+
+			builder.Write(part[:remaining])
+			visibleLen += remaining
+			truncated = true
+			part = part[remaining:]
 		}
-		builder.Write(line)
-		lineLen += len(line)
-		lineStarted = lineStarted || len(line) > 0
-		return false
+
+		remaining := visibleLen + sensitiveValueLookahead - builder.Len()
+		if len(part) > remaining {
+			part = part[:remaining]
+		}
+		builder.Write(part)
+	}
+	result := func() string {
+		if length < len(truncationMarker) {
+			return truncationMarker[:length]
+		}
+		masked := MaskAWSSensitiveValues(builder.String())
+		return masked[:visibleLen] + truncationMarker[:length-visibleLen]
 	}
 	for {
 		line, err := reader.ReadSlice('\n')
@@ -381,9 +397,9 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 
 		if pendingCR {
 			pendingCR = false
-			if !startsNewline && appendLine([]byte{'\r'}) {
-				truncated = true
-				visibleLen = builder.Len()
+			if !startsNewline {
+				appendPart([]byte{'\r'})
+				lineStarted = true
 			}
 		}
 
@@ -394,41 +410,18 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 			pendingCR = true
 		}
 
-		if !truncated {
-			remaining := visibleLimit - lineLen
-			if appendLine(line) {
-				truncated = true
-				visibleLen = builder.Len()
-				lookahead := line[remaining:]
-				if len(lookahead) > sensitiveValueLookahead {
-					lookahead = lookahead[:sensitiveValueLookahead]
-				}
-				builder.Write(lookahead)
-			}
-		} else {
-			remaining := visibleLen + sensitiveValueLookahead - builder.Len()
-			if len(line) > remaining {
-				line = line[:remaining]
-			}
-			builder.Write(line)
+		if len(line) > 0 {
+			appendPart(line)
+			lineStarted = true
 		}
 
 		if endsLine {
-			builder.WriteByte('\n')
+			appendPart([]byte{'\n'})
 			lineStarted = false
-			lineLen = 0
-			if !truncated && builder.Len() >= visibleLimit {
-				truncated = true
-				visibleLen = visibleLimit
-			}
 		}
 
 		if truncated && builder.Len() >= visibleLen+sensitiveValueLookahead {
-			masked := MaskAWSSensitiveValues(builder.String())
-			if length < len(truncationMarker) {
-				return truncationMarker[:length], nil
-			}
-			return masked[:visibleLen] + truncationMarker[:length-visibleLen], nil
+			return result(), nil
 		}
 
 		switch err {
@@ -436,22 +429,14 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 			continue
 		case io.EOF:
 			if pendingCR {
-				if !truncated && appendLine([]byte{'\r'}) {
-					truncated = true
-					visibleLen = builder.Len()
-				} else if truncated {
-					builder.WriteByte('\r')
-				}
+				appendPart([]byte{'\r'})
+				lineStarted = true
 			}
 			if lineStarted {
-				builder.WriteByte('\n')
+				appendPart([]byte{'\n'})
 			}
 			if truncated {
-				masked := MaskAWSSensitiveValues(builder.String())
-				if length < len(truncationMarker) {
-					return truncationMarker[:length], nil
-				}
-				return masked[:visibleLen] + truncationMarker[:length-visibleLen], nil
+				return result(), nil
 			}
 			return MaskAWSSensitiveValues(builder.String()), nil
 		default:
