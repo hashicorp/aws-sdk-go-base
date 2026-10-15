@@ -121,6 +121,59 @@ func TestReadTruncatedBodyCumulativeLimit(t *testing.T) {
 	}
 }
 
+func TestReadTruncatedBodyCRLF(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		body       string
+		length     int
+		readerSize int
+		want       string
+	}{
+		"normal": {
+			body:   "first\r\nsecond\r\n",
+			length: maxRequestBodyLen,
+			want:   "first\nsecond\n",
+		},
+		"unterminated_trailing_carriage_return": {
+			body:   "first\r",
+			length: maxRequestBodyLen,
+			want:   "first\r\n",
+		},
+		"request_boundary": {
+			body:       strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1) + "\r\n",
+			length:     MaxResponseBodyLen,
+			readerSize: bodyLogBufferSize(maxRequestBodyLen),
+			want:       strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1) + "\n",
+		},
+		"response_boundary": {
+			body:       strings.Repeat("a", bodyLogBufferSize(MaxResponseBodyLen)-1) + "\r\n",
+			length:     bodyLogBufferSize(MaxResponseBodyLen),
+			readerSize: bodyLogBufferSize(MaxResponseBodyLen),
+			want:       strings.Repeat("a", bodyLogBufferSize(MaxResponseBodyLen)-1) + "\n",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			readerSize := tc.readerSize
+			if readerSize == 0 {
+				readerSize = bodyLogBufferSize(tc.length)
+			}
+			reader := bufio.NewReaderSize(strings.NewReader(tc.body), readerSize)
+			got, err := ReadTruncatedBody(reader, tc.length)
+			if err != nil {
+				t.Fatalf("ReadTruncatedBody() error = %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("ReadTruncatedBody() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
 	t.Parallel()
 
