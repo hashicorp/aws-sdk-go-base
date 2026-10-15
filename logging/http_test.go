@@ -125,14 +125,28 @@ func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
 	t.Parallel()
 
 	want := errors.New("read body")
-	reader := bufio.NewReaderSize(&readerWithError{
-		data: []byte(strings.Repeat("a", maxRequestBodyLen+sensitiveValueLookahead)),
-		err:  want,
-	}, bodyLogBufferSize(maxRequestBodyLen))
+	tests := map[string][]byte{
+		"unterminated": []byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen))),
+		"terminated": append(
+			[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1)),
+			'\n',
+		),
+	}
 
-	_, err := ReadTruncatedBody(reader, maxRequestBodyLen)
-	if !errors.Is(err, want) {
-		t.Fatalf("ReadTruncatedBody() error = %v, want %v", err, want)
+	for name, data := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			reader := bufio.NewReaderSize(&readerWithError{
+				data: data,
+				err:  want,
+			}, bodyLogBufferSize(maxRequestBodyLen))
+
+			_, err := ReadTruncatedBody(reader, maxRequestBodyLen)
+			if !errors.Is(err, want) {
+				t.Fatalf("ReadTruncatedBody() error = %v, want %v", err, want)
+			}
+		})
 	}
 }
 
