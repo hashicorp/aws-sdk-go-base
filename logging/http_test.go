@@ -4,7 +4,9 @@
 package logging
 
 import (
+	"bufio"
 	"context"
+	"errors"
 	"io"
 	"math"
 	"net/http"
@@ -15,11 +17,143 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 )
 
+type readerWithError struct {
+	data []byte
+	err  error
+}
+
+func (r *readerWithError) Read(p []byte) (int, error) {
+	if len(r.data) == 0 {
+		return 0, r.err
+	}
+	n := copy(p, r.data)
+	r.data = r.data[n:]
+	return n, r.err
+}
+
+func TestReadTruncatedBodySmallLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		body   string
+		length int
+		want   string
+	}{
+		"zero": {
+			body:   "body",
+			length: 0,
+			want:   "",
+		},
+		"less_than_marker": {
+			body:   strings.Repeat("a", len(truncationMarker)),
+			length: len(truncationMarker) - 1,
+			want:   truncationMarker[:len(truncationMarker)-1],
+		},
+		"marker_length": {
+			body:   strings.Repeat("a", len(truncationMarker)+1),
+			length: len(truncationMarker),
+			want:   truncationMarker,
+		},
+		"full_body_fits": {
+			body:   "body",
+			length: len(truncationMarker) - 1,
+			want:   "body\n",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := ReadTruncatedBody(bufio.NewReader(strings.NewReader(tc.body)), tc.length)
+			if err != nil {
+				t.Fatalf("ReadTruncatedBody() error = %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("ReadTruncatedBody() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestReadTruncatedBodyCumulativeLimit(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		body   string
+		length int
+	}{
+		"request_mixed_lines": {
+			body:   strings.Repeat("a", 20) + "\n" + strings.Repeat("b", 2*maxRequestBodyLen),
+			length: maxRequestBodyLen,
+		},
+		"response_mixed_lines": {
+			body:   strings.Repeat("a", 20) + "\n" + strings.Repeat("b", 2*MaxResponseBodyLen),
+			length: MaxResponseBodyLen,
+		},
+		"request_unterminated_final_line": {
+			body:   strings.Repeat("a", maxRequestBodyLen-10) + "\n" + "short-final-line",
+			length: maxRequestBodyLen,
+		},
+		"response_unterminated_final_line": {
+			body:   strings.Repeat("a", MaxResponseBodyLen-10) + "\n" + "short-final-line",
+			length: MaxResponseBodyLen,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := ReadTruncatedBody(bufio.NewReader(strings.NewReader(tc.body)), tc.length)
+			if err != nil {
+				t.Fatalf("ReadTruncatedBody() error = %v", err)
+			}
+
+			want := tc.body[:tc.length-len(truncationMarker)] + truncationMarker
+			if got != want {
+				t.Errorf("ReadTruncatedBody() = %q, want %q", got, want)
+			}
+			if len(got) != tc.length {
+				t.Errorf("ReadTruncatedBody() length = %d, want %d", len(got), tc.length)
+			}
+		})
+	}
+}
+
+func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
+	t.Parallel()
+
+	want := errors.New("read body")
+	tests := map[string][]byte{
+		"unterminated": []byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen))),
+		"terminated": append(
+			[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1)),
+			'\n',
+		),
+	}
+
+	for name, data := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			reader := bufio.NewReaderSize(&readerWithError{
+				data: data,
+				err:  want,
+			}, bodyLogBufferSize(maxRequestBodyLen))
+
+			_, err := ReadTruncatedBody(reader, maxRequestBodyLen)
+			if !errors.Is(err, want) {
+				t.Fatalf("ReadTruncatedBody() error = %v, want %v", err, want)
+			}
+		})
+	}
+}
+
 func TestDefaultRequestBodyLogger(t *testing.T) {
 	t.Parallel()
 
 	// Build a large body well over maxRequestBodyLen (1024 bytes).
-	// bufio.Scanner has a default buffer size of 4,096 bytes.
 	// Each line is "abcdefgh\n" (9 bytes). 12,000 lines = 108,000 bytes.
 	var largeBodyBuilder strings.Builder
 	for range 12_000 {
@@ -27,14 +161,20 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 	}
 	largeBody := largeBodyBuilder.String()
 
-	// ReadTruncatedBody writes lines until builder.Len() >= 1024, then appends
-	// [truncated...].  9-byte lines: 114 lines = 1026 bytes ≥ 1024.
-	var largeTruncatedBuilder strings.Builder
-	for range 114 {
-		largeTruncatedBuilder.WriteString("abcdefgh\n")
-	}
-	largeTruncatedBuilder.WriteString("[truncated...]")
-	largeTruncated := largeTruncatedBuilder.String()
+	largeTruncated := largeBody[:maxRequestBodyLen-len(truncationMarker)] + truncationMarker
+	longLineBody := strings.Repeat("a", 128*1024)
+	nearLimitBody := strings.Repeat("a", maxRequestBodyLen-3) + "\n"
+	exactLimitTerminatedBody := strings.Repeat("a", maxRequestBodyLen-1) + "\n"
+	exactLimitUnterminatedBody := strings.Repeat("a", maxRequestBodyLen-1)
+	oneByteOverTerminatedBody := strings.Repeat("a", maxRequestBodyLen) + "\n"
+	oneByteOverUnterminatedBody := strings.Repeat("a", maxRequestBodyLen)
+	truncatedLimitBody := strings.Repeat("a", maxRequestBodyLen-len(truncationMarker)) + truncationMarker
+	const (
+		secretKey = "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8"
+		accessKey = "AKIA5PX2H2S3LHEXAMPLE"
+	)
+	secretAtBoundary := strings.Repeat(".", maxRequestBodyLen-len(truncationMarker)-8) + secretKey + ";"
+	accessKeyAtBoundary := strings.Repeat(".", maxRequestBodyLen-len(truncationMarker)-8) + accessKey + ";"
 
 	tests := map[string]struct {
 		requestBody     string
@@ -48,9 +188,41 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 			requestBody:     "Action=ListUsers&Version=2010-05-08\n",
 			expectedLogBody: "Action=ListUsers&Version=2010-05-08\n",
 		},
+		"near_limit_body": {
+			requestBody:     nearLimitBody,
+			expectedLogBody: nearLimitBody,
+		},
+		"exact_limit_terminated_body": {
+			requestBody:     exactLimitTerminatedBody,
+			expectedLogBody: exactLimitTerminatedBody,
+		},
+		"exact_limit_unterminated_body": {
+			requestBody:     exactLimitUnterminatedBody,
+			expectedLogBody: exactLimitTerminatedBody,
+		},
+		"one_byte_over_terminated_body": {
+			requestBody:     oneByteOverTerminatedBody,
+			expectedLogBody: truncatedLimitBody,
+		},
+		"one_byte_over_unterminated_body": {
+			requestBody:     oneByteOverUnterminatedBody,
+			expectedLogBody: truncatedLimitBody,
+		},
 		"large_body": {
 			requestBody:     largeBody,
 			expectedLogBody: largeTruncated,
+		},
+		"long_line": {
+			requestBody:     longLineBody,
+			expectedLogBody: strings.Repeat("a", maxRequestBodyLen-len(truncationMarker)) + truncationMarker,
+		},
+		"secret_key_crosses_truncation_boundary": {
+			requestBody:     secretAtBoundary,
+			expectedLogBody: strings.Repeat(".", maxRequestBodyLen-len(truncationMarker)-8) + "MfP3****" + truncationMarker,
+		},
+		"access_key_crosses_truncation_boundary": {
+			requestBody:     accessKeyAtBoundary,
+			expectedLogBody: strings.Repeat(".", maxRequestBodyLen-len(truncationMarker)-8) + "AKIA****" + truncationMarker,
 		},
 	}
 
