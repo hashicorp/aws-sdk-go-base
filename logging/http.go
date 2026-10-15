@@ -421,6 +421,9 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		}
 
 		if truncated && builder.Len() >= visibleLen+sensitiveValueLookahead {
+			if _, err := reader.Discard(reader.Buffered()); err != nil {
+				return "", err
+			}
 			if _, err := reader.Peek(1); err != nil && err != io.EOF && err != bufio.ErrBufferFull {
 				return "", err
 			}
