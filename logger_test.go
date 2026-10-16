@@ -26,6 +26,16 @@ type responseCountingBufferPool struct {
 	puts   int
 }
 
+type responseTestReadCloser struct {
+	io.Reader
+	closeCalls int
+}
+
+func (r *responseTestReadCloser) Close() error {
+	r.closeCalls++
+	return nil
+}
+
 func (p *responseCountingBufferPool) Get() *bytes.Buffer {
 	p.gets++
 	return p.buffer
@@ -126,11 +136,13 @@ func TestDefaultResponseBodyLogger(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			pool := &responseCountingBufferPool{buffer: &bytes.Buffer{}}
+			original := &responseTestReadCloser{Reader: strings.NewReader(tc.responseBody)}
 			resp := &http.Response{
-				Body: io.NopCloser(strings.NewReader(tc.responseBody)),
+				Body: original,
 			}
 
-			logger := &defaultResponseBodyLogger{}
+			logger := &defaultResponseBodyLogger{pool: pool}
 			var attrs []attribute.KeyValue
 
 			if err := logger.Log(t.Context(), resp, &attrs); err != nil {
@@ -156,6 +168,26 @@ func TestDefaultResponseBodyLogger(t *testing.T) {
 			}
 			if string(remaining) != tc.responseBody {
 				t.Errorf("resp.Body after Log:\n got: %q\nwant: %q", string(remaining), tc.responseBody)
+			}
+
+			if err := resp.Body.Close(); err != nil {
+				t.Fatalf("first resp.Body.Close() error = %v", err)
+			}
+			if pool.puts != 1 {
+				t.Errorf("pool Put() calls after first Close() = %d, want 1", pool.puts)
+			}
+			if original.closeCalls != 1 {
+				t.Errorf("original Close() calls after first Close() = %d, want 1", original.closeCalls)
+			}
+
+			if err := resp.Body.Close(); err != nil {
+				t.Fatalf("second resp.Body.Close() error = %v", err)
+			}
+			if pool.puts != 1 {
+				t.Errorf("pool Put() calls after second Close() = %d, want 1", pool.puts)
+			}
+			if original.closeCalls != 1 {
+				t.Errorf("original Close() calls after second Close() = %d, want 1", original.closeCalls)
 			}
 		})
 	}
