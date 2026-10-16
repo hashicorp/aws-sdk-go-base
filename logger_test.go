@@ -4,6 +4,8 @@
 package awsbase
 
 import (
+	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -12,6 +14,40 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"go.opentelemetry.io/otel/attribute"
 )
+
+type responseReaderWithError struct {
+	data []byte
+	err  error
+}
+
+type responseCountingBufferPool struct {
+	buffer *bytes.Buffer
+	gets   int
+	puts   int
+}
+
+func (p *responseCountingBufferPool) Get() *bytes.Buffer {
+	p.gets++
+	return p.buffer
+}
+
+func (p *responseCountingBufferPool) Put(buffer *bytes.Buffer) {
+	p.puts++
+	buffer.Reset()
+}
+
+func (r *responseReaderWithError) Read(p []byte) (int, error) {
+	if len(r.data) == 0 {
+		return 0, r.err
+	}
+	n := copy(p, r.data)
+	r.data = r.data[n:]
+	return n, r.err
+}
+
+func (r *responseReaderWithError) Close() error {
+	return nil
+}
 
 func TestDefaultResponseBodyLogger(t *testing.T) {
 	t.Parallel()
@@ -122,6 +158,27 @@ func TestDefaultResponseBodyLogger(t *testing.T) {
 				t.Errorf("resp.Body after Log:\n got: %q\nwant: %q", string(remaining), tc.responseBody)
 			}
 		})
+	}
+}
+
+func TestDefaultResponseBodyLoggerReturnsBufferOnReadError(t *testing.T) {
+	t.Parallel()
+
+	pool := &responseCountingBufferPool{buffer: &bytes.Buffer{}}
+
+	want := errors.New("read body")
+	resp := &http.Response{Body: &responseReaderWithError{
+		data: []byte("body"),
+		err:  want,
+	}}
+
+	err := (&defaultResponseBodyLogger{pool: pool}).Log(t.Context(), resp, nil)
+	if !errors.Is(err, want) {
+		t.Fatalf("Log() error = %v, want %v", err, want)
+	}
+
+	if pool.gets != 1 || pool.puts != 1 {
+		t.Errorf("pool calls = Get:%d Put:%d, want Get:1 Put:1", pool.gets, pool.puts)
 	}
 }
 

@@ -18,6 +18,12 @@ type BufferPoolType struct {
 	sync.Pool
 }
 
+// BufferPool provides captured-body buffers to loggers.
+type BufferPool interface {
+	Get() *bytes.Buffer
+	Put(*bytes.Buffer)
+}
+
 func newBufferPool(size int) *BufferPoolType {
 	return &BufferPoolType{
 		Pool: sync.Pool{
@@ -42,7 +48,7 @@ func (p *BufferPoolType) Put(v *bytes.Buffer) {
 // returned to pool only when Close is called, ensuring it outlives the body read.
 type PooledBody struct {
 	io.Reader
-	pool *BufferPoolType
+	pool BufferPool
 	buf  *bytes.Buffer
 	orig io.ReadCloser
 	once sync.Once
@@ -53,7 +59,7 @@ type PooledBody struct {
 // captured to on Close; captured is the pool buffer that was used to tee the
 // body; orig is the original ReadCloser. The Reader presented to callers
 // replays captured followed by any remaining bytes in orig.
-func NewPooledBody(pool *BufferPoolType, captured *bytes.Buffer, orig io.ReadCloser) *PooledBody {
+func NewPooledBody(pool BufferPool, captured *bytes.Buffer, orig io.ReadCloser) *PooledBody {
 	return &PooledBody{
 		Reader: io.MultiReader(bytes.NewReader(captured.Bytes()), orig),
 		pool:   pool,
