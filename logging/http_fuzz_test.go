@@ -7,6 +7,8 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/base64"
+	"net/http"
+	"reflect"
 	"strings"
 	"testing"
 )
@@ -48,6 +50,63 @@ func FuzzAuthorizationHeaderAttribute(f *testing.F) {
 		}
 		if strings.Contains(got.Value.AsString(), nonAWSParameter) {
 			t.Fatalf("authorizationHeaderAttribute() leaked non-AWS parameters: %q", got.Value.AsString())
+		}
+	})
+}
+
+func FuzzDecomposeRequestHeaders(f *testing.F) {
+	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, SignedHeaders=host, Signature=signature", "attempt=2; max=3", "X-Example", "value", "token")
+	f.Add("Bearer secret-token", "attempt=1;", "X-Example", "value", "")
+	f.Add("Basic dXNlcjpwYXNz", "attempt=not-a-number;", "X-Example", "value", "token")
+	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, Signature", "attempt=3;", "X-Example", "value", "")
+	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE,", "", "X-Example", "value", "")
+
+	f.Fuzz(func(t *testing.T, authorization, retry, headerName, headerValue, token string) {
+		// Raw authorization input exercises arbitrary parser input without
+		// assuming every malformed value has a sanitized representation.
+		_, _ = authorizationHeaderAttribute(authorization)
+		authorization = "Bearer authorization:" + base64.RawURLEncoding.EncodeToString([]byte(authorization))
+		header := make(http.Header)
+		header.Set("Authorization", authorization)
+		if retry != "" {
+			header.Set("Amz-Sdk-Request", retry)
+		}
+		if headerName != "" {
+			header[headerName] = []string{headerValue}
+		}
+		securityToken := "token:" + base64.RawURLEncoding.EncodeToString([]byte(token))
+		if token != "" {
+			header.Set("X-Amz-Security-Token", securityToken)
+		}
+		header.Set("Content-Length", "123")
+		header.Set("User-Agent", "agent")
+
+		before := header.Clone()
+		first := attributeValues(decomposeRequestHeaders(&http.Request{Header: header}))
+		second := attributeValues(decomposeRequestHeaders(&http.Request{Header: header}))
+		if !reflect.DeepEqual(header, before) {
+			t.Fatal("request header was modified")
+		}
+		if !reflect.DeepEqual(first, second) {
+			t.Fatalf("decomposeRequestHeaders() is non-deterministic: %#v, %#v", first, second)
+		}
+		for _, key := range []string{"http.request.header.content_length", "http.request.header.user_agent"} {
+			if _, ok := first[key]; ok {
+				t.Fatalf("excluded header %q was emitted", key)
+			}
+		}
+		if value, ok := first["http.request.header.authorization"]; ok && value == authorization {
+			t.Fatalf("authorization leaked: %q", authorization)
+		}
+		if token != "" {
+			if value, ok := first["http.request.header.x_amz_security_token"]; !ok || value != "*****" {
+				t.Fatalf("security token attribute = %#v, want *****", value)
+			}
+		}
+		for key := range first {
+			if key == "" {
+				t.Fatal("empty attribute key")
+			}
 		}
 	})
 }
