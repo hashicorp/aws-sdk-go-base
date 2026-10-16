@@ -5,6 +5,7 @@ package logging
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"unicode"
+	"unsafe"
 
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/slices"
@@ -271,8 +273,13 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 
 	key := authorizationAttributeKey
 	if strings.HasPrefix(scheme, "AWS4-") {
-		var builder strings.Builder
+		var builder bytes.Buffer
 		builder.Grow(len(v))
+		// Write "scheme " into the buffer first so the whole value can be
+		// masked in place and copied out once. The scheme is always "AWS4-*",
+		// which the masker never rewrites.
+		builder.WriteString(scheme)
+		builder.WriteByte(' ')
 		// Iterate the comma-separated components without allocating a slice.
 		// rest holds the unprocessed remainder; more reports whether another
 		// comma follows, so a trailing comma still yields a final empty component.
@@ -301,7 +308,9 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 			}
 			rest = next
 		}
-		return key.String(scheme + " " + MaskAWSSensitiveValues(builder.String())), true
+		// Mask in place, then copy out once into a caller-owned string. The
+		// single copy is what lets the buffer be pooled later.
+		return key.String(string(MaskAWSSensitiveValuesBytes(builder.Bytes()))), true
 	} else {
 		return key.String(scheme + " " + strings.Repeat("*", len(params))), true
 	}
@@ -390,7 +399,7 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		length = 0
 	}
 
-	var builder strings.Builder
+	var builder bytes.Buffer
 	visibleLimit := length
 	if length >= len(truncationMarker) {
 		visibleLimit -= len(truncationMarker)
@@ -424,8 +433,9 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		if length < len(truncationMarker) {
 			return truncationMarker[:length]
 		}
-		masked := MaskAWSSensitiveValues(builder.String())
-		return masked[:visibleLen] + truncationMarker[:length-visibleLen]
+		masked := MaskAWSSensitiveValuesBytes(builder.Bytes())
+		masked = append(masked[:visibleLen], truncationMarker[:length-visibleLen]...)
+		return unsafe.String(unsafe.SliceData(masked), len(masked))
 	}
 	for {
 		line, err := reader.ReadSlice('\n')
@@ -485,7 +495,8 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 			if truncated && builder.Len() > length {
 				return truncatedResult(), nil
 			}
-			return MaskAWSSensitiveValues(builder.String()), nil
+			masked := MaskAWSSensitiveValuesBytes(builder.Bytes())
+			return unsafe.String(unsafe.SliceData(masked), len(masked)), nil
 		default:
 			return "", err
 		}
