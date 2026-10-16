@@ -12,6 +12,7 @@ import (
 	"math"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -276,6 +277,122 @@ func TestAuthorizationHeaderAttributeSensitiveValues(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDecomposeRequestHeaders(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		header    http.Header
+		assertion func(t *testing.T, values map[string]any)
+	}{
+		"ordinary_headers_and_exclusions": {
+			header: http.Header{
+				"Content-Length":  {"123"},
+				"User-Agent":      {"sdk-agent"},
+				"X-Custom-Header": {"value"},
+				"X-Multiple":      {"first", "second"},
+			},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.request.header.x_custom_header"], "value"; got != want {
+					t.Errorf("single header = %#v, want %#v", got, want)
+				}
+				if got, want := values["http.request.header.x_multiple"], []string{"first", "second"}; !reflect.DeepEqual(got, want) {
+					t.Errorf("multiple header = %#v, want %#v", got, want)
+				}
+				for _, key := range []string{"http.request.header.content_length", "http.request.header.user_agent"} {
+					if _, ok := values[key]; ok {
+						t.Errorf("excluded header %q was emitted", key)
+					}
+				}
+			},
+		},
+		"resend_count": {
+			header: http.Header{"Amz-Sdk-Request": {"attempt=3; max=5", "attempt=9; max=10"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.resend_count"], int64(3); got != want {
+					t.Errorf("resend count = %v, want %v", got, want)
+				}
+			},
+		},
+		"no_resend_count": {
+			header: http.Header{"Amz-Sdk-Request": {"attempt=1; max=5", "attempt=9; max=10"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if _, ok := values["http.resend_count"]; ok {
+					t.Error("resend count was emitted")
+				}
+			},
+		},
+		"malformed_resend_count": {
+			header: http.Header{"Amz-Sdk-Request": {"attempt=not-a-number;"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if _, ok := values["http.resend_count"]; ok {
+					t.Error("resend count was emitted")
+				}
+			},
+		},
+		"valid_sigv4": {
+			header: http.Header{"Authorization": {"AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, SignedHeaders=host, Signature=signature"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.request.header.authorization"], "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****"; got != want {
+					t.Errorf("authorization = %q, want %q", got, want)
+				}
+			},
+		},
+		"non_aws_authorization": {
+			header: http.Header{"Authorization": {"Bearer bearer-token"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.request.header.authorization"], "Bearer ************"; got != want {
+					t.Errorf("authorization = %q, want %q", got, want)
+				}
+			},
+		},
+		"malformed_aws4_is_omitted": {
+			header: http.Header{"Authorization": {"AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, Signature"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if _, ok := values["http.request.header.authorization"]; ok {
+					t.Error("authorization was emitted")
+				}
+			},
+		},
+		"security_token": {
+			header: http.Header{"X-Amz-Security-Token": {"security-token"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.request.header.x_amz_security_token"], "*****"; got != want {
+					t.Errorf("security token = %q, want %q", got, want)
+				}
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			headerBefore := tc.header.Clone()
+			values := attributeValues(decomposeRequestHeaders(&http.Request{Header: tc.header}))
+			if !reflect.DeepEqual(tc.header, headerBefore) {
+				t.Error("request header was modified")
+			}
+			tc.assertion(t, values)
+		})
+	}
+}
+
+func attributeValues(attrs []attribute.KeyValue) map[string]any {
+	values := make(map[string]any, len(attrs))
+	for _, attr := range attrs {
+		values[string(attr.Key)] = attr.Value.AsInterface()
+	}
+	return values
 }
 
 func TestDefaultRequestBodyLogger(t *testing.T) {
