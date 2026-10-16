@@ -5,6 +5,7 @@ package logging
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -22,6 +23,22 @@ type readerWithError struct {
 	err  error
 }
 
+type countingBufferPool struct {
+	buffer *bytes.Buffer
+	gets   int
+	puts   int
+}
+
+func (p *countingBufferPool) Get() *bytes.Buffer {
+	p.gets++
+	return p.buffer
+}
+
+func (p *countingBufferPool) Put(buffer *bytes.Buffer) {
+	p.puts++
+	buffer.Reset()
+}
+
 func (r *readerWithError) Read(p []byte) (int, error) {
 	if len(r.data) == 0 {
 		return 0, r.err
@@ -29,6 +46,10 @@ func (r *readerWithError) Read(p []byte) (int, error) {
 	n := copy(p, r.data)
 	r.data = r.data[n:]
 	return n, r.err
+}
+
+func (r *readerWithError) Close() error {
+	return nil
 }
 
 func TestReadTruncatedBodySmallLimit(t *testing.T) {
@@ -247,6 +268,27 @@ func TestReadTruncatedBodyTrailingDataAfterTruncation(t *testing.T) {
 				t.Errorf("ReadTruncatedBody() = %q, want %q", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestDefaultRequestBodyLoggerReturnsBufferOnReadError(t *testing.T) {
+	t.Parallel()
+
+	pool := &countingBufferPool{buffer: &bytes.Buffer{}}
+
+	want := errors.New("read body")
+	req := &http.Request{Body: &readerWithError{
+		data: []byte("body"),
+		err:  want,
+	}}
+
+	err := (&defaultRequestBodyLogger{pool: pool}).Log(t.Context(), req, nil)
+	if !errors.Is(err, want) {
+		t.Fatalf("Log() error = %v, want %v", err, want)
+	}
+
+	if pool.gets != 1 || pool.puts != 1 {
+		t.Errorf("pool calls = Get:%d Put:%d, want Get:1 Put:1", pool.gets, pool.puts)
 	}
 }
 

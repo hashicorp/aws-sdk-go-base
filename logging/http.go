@@ -109,7 +109,9 @@ func requestBodyLogger(ctx context.Context) RequestBodyLogger {
 
 var _ RequestBodyLogger = &defaultRequestBodyLogger{}
 
-type defaultRequestBodyLogger struct{}
+type defaultRequestBodyLogger struct {
+	pool BufferPool
+}
 
 func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, attrs *[]attribute.KeyValue) error {
 	if req.Body == nil || req.Body == http.NoBody {
@@ -117,9 +119,14 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 		return nil
 	}
 
+	pool := l.pool
+	if pool == nil {
+		pool = requestBufferPool
+	}
+
 	// original is borrowed from the pool and teed into while scanning. Ownership
 	// is transferred to NewPooledBody, which returns it to the pool on Close.
-	original := requestBufferPool.Get()
+	original := pool.Get()
 
 	tee := io.TeeReader(req.Body, original)
 
@@ -127,14 +134,14 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 
 	body, err := ReadTruncatedBody(reader, maxRequestBodyLen)
 	if err != nil {
-		requestBufferPool.Put(original)
+		pool.Put(original)
 		return err
 	}
 
 	*attrs = append(*attrs, attribute.String("http.request.body", body))
 
 	// Restore the full body for the SDK serialiser.
-	req.Body = NewPooledBody(requestBufferPool, original, req.Body)
+	req.Body = NewPooledBody(pool, original, req.Body)
 
 	return nil
 }

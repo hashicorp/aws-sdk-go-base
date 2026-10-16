@@ -215,12 +215,19 @@ func responseBodyLogger(ctx context.Context) logging.ResponseBodyLogger {
 
 var _ logging.ResponseBodyLogger = &defaultResponseBodyLogger{}
 
-type defaultResponseBodyLogger struct{}
+type defaultResponseBodyLogger struct {
+	pool logging.BufferPool
+}
 
 func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response, attrs *[]attribute.KeyValue) error {
+	pool := l.pool
+	if pool == nil {
+		pool = logging.ResponseBufferPool
+	}
+
 	// original is borrowed from the pool and teed into while scanning. Ownership
 	// is transferred to NewPooledBody, which returns it to the pool on Close.
-	original := logging.ResponseBufferPool.Get()
+	original := pool.Get()
 
 	tee := io.TeeReader(resp.Body, original)
 
@@ -228,14 +235,14 @@ func (l *defaultResponseBodyLogger) Log(ctx context.Context, resp *http.Response
 
 	body, err := logging.ReadTruncatedBody(reader, logging.MaxResponseBodyLen)
 	if err != nil {
-		logging.ResponseBufferPool.Put(original)
+		pool.Put(original)
 		return err
 	}
 
 	*attrs = append(*attrs, attribute.String("http.response.body", body))
 
 	// Restore the full body for the SDK deserialiser.
-	resp.Body = logging.NewPooledBody(logging.ResponseBufferPool, original, resp.Body)
+	resp.Body = logging.NewPooledBody(pool, original, resp.Body)
 
 	return nil
 }
