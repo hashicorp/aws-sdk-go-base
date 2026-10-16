@@ -5,6 +5,7 @@ package logging
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -255,12 +256,16 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 
 	key := RequestHeaderAttributeKey("Authorization")
 	if strings.HasPrefix(scheme, "AWS4-") {
-		components := regexp.MustCompile(`,\s+`).Split(params, -1)
-		var builder strings.Builder
+		components := strings.Split(params, ",")
+		var builder bytes.Buffer
 		builder.Grow(len(params))
 		for i, component := range components {
-			parts := strings.SplitAfterN(component, "=", 2)
-			name := parts[0]
+			component = strings.TrimSpace(component)
+			parts := strings.SplitN(component, "=", 2)
+			if len(parts) != 2 || parts[0] == "" {
+				return attribute.KeyValue{}, false
+			}
+			name := parts[0] + "="
 			value := parts[1]
 			if name != "SignedHeaders=" && name != "Credential=" {
 				// "Signature" or an unknown field
