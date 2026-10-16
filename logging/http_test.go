@@ -501,19 +501,22 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 			t.Parallel()
 
 			expectedFullBody := tc.requestBody
+			pool := &countingBufferPool{buffer: &bytes.Buffer{}}
 
 			req := &http.Request{
 				Method: http.MethodPost,
 				URL:    &url.URL{Scheme: "https", Host: "example.com", Path: "/"},
 				Header: make(http.Header),
 			}
+			var original *testReadCloser
 			if tc.requestBody == "" {
 				req.Body = http.NoBody
 			} else {
-				req.Body = io.NopCloser(strings.NewReader(tc.requestBody))
+				original = &testReadCloser{Reader: strings.NewReader(tc.requestBody)}
+				req.Body = original
 			}
 
-			logger := &defaultRequestBodyLogger{}
+			logger := &defaultRequestBodyLogger{pool: pool}
 			var attrs []attribute.KeyValue
 
 			if err := logger.Log(t.Context(), req, &attrs); err != nil {
@@ -539,6 +542,30 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 			}
 			if string(remaining) != expectedFullBody {
 				t.Errorf("req.Body after Log:\n got: %q\nwant: %q", string(remaining), expectedFullBody)
+			}
+
+			if original == nil {
+				return
+			}
+
+			if err := req.Body.Close(); err != nil {
+				t.Fatalf("first req.Body.Close() error = %v", err)
+			}
+			if pool.puts != 1 {
+				t.Errorf("pool Put() calls after first Close() = %d, want 1", pool.puts)
+			}
+			if original.closeCalls != 1 {
+				t.Errorf("original Close() calls after first Close() = %d, want 1", original.closeCalls)
+			}
+
+			if err := req.Body.Close(); err != nil {
+				t.Fatalf("second req.Body.Close() error = %v", err)
+			}
+			if pool.puts != 1 {
+				t.Errorf("pool Put() calls after second Close() = %d, want 1", pool.puts)
+			}
+			if original.closeCalls != 1 {
+				t.Errorf("original Close() calls after second Close() = %d, want 1", original.closeCalls)
 			}
 		})
 	}
