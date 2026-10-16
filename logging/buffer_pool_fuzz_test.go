@@ -52,6 +52,7 @@ func FuzzPooledBodyReads(f *testing.F) {
 		body := NewPooledBody(pool, captured, original)
 
 		var got []byte
+		var readErr error
 		for i := 0; ; i++ {
 			size := 1
 			if len(readSizes) > 0 {
@@ -61,17 +62,24 @@ func FuzzPooledBodyReads(f *testing.F) {
 			n, err := body.Read(chunk)
 			got = append(got, chunk[:n]...)
 			if err == io.EOF {
+				if sourceErr != nil {
+					t.Fatalf("Read() error = io.EOF, want %v", sourceErr)
+				}
 				break
 			}
 			if err != nil {
-				if sourceErr != nil && !errors.Is(err, sourceErr) {
-					t.Fatalf("Read() error = %v, want %v", err, sourceErr)
-				}
+				readErr = err
 				if sourceErr == nil {
 					t.Fatalf("Read() error = %v", err)
 				}
+				if !errors.Is(err, sourceErr) {
+					t.Fatalf("Read() error = %v, want %v", err, sourceErr)
+				}
 				break
 			}
+		}
+		if sourceErr != nil && !errors.Is(readErr, sourceErr) {
+			t.Fatalf("Read() error = %v, want %v", readErr, sourceErr)
 		}
 
 		want := append(append([]byte{}, capturedBytes...), sourceBytes...)
