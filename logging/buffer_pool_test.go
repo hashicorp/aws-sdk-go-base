@@ -27,7 +27,7 @@ func TestPooledBody(t *testing.T) {
 
 	closeErr := errors.New("close body")
 	original := &testReadCloser{Reader: bytes.NewReader([]byte("source")), err: closeErr}
-	pool := newBufferPool(16)
+	pool := &countingBufferPool{buffer: &bytes.Buffer{}}
 	captured := pool.Get()
 	captured.WriteString("captured")
 	body := NewPooledBody(pool, captured, original)
@@ -46,22 +46,25 @@ func TestPooledBody(t *testing.T) {
 	if got, want := string(remaining), "turedsource"; got != want {
 		t.Errorf("remaining = %q, want %q", got, want)
 	}
+	if pool.puts != 0 {
+		t.Errorf("pool Put() calls before Close() = %d, want 0", pool.puts)
+	}
 
 	if err := body.Close(); !errors.Is(err, closeErr) {
 		t.Fatalf("first Close() error = %v, want %v", err, closeErr)
 	}
+	if pool.puts != 1 {
+		t.Errorf("pool Put() calls after first Close() = %d, want 1", pool.puts)
+	}
 	if err := body.Close(); !errors.Is(err, closeErr) {
 		t.Fatalf("second Close() error = %v, want %v", err, closeErr)
+	}
+	if pool.puts != 1 {
+		t.Errorf("pool Put() calls after second Close() = %d, want 1", pool.puts)
 	}
 	if original.closeCalls != 1 {
 		t.Errorf("Close() calls = %d, want 1", original.closeCalls)
 	}
-
-	returned := pool.Get()
-	if returned.Len() != 0 {
-		t.Errorf("pooled buffer length = %d, want 0", returned.Len())
-	}
-	pool.Put(returned)
 }
 
 func TestPooledBodyCloseConcurrent(t *testing.T) {
