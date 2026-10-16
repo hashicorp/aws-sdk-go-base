@@ -168,6 +168,26 @@ func TestAuthorizationHeaderAttribute(t *testing.T) {
 			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host;x-amz-date, Signature=*****",
 			ok:     true,
 		},
+		"components_without_whitespace": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ",SignedHeaders=host,Signature=" + signature,
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****",
+			ok:     true,
+		},
+		"component_whitespace": {
+			header: "AWS4-HMAC-SHA256   Credential=" + credential + " ,  SignedHeaders=host  , Signature=" + signature + "  ",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****",
+			ok:     true,
+		},
+		"unknown_component": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ", Extra=sensitive-value, SignedHeaders=host",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, Extra=*****, SignedHeaders=host",
+			ok:     true,
+		},
+		"value_contains_equals": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + "=suffix, SignedHeaders=host=extra, Signature=" + signature + "=more",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE=suffix, SignedHeaders=host=extra, Signature=*****",
+			ok:     true,
+		},
 		"non_aws_scheme": {
 			header: "Bearer secret-token",
 			want:   "Bearer ************",
