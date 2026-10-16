@@ -6,6 +6,7 @@ package logging
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"strings"
 	"testing"
 )
@@ -25,18 +26,27 @@ func FuzzAuthorizationHeaderAttribute(f *testing.F) {
 		_, _ = authorizationHeaderAttribute(header)
 
 		const credential = "AKIA5PX2H2S3LHEXAMPLE"
-		signature := "signature:" + header
+		// Encoding keeps the fuzzed data in one syntactically valid parameter,
+		// so every generated case exercises the sanitizer rather than rejection.
+		parameter := base64.RawURLEncoding.EncodeToString([]byte(header))
+		signature := "signature:" + parameter
 		awsHeader := "AWS4-HMAC-SHA256 Credential=" + credential + ", SignedHeaders=host, Signature=" + signature
-		if got, ok := authorizationHeaderAttribute(awsHeader); ok {
-			value := got.Value.AsString()
-			if strings.Contains(value, signature) || strings.Contains(value, credential) {
-				t.Fatalf("authorizationHeaderAttribute() leaked AWS4 data: %q", value)
-			}
+		got, ok := authorizationHeaderAttribute(awsHeader)
+		if !ok {
+			t.Fatal("authorizationHeaderAttribute() rejected a valid AWS4 header")
+		}
+		value := got.Value.AsString()
+		if strings.Contains(value, signature) || strings.Contains(value, credential) {
+			t.Fatalf("authorizationHeaderAttribute() leaked AWS4 data: %q", value)
 		}
 
-		nonAWSParameter := "parameter:" + header
+		nonAWSParameter := "parameter:" + parameter
 		nonAWSHeader := "Bearer " + nonAWSParameter
-		if got, ok := authorizationHeaderAttribute(nonAWSHeader); ok && strings.Contains(got.Value.AsString(), nonAWSParameter) {
+		got, ok = authorizationHeaderAttribute(nonAWSHeader)
+		if !ok {
+			t.Fatal("authorizationHeaderAttribute() rejected a valid Bearer header")
+		}
+		if strings.Contains(got.Value.AsString(), nonAWSParameter) {
 			t.Fatalf("authorizationHeaderAttribute() leaked non-AWS parameters: %q", got.Value.AsString())
 		}
 	})
