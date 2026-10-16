@@ -15,6 +15,33 @@ const (
 	fuzzSecretKey = "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8"
 )
 
+func FuzzAuthorizationHeaderAttribute(f *testing.F) {
+	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, SignedHeaders=host, Signature=signature")
+	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE,")
+	f.Add("Bearer secret-token")
+
+	f.Fuzz(func(t *testing.T, header string) {
+		// Arbitrary headers must never panic.
+		_, _ = authorizationHeaderAttribute(header)
+
+		const credential = "AKIA5PX2H2S3LHEXAMPLE"
+		signature := "signature:" + header
+		awsHeader := "AWS4-HMAC-SHA256 Credential=" + credential + ", SignedHeaders=host, Signature=" + signature
+		if got, ok := authorizationHeaderAttribute(awsHeader); ok {
+			value := got.Value.AsString()
+			if strings.Contains(value, signature) || strings.Contains(value, credential) {
+				t.Fatalf("authorizationHeaderAttribute() leaked AWS4 data: %q", value)
+			}
+		}
+
+		nonAWSParameter := "parameter:" + header
+		nonAWSHeader := "Bearer " + nonAWSParameter
+		if got, ok := authorizationHeaderAttribute(nonAWSHeader); ok && strings.Contains(got.Value.AsString(), nonAWSParameter) {
+			t.Fatalf("authorizationHeaderAttribute() leaked non-AWS parameters: %q", got.Value.AsString())
+		}
+	})
+}
+
 func FuzzReadTruncatedBody(f *testing.F) {
 	seed := func(body []byte, readerBufferSize int) {
 		f.Add(body, readerBufferSize)
