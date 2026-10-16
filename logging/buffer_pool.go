@@ -45,6 +45,8 @@ type PooledBody struct {
 	pool *BufferPoolType
 	buf  *bytes.Buffer
 	orig io.ReadCloser
+	once sync.Once
+	err  error
 }
 
 // NewPooledBody constructs a PooledBody. pool is the buffer pool to return
@@ -61,6 +63,9 @@ func NewPooledBody(pool *BufferPoolType, captured *bytes.Buffer, orig io.ReadClo
 }
 
 func (b *PooledBody) Close() error {
-	b.pool.Put(b.buf)
-	return b.orig.Close()
+	b.once.Do(func() {
+		b.pool.Put(b.buf)
+		b.err = b.orig.Close()
+	})
+	return b.err
 }
