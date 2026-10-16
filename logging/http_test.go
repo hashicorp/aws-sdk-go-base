@@ -151,6 +151,115 @@ func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
 	}
 }
 
+func TestAuthorizationHeaderAttribute(t *testing.T) {
+	t.Parallel()
+
+	const (
+		credential = "AKIA5PX2H2S3LHEXAMPLE"
+		signature  = "0123456789abcdef"
+	)
+	tests := map[string]struct {
+		header string
+		want   string
+		ok     bool
+	}{
+		"valid_sigv4": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ", SignedHeaders=host;x-amz-date, Signature=" + signature,
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host;x-amz-date, Signature=*****",
+			ok:     true,
+		},
+		"non_aws_scheme": {
+			header: "Bearer secret-token",
+			want:   "Bearer ************",
+			ok:     true,
+		},
+		"missing_equals": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ", Signature",
+		},
+		"trailing_comma": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ",",
+		},
+		"empty_component_name": {
+			header: "AWS4-HMAC-SHA256 =value",
+		},
+		"empty_values": {
+			header: "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=",
+			want:   "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=*****",
+			ok:     true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, ok := authorizationHeaderAttribute(tc.header)
+			if ok != tc.ok {
+				t.Fatalf("authorizationHeaderAttribute() ok = %t, want %t", ok, tc.ok)
+			}
+			if ok && got.Value.AsString() != tc.want {
+				t.Errorf("authorizationHeaderAttribute() = %q, want %q", got.Value.AsString(), tc.want)
+			}
+		})
+	}
+}
+
+func TestDecomposeRequestHeadersSensitiveValues(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		authorization string
+		wantAuth      string
+	}{
+		"valid": {
+			authorization: "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, SignedHeaders=host, Signature=signature",
+			wantAuth:      "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****",
+		},
+		"missing_equals": {
+			authorization: "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, Signature",
+		},
+		"trailing_comma": {
+			authorization: "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE,",
+		},
+		"empty_component_name": {
+			authorization: "AWS4-HMAC-SHA256 =sensitive-value",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			req := &http.Request{Header: http.Header{
+				"Authorization":        {tc.authorization},
+				"X-Amz-Security-Token": {"first-token", "second-token"},
+				"Amz-Sdk-Request":      {"attempt=3; max=5", "attempt=9; max=10"},
+			}}
+
+			attrs := decomposeRequestHeaders(req)
+			values := make(map[string]any, len(attrs))
+			for _, attr := range attrs {
+				values[string(attr.Key)] = attr.Value.AsInterface()
+			}
+
+			gotAuth, hasAuth := values["http.request.header.authorization"]
+			if tc.wantAuth == "" {
+				if hasAuth {
+					t.Errorf("authorization = %q, want absent", gotAuth)
+				}
+			} else if gotAuth != tc.wantAuth {
+				t.Errorf("authorization = %q, want %q", gotAuth, tc.wantAuth)
+			}
+			if got, want := values["http.request.header.x_amz_security_token"], "*****"; got != want {
+				t.Errorf("security token = %q, want %q", got, want)
+			}
+			if got, want := values["http.resend_count"], int64(3); got != want {
+				t.Errorf("resend count = %v, want %v", got, want)
+			}
+		})
+	}
+}
+
 func TestDefaultRequestBodyLogger(t *testing.T) {
 	t.Parallel()
 
