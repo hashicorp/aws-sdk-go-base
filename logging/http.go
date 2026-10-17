@@ -123,9 +123,9 @@ func (l *defaultRequestBodyLogger) Log(ctx context.Context, req *http.Request, a
 
 	tee := io.TeeReader(req.Body, original)
 
-	reader := NewBodyReader(tee, maxRequestBodyLen)
+	reader, observedErr := newTrackedBodyReader(tee, maxRequestBodyLen)
 
-	body, err := ReadTruncatedBody(reader, maxRequestBodyLen)
+	body, err := readTruncatedBody(reader, maxRequestBodyLen, observedErr)
 	if err != nil {
 		requestBufferPool.Put(original)
 		return err
@@ -337,11 +337,33 @@ func bodyLogBufferSize(length int) int {
 	return length + sensitiveValueLookahead + 1
 }
 
+type errorTrackingReader struct {
+	reader      io.Reader
+	observedErr error
+}
+
+func (r *errorTrackingReader) Read(p []byte) (int, error) {
+	n, err := r.reader.Read(p)
+	if err != nil {
+		r.observedErr = err
+	}
+	return n, err
+}
+
 func NewBodyReader(reader io.Reader, length int) *bufio.Reader {
 	return bufio.NewReaderSize(reader, bodyLogBufferSize(length))
 }
 
+func newTrackedBodyReader(reader io.Reader, length int) (*bufio.Reader, *errorTrackingReader) {
+	tracked := &errorTrackingReader{reader: reader}
+	return bufio.NewReaderSize(tracked, bodyLogBufferSize(length)), tracked
+}
+
 func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
+	return readTruncatedBody(reader, length, nil)
+}
+
+func readTruncatedBody(reader *bufio.Reader, length int, tracker *errorTrackingReader) (string, error) {
 	if length < 0 {
 		length = 0
 	}
@@ -421,10 +443,10 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		}
 
 		if truncated && builder.Len() >= visibleLen+sensitiveValueLookahead {
-			if _, err := reader.Discard(reader.Buffered()); err != nil {
-				return "", err
+			if tracker != nil && tracker.observedErr != nil && tracker.observedErr != io.EOF && tracker.observedErr != bufio.ErrBufferFull {
+				return "", tracker.observedErr
 			}
-			if _, err := reader.Peek(1); err != nil && err != io.EOF && err != bufio.ErrBufferFull {
+			if _, err := reader.Discard(reader.Buffered()); err != nil {
 				return "", err
 			}
 			return truncatedResult(), nil
