@@ -8,37 +8,34 @@ import (
 	"unsafe"
 )
 
-func TestMaskAWSSensitiveValues(t *testing.T) {
-	t.Parallel()
+type maskAWSSensitiveValuesTestCase struct {
+	input    string
+	expected string
+}
 
-	type testCase struct {
-		input    string
-		expected string
-	}
-
-	tests := map[string]testCase{
-		"mask_simple": {
-			input:    "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8",
-			expected: "MfP3********************************N8U8",
-		},
-		"mask_complex_json": {
-			input: `
+var maskAWSSensitiveValuesTests = map[string]maskAWSSensitiveValuesTestCase{
+	"mask_simple": {
+		input:    "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8",
+		expected: "MfP3********************************N8U8",
+	},
+	"mask_complex_json": {
+		input: `
 {
 	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
 	"BucketName": "test-bucket",
 	"AWSKeyId": "AIDACKCEVSQ6C2EXAMPLE",
 }
 `,
-			expected: `
+		expected: `
 {
 	"AWSSecretKey": "LEfH********************************jOte",
 	"BucketName": "test-bucket",
 	"AWSKeyId": "AIDA*************MPLE",
 }
 `,
-		},
-		"mask_multiple_json": {
-			input: `
+	},
+	"mask_multiple_json": {
+		input: `
 {
 	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
 	"BucketName": "test-bucket-1",
@@ -53,7 +50,7 @@ func TestMaskAWSSensitiveValues(t *testing.T) {
 	"AWSKeyId": "AKIA5PX2H2S3LHEXAMPLE",
 }
 `,
-			expected: `
+		expected: `
 {
 	"AWSSecretKey": "LEfH********************************jOte",
 	"BucketName": "test-bucket-1",
@@ -68,33 +65,54 @@ func TestMaskAWSSensitiveValues(t *testing.T) {
 	"AWSKeyId": "AKIA*************MPLE",
 }
 `,
-		},
-		"no_mask": {
-			input:    "<BucketName>test-bucket</BucketName>",
-			expected: "<BucketName>test-bucket</BucketName>",
-		},
-		"mask_xml": {
-			input: `
+	},
+	"no_mask": {
+		input:    "<BucketName>test-bucket</BucketName>",
+		expected: "<BucketName>test-bucket</BucketName>",
+	},
+	"mask_xml": {
+		input: `
 <AWSSecretKey>8/AiP0ofCD/YOAqXWrungQt/Y4BkTj1UOjZ0MqBs</AWSSecretKey>
 <BucketName>test-bucket</BucketName>
 <AWSKeyId>AIDACKCEVSQ6C2EXAMPLE</AWSKeyId>
 `,
-			expected: `
+		expected: `
 <AWSSecretKey>8/Ai********************************MqBs</AWSSecretKey>
 <BucketName>test-bucket</BucketName>
 <AWSKeyId>AIDA*************MPLE</AWSKeyId>
 `,
-		},
-	}
+	},
+}
 
-	for name, test := range tests {
+func TestMaskAWSSensitiveValues(t *testing.T) {
+	t.Parallel()
+
+	for name, test := range maskAWSSensitiveValuesTests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
 			got := MaskAWSSensitiveValues(test.input)
-
 			if got != test.expected {
 				t.Errorf("unexpected diff +wanted: %s, -got: %s", test.expected, got)
+			}
+		})
+	}
+}
+
+func TestMaskAWSSensitiveValuesBytes(t *testing.T) {
+	t.Parallel()
+
+	for name, test := range maskAWSSensitiveValuesTests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			input := []byte(test.input)
+			got := MaskAWSSensitiveValuesBytes(input)
+			if string(got) != test.expected {
+				t.Errorf("unexpected diff +wanted: %s, -got: %s", test.expected, got)
+			}
+			if unsafe.SliceData(got) == unsafe.SliceData(input) {
+				t.Error("returned slice aliases input")
 			}
 		})
 	}
@@ -148,6 +166,23 @@ func BenchmarkMaskAWSSensitiveValues(b *testing.B) {
 `)
 	}
 	dump = s
+}
+
+func BenchmarkMaskAWSSensitiveValuesBytes(b *testing.B) {
+	source := []byte(`
+{
+	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
+	"BucketName": "test-bucket",
+	"AWSKeyId": "AIDACKCEVSQ6C2EXAMPLE",
+}
+`)
+	field := make([]byte, len(source))
+	b.ReportAllocs()
+	for b.Loop() {
+		copy(field, source)
+		field = MaskAWSSensitiveValuesBytes(field)
+	}
+	dump = string(field)
 }
 
 var dump string
