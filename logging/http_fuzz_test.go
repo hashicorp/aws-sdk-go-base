@@ -6,6 +6,7 @@ package logging
 import (
 	"bufio"
 	"bytes"
+	"encoding/base64"
 	"strings"
 	"testing"
 )
@@ -14,6 +15,42 @@ const (
 	fuzzAccessKey = "AKIA5PX2H2S3LHEXAMPLE"
 	fuzzSecretKey = "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8"
 )
+
+func FuzzAuthorizationHeaderAttribute(f *testing.F) {
+	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, SignedHeaders=host, Signature=signature")
+	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE,")
+	f.Add("Bearer secret-token")
+
+	f.Fuzz(func(t *testing.T, header string) {
+		// Arbitrary headers must never panic.
+		_, _ = authorizationHeaderAttribute(header)
+
+		const credential = "AKIA5PX2H2S3LHEXAMPLE"
+		// Encoding keeps the fuzzed data in one syntactically valid parameter,
+		// so every generated case exercises the sanitizer rather than rejection.
+		parameter := base64.RawURLEncoding.EncodeToString([]byte(header))
+		signature := "signature:" + parameter
+		awsHeader := "AWS4-HMAC-SHA256 Credential=" + credential + ", SignedHeaders=host, Signature=" + signature
+		got, ok := authorizationHeaderAttribute(awsHeader)
+		if !ok {
+			t.Fatal("authorizationHeaderAttribute() rejected a valid AWS4 header")
+		}
+		value := got.Value.AsString()
+		if strings.Contains(value, signature) || strings.Contains(value, credential) {
+			t.Fatalf("authorizationHeaderAttribute() leaked AWS4 data: %q", value)
+		}
+
+		nonAWSParameter := "parameter:" + parameter
+		nonAWSHeader := "Bearer " + nonAWSParameter
+		got, ok = authorizationHeaderAttribute(nonAWSHeader)
+		if !ok {
+			t.Fatal("authorizationHeaderAttribute() rejected a valid Bearer header")
+		}
+		if strings.Contains(got.Value.AsString(), nonAWSParameter) {
+			t.Fatalf("authorizationHeaderAttribute() leaked non-AWS parameters: %q", got.Value.AsString())
+		}
+	})
+}
 
 func FuzzReadTruncatedBody(f *testing.F) {
 	seed := func(body []byte, readerBufferSize int) {
