@@ -74,9 +74,9 @@ func FuzzReadTruncatedBody(f *testing.F) {
 			}
 
 			if len(normalized) > maxLength {
-				// A truncated result must end with the truncation marker.
-				if !strings.HasSuffix(got, truncationMarker) {
-					t.Fatalf("ReadTruncatedBody() = %q, want truncation marker", got)
+				want := expectedMasked[:maxLength-len(truncationMarker)] + truncationMarker
+				if got != want {
+					t.Fatalf("ReadTruncatedBody() = %q, want truncated body %q", got, want)
 				}
 			} else {
 				// When not truncated, the entire body must be returned with proper normalization and masking.
