@@ -31,6 +31,25 @@ func (r *readerWithError) Read(p []byte) (int, error) {
 	return n, r.err
 }
 
+type stagedReader struct {
+	stages [][]byte
+	errs   []error
+	reads  int
+}
+
+func (r *stagedReader) Read(p []byte) (int, error) {
+	r.reads++
+	if len(r.stages) == 0 {
+		return 0, errors.New("unexpected read from paused stream")
+	}
+
+	n := copy(p, r.stages[0])
+	err := r.errs[0]
+	r.stages = r.stages[1:]
+	r.errs = r.errs[1:]
+	return n, err
+}
+
 func TestReadTruncatedBodySmallLimit(t *testing.T) {
 	t.Parallel()
 
@@ -121,6 +140,59 @@ func TestReadTruncatedBodyCumulativeLimit(t *testing.T) {
 	}
 }
 
+func TestReadTruncatedBodyCRLF(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		body       string
+		length     int
+		readerSize int
+		want       string
+	}{
+		"normal": {
+			body:   "first\r\nsecond\r\n",
+			length: maxRequestBodyLen,
+			want:   "first\nsecond\n",
+		},
+		"unterminated_trailing_carriage_return": {
+			body:   "first\r",
+			length: maxRequestBodyLen,
+			want:   "first\r\n",
+		},
+		"request_boundary": {
+			body:       strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1) + "\r\n",
+			length:     MaxResponseBodyLen,
+			readerSize: bodyLogBufferSize(maxRequestBodyLen),
+			want:       strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1) + "\n",
+		},
+		"response_boundary": {
+			body:       strings.Repeat("a", bodyLogBufferSize(MaxResponseBodyLen)-1) + "\r\n",
+			length:     bodyLogBufferSize(MaxResponseBodyLen),
+			readerSize: bodyLogBufferSize(MaxResponseBodyLen),
+			want:       strings.Repeat("a", bodyLogBufferSize(MaxResponseBodyLen)-1) + "\n",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			readerSize := tc.readerSize
+			if readerSize == 0 {
+				readerSize = bodyLogBufferSize(tc.length)
+			}
+			reader := bufio.NewReaderSize(strings.NewReader(tc.body), readerSize)
+			got, err := ReadTruncatedBody(reader, tc.length)
+			if err != nil {
+				t.Fatalf("ReadTruncatedBody() error = %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("ReadTruncatedBody() = %q, want %q", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
 	t.Parallel()
 
@@ -131,22 +203,49 @@ func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
 			[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1)),
 			'\n',
 		),
+		"terminated_with_trailing_data": append(
+			[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-2)),
+			'\n', 'x',
+		),
 	}
 
 	for name, data := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			reader := bufio.NewReaderSize(&readerWithError{
+			reader, observedErr := newTrackedBodyReader(&readerWithError{
 				data: data,
 				err:  want,
-			}, bodyLogBufferSize(maxRequestBodyLen))
+			}, maxRequestBodyLen)
 
-			_, err := ReadTruncatedBody(reader, maxRequestBodyLen)
+			_, err := readTruncatedBody(reader, maxRequestBodyLen, observedErr)
 			if !errors.Is(err, want) {
 				t.Fatalf("ReadTruncatedBody() error = %v, want %v", err, want)
 			}
 		})
+	}
+}
+
+func TestReadTruncatedBodyReturnsWithoutReadingNextStage(t *testing.T) {
+	t.Parallel()
+
+	// The first stage fills the default buffer, contains all required lookahead,
+	// and leaves a buffered tail. A second read represents a paused request body.
+	firstStage := strings.Repeat("a", 1049) + "\n" + strings.Repeat("b", 15)
+	staged := &stagedReader{stages: [][]byte{[]byte(firstStage)}, errs: []error{nil}}
+
+	reader, observedErr := newTrackedBodyReader(staged, maxRequestBodyLen)
+	got, err := readTruncatedBody(reader, maxRequestBodyLen, observedErr)
+	if err != nil {
+		t.Fatalf("ReadTruncatedBody() error = %v", err)
+	}
+
+	want := strings.Repeat("a", maxRequestBodyLen-len(truncationMarker)) + truncationMarker
+	if got != want {
+		t.Errorf("ReadTruncatedBody() = %q, want %q", got, want)
+	}
+	if staged.reads != 1 {
+		t.Errorf("Read() calls = %d, want 1", staged.reads)
 	}
 }
 
