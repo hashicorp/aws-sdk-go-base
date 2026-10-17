@@ -4,6 +4,8 @@
 package awsbase
 
 import (
+	"bytes"
+	"errors"
 	"io"
 	"net/http"
 	"strings"
@@ -12,6 +14,50 @@ import (
 	"github.com/hashicorp/aws-sdk-go-base/v2/logging"
 	"go.opentelemetry.io/otel/attribute"
 )
+
+type responseReaderWithError struct {
+	data []byte
+	err  error
+}
+
+type responseCountingBufferPool struct {
+	buffer *bytes.Buffer
+	gets   int
+	puts   int
+}
+
+type responseTestReadCloser struct {
+	io.Reader
+	closeCalls int
+}
+
+func (r *responseTestReadCloser) Close() error {
+	r.closeCalls++
+	return nil
+}
+
+func (p *responseCountingBufferPool) Get() *bytes.Buffer {
+	p.gets++
+	return p.buffer
+}
+
+func (p *responseCountingBufferPool) Put(buffer *bytes.Buffer) {
+	p.puts++
+	buffer.Reset()
+}
+
+func (r *responseReaderWithError) Read(p []byte) (int, error) {
+	if len(r.data) == 0 {
+		return 0, r.err
+	}
+	n := copy(p, r.data)
+	r.data = r.data[n:]
+	return n, r.err
+}
+
+func (r *responseReaderWithError) Close() error {
+	return nil
+}
 
 func TestDefaultResponseBodyLogger(t *testing.T) {
 	t.Parallel()
@@ -90,11 +136,13 @@ func TestDefaultResponseBodyLogger(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
+			pool := &responseCountingBufferPool{buffer: &bytes.Buffer{}}
+			original := &responseTestReadCloser{Reader: strings.NewReader(tc.responseBody)}
 			resp := &http.Response{
-				Body: io.NopCloser(strings.NewReader(tc.responseBody)),
+				Body: original,
 			}
 
-			logger := &defaultResponseBodyLogger{}
+			logger := &defaultResponseBodyLogger{pool: pool}
 			var attrs []attribute.KeyValue
 
 			if err := logger.Log(t.Context(), resp, &attrs); err != nil {
@@ -121,7 +169,48 @@ func TestDefaultResponseBodyLogger(t *testing.T) {
 			if string(remaining) != tc.responseBody {
 				t.Errorf("resp.Body after Log:\n got: %q\nwant: %q", string(remaining), tc.responseBody)
 			}
+
+			if err := resp.Body.Close(); err != nil {
+				t.Fatalf("first resp.Body.Close() error = %v", err)
+			}
+			if pool.puts != 1 {
+				t.Errorf("pool Put() calls after first Close() = %d, want 1", pool.puts)
+			}
+			if original.closeCalls != 1 {
+				t.Errorf("original Close() calls after first Close() = %d, want 1", original.closeCalls)
+			}
+
+			if err := resp.Body.Close(); err != nil {
+				t.Fatalf("second resp.Body.Close() error = %v", err)
+			}
+			if pool.puts != 1 {
+				t.Errorf("pool Put() calls after second Close() = %d, want 1", pool.puts)
+			}
+			if original.closeCalls != 1 {
+				t.Errorf("original Close() calls after second Close() = %d, want 1", original.closeCalls)
+			}
 		})
+	}
+}
+
+func TestDefaultResponseBodyLoggerReturnsBufferOnReadError(t *testing.T) {
+	t.Parallel()
+
+	pool := &responseCountingBufferPool{buffer: &bytes.Buffer{}}
+
+	want := errors.New("read body")
+	resp := &http.Response{Body: &responseReaderWithError{
+		data: []byte("body"),
+		err:  want,
+	}}
+
+	err := (&defaultResponseBodyLogger{pool: pool}).Log(t.Context(), resp, nil)
+	if !errors.Is(err, want) {
+		t.Fatalf("Log() error = %v, want %v", err, want)
+	}
+
+	if pool.gets != 1 || pool.puts != 1 {
+		t.Errorf("pool calls = Get:%d Put:%d, want Get:1 Put:1", pool.gets, pool.puts)
 	}
 }
 
