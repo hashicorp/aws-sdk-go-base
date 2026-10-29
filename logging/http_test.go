@@ -387,6 +387,92 @@ func TestDecomposeRequestHeaders(t *testing.T) {
 	}
 }
 
+func TestDecomposeResponseHeaders(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		header    http.Header
+		assertion func(t *testing.T, values map[string]any)
+	}{
+		"ordinary_headers_and_content_length": {
+			header: http.Header{
+				"Content-Length":  {"123"},
+				"X-Custom-Header": {"value"},
+				"X-Multiple":      {"first", "second"},
+			},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.response.header.x_custom_header"], "value"; got != want {
+					t.Errorf("single header = %#v, want %#v", got, want)
+				}
+				if got, want := values["http.response.header.x_multiple"], []string{"first", "second"}; !reflect.DeepEqual(got, want) {
+					t.Errorf("multiple header = %#v, want %#v", got, want)
+				}
+				if _, ok := values["http.response.header.content_length"]; ok {
+					t.Error("content length was emitted")
+				}
+			},
+		},
+		"normalized_names": {
+			header: http.Header{
+				"mIxEd-Case-Header": {"mixed"},
+				"X_With_Underscore": {"underscore"},
+			},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.response.header.mixed_case_header"], "mixed"; got != want {
+					t.Errorf("mixed-case header = %#v, want %#v", got, want)
+				}
+				if got, want := values["http.response.header.x_with_underscore"], "underscore"; got != want {
+					t.Errorf("underscore header = %#v, want %#v", got, want)
+				}
+			},
+		},
+		"empty_headers_and_values": {
+			header: http.Header{
+				"X-Empty": {""},
+				"X-Mixed": {"", "value"},
+			},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.response.header.x_empty"], ""; got != want {
+					t.Errorf("empty header = %#v, want %#v", got, want)
+				}
+				if got, want := values["http.response.header.x_mixed"], []string{"", "value"}; !reflect.DeepEqual(got, want) {
+					t.Errorf("mixed header = %#v, want %#v", got, want)
+				}
+			},
+		},
+		"empty": {
+			header: http.Header{},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if len(values) != 0 {
+					t.Errorf("attributes = %#v, want empty", values)
+				}
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			before := tc.header.Clone()
+			values := attributeValues(DecomposeResponseHeaders(&http.Response{Header: tc.header}))
+			if !reflect.DeepEqual(tc.header, before) {
+				t.Error("response header was modified")
+			}
+			for key := range values {
+				if !strings.HasPrefix(key, "http.response.header.") {
+					t.Errorf("non-response header attribute %q", key)
+				}
+			}
+			tc.assertion(t, values)
+		})
+	}
+}
+
 func attributeValues(attrs []attribute.KeyValue) map[string]any {
 	values := make(map[string]any, len(attrs))
 	for _, attr := range attrs {
