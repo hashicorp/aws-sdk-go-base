@@ -111,6 +111,59 @@ func FuzzDecomposeRequestHeaders(f *testing.F) {
 	})
 }
 
+func FuzzDecomposeResponseHeaders(f *testing.F) {
+	f.Add("Content-Type", "application/json", "charset=utf-8", "123")
+	f.Add("mIxEd-Case-Header", "value", "", "")
+	f.Add("X-With-Hyphen", "first", "second", "")
+	f.Add("X_With_Underscore", "value", "", "")
+	f.Add("", "", "", "0")
+
+	f.Fuzz(func(t *testing.T, headerName, firstValue, secondValue, contentLength string) {
+		header := make(http.Header)
+		if headerName != "" {
+			header[headerName] = []string{firstValue}
+			if secondValue != "" {
+				header[headerName] = append(header[headerName], secondValue)
+			}
+		}
+		if contentLength != "" {
+			header.Set("Content-Length", contentLength)
+		}
+
+		before := header.Clone()
+		first := attributeValues(DecomposeResponseHeaders(&http.Response{Header: header}))
+		second := attributeValues(DecomposeResponseHeaders(&http.Response{Header: header}))
+		if !reflect.DeepEqual(header, before) {
+			t.Fatal("response header was modified")
+		}
+		if !reflect.DeepEqual(first, second) {
+			t.Fatalf("DecomposeResponseHeaders() is non-deterministic: %#v, %#v", first, second)
+		}
+		if _, ok := first["http.response.header.content_length"]; ok {
+			t.Fatal("content length was emitted")
+		}
+		for key := range first {
+			if key == "" {
+				t.Fatal("empty attribute key")
+			}
+		}
+		if headerName != "" && !strings.EqualFold(headerName, "Content-Length") {
+			key := responseHeaderAttributeName(headerName)
+			got, ok := first[key]
+			if !ok {
+				t.Fatalf("header attribute %q was omitted", key)
+			}
+			if secondValue == "" {
+				if _, ok := got.(string); !ok {
+					t.Fatalf("single header type = %T, want string", got)
+				}
+			} else if _, ok := got.([]string); !ok {
+				t.Fatalf("multiple header type = %T, want []string", got)
+			}
+		}
+	})
+}
+
 func FuzzReadTruncatedBody(f *testing.F) {
 	seed := func(body []byte, readerBufferSize int) {
 		f.Add(body, readerBufferSize)
