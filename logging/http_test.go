@@ -673,6 +673,88 @@ func BenchmarkDecomposeResponseHeaders(b *testing.B) {
 	}
 }
 
+func TestResendCountAttribute(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		input      string
+		expectedKV attribute.KeyValue
+		expectedOK bool
+	}{
+		"typical retry": {
+			input:      "attempt=3; max=5",
+			expectedKV: attribute.Int("http.resend_count", 3),
+			expectedOK: true,
+		},
+		"first attempt not logged": {
+			input:      "attempt=1; max=5",
+			expectedOK: false,
+		},
+		"large count": {
+			input:      "attempt=100; max=200",
+			expectedKV: attribute.Int("http.resend_count", 100),
+			expectedOK: true,
+		},
+		"leading marker with prefix": {
+			input:      "prefix attempt=2; suffix",
+			expectedKV: attribute.Int("http.resend_count", 2),
+			expectedOK: true,
+		},
+		"empty": {
+			input:      "",
+			expectedOK: false,
+		},
+		"no marker": {
+			input:      "max=5",
+			expectedOK: false,
+		},
+		"no digits": {
+			input:      "attempt=not-a-number;",
+			expectedOK: false,
+		},
+		"missing semicolon": {
+			input:      "attempt=5",
+			expectedOK: false,
+		},
+		"empty digits": {
+			input:      "attempt=;",
+			expectedOK: false,
+		},
+		"space before semicolon": {
+			input:      "attempt=5 ;",
+			expectedOK: false,
+		},
+		"case sensitive": {
+			input:      "ATTEMPT=2;",
+			expectedOK: false,
+		},
+		"overflow is ignored": {
+			input:      "attempt=99999999999999999999999999;",
+			expectedOK: false,
+		},
+		// The parser inspects only the first "attempt=" occurrence, so a
+		// malformed first marker is not rescued by a later well-formed one.
+		"only first marker inspected": {
+			input:      "attempt=x; attempt=2;",
+			expectedOK: false,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			gotKV, gotOK := resendCountAttribute(tc.input)
+			if gotOK != tc.expectedOK {
+				t.Fatalf("resendCountAttribute(%q) ok = %v, want %v", tc.input, gotOK, tc.expectedOK)
+			}
+			if tc.expectedOK && gotKV != tc.expectedKV {
+				t.Errorf("resendCountAttribute(%q) = %v, want %v", tc.input, gotKV, tc.expectedKV)
+			}
+		})
+	}
+}
+
 func BenchmarkResendCountAttribute(b *testing.B) {
 	benchmarks := map[string]string{
 		"match":     "attempt=3; max=5",

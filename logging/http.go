@@ -279,18 +279,32 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 }
 
 func resendCountAttribute(v string) (kv attribute.KeyValue, ok bool) {
-	re := regexp.MustCompile(`attempt=(\d+);`)
-	match := re.FindStringSubmatch(v)
-	if len(match) != 2 { //nolint:mnd
+	// The Amz-Sdk-Request header is formatted by the SDK as "attempt=N; max=M",
+	// so parse the single leading attempt value directly, without regexp or
+	// allocation.
+	const marker = "attempt="
+	_, digits, found := strings.Cut(v, marker)
+	if !found {
 		return
 	}
 
-	attempt, err := strconv.Atoi(match[1])
-	if err != nil {
+	// Count the run of leading ASCII digits.
+	n := 0
+	for n < len(digits) && digits[n] >= '0' && digits[n] <= '9' {
+		n++
+	}
+
+	// Require at least one digit followed immediately by ';'.
+	if n == 0 || n >= len(digits) || digits[n] != ';' {
 		return
 	}
 
-	if attempt > 1 {
+	// Emit for any parsed value except exactly 1.
+	if digits[:n] != "1" {
+		attempt, err := strconv.Atoi(digits[:n])
+		if err != nil {
+			return
+		}
 		return attribute.Int("http.resend_count", attempt), true
 	}
 
