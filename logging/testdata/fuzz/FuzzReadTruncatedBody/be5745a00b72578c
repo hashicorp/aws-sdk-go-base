@@ -1,0 +1,3 @@
+go test fuzz v1
+[]byte("0MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8")
+int(-39)
