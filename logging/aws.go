@@ -37,11 +37,18 @@ func MaskAWSAccessKey(field []byte) []byte {
 	return field
 }
 
+// MaskAWSSensitiveValues returns a masked copy of field with AWS access and secret keys redacted.
 func MaskAWSSensitiveValues(field string) string {
 	b := unsafe.Slice(unsafe.StringData(field), len(field))
-	b = MaskAWSAccessKey(b)
-	MaskAWSSecretKeys(b)
+	b = MaskAWSSensitiveValuesBytes(b)
 	return unsafe.String(unsafe.SliceData(b), len(b))
+}
+
+// MaskAWSSensitiveValuesBytes returns a masked copy of field with AWS access and secret keys redacted.
+func MaskAWSSensitiveValuesBytes(field []byte) []byte {
+	field = MaskAWSAccessKey(field)
+	MaskAWSSecretKeys(field)
+	return field
 }
 
 // MaskAWSSecretKeys masks likely AWS secret access keys in the input.

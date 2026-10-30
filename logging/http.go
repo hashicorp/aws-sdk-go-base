@@ -5,6 +5,7 @@ package logging
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"fmt"
 	"io"
@@ -12,6 +13,7 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+	"unsafe"
 
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/slices"
@@ -263,7 +265,7 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 	key := RequestHeaderAttributeKey("Authorization")
 	if strings.HasPrefix(scheme, "AWS4-") {
 		components := regexp.MustCompile(`,\s+`).Split(params, -1)
-		var builder strings.Builder
+		var builder bytes.Buffer
 		builder.Grow(len(params))
 		for i, component := range components {
 			parts := strings.SplitAfterN(component, "=", 2)
@@ -279,9 +281,9 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 				builder.WriteString(", ")
 			}
 		}
-		return key.String(fmt.Sprintf("%s %s", scheme, MaskAWSSensitiveValues(builder.String()))), true
+		return key.String(scheme + " " + string(MaskAWSSensitiveValuesBytes(builder.Bytes()))), true
 	} else {
-		return key.String(fmt.Sprintf("%s %s", scheme, strings.Repeat("*", len(params)))), true
+		return key.String(scheme + " " + strings.Repeat("*", len(params))), true
 	}
 }
 
@@ -353,7 +355,7 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		length = 0
 	}
 
-	var builder strings.Builder
+	var builder bytes.Buffer
 	visibleLimit := length
 	if length >= len(truncationMarker) {
 		visibleLimit -= len(truncationMarker)
@@ -387,8 +389,9 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		if length < len(truncationMarker) {
 			return truncationMarker[:length]
 		}
-		masked := MaskAWSSensitiveValues(builder.String())
-		return masked[:visibleLen] + truncationMarker[:length-visibleLen]
+		masked := MaskAWSSensitiveValuesBytes(builder.Bytes())
+		masked = append(masked[:visibleLen], truncationMarker[:length-visibleLen]...)
+		return unsafe.String(unsafe.SliceData(masked), len(masked))
 	}
 	for {
 		line, err := reader.ReadSlice('\n')
@@ -451,7 +454,8 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 			if truncated && builder.Len() > length {
 				return truncatedResult(), nil
 			}
-			return MaskAWSSensitiveValues(builder.String()), nil
+			masked := MaskAWSSensitiveValuesBytes(builder.Bytes())
+			return unsafe.String(unsafe.SliceData(masked), len(masked)), nil
 		default:
 			return "", err
 		}
