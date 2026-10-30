@@ -174,34 +174,77 @@ func TestReadTruncatedBodyCRLF(t *testing.T) {
 	}
 }
 
-func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
+func TestReadTruncatedBodyTrailingDataAfterTruncation(t *testing.T) {
 	t.Parallel()
 
-	want := errors.New("read body")
-	tests := map[string][]byte{
-		"unterminated": []byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen))),
-		"terminated": append(
-			[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1)),
-			'\n',
-		),
-		"terminated_with_trailing_data": append(
-			[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-2)),
-			'\n', 'x',
-		),
+	readErr := errors.New("read body")
+
+	// truncatedResult is the result expected when a body is truncated and the
+	// trailing data reads cleanly.
+	truncatedResult := strings.Repeat("a", maxRequestBodyLen-len(truncationMarker)) + truncationMarker
+
+	tests := map[string]struct {
+		data    []byte
+		readErr error
+		want    string
+	}{
+		// When a read error occurs after truncation, it must be surfaced rather
+		// than swallowed.
+		"unterminated_error": {
+			data:    []byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen))),
+			readErr: readErr,
+		},
+		"terminated_error": {
+			data: append(
+				[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-1)),
+				'\n',
+			),
+			readErr: readErr,
+		},
+		"terminated_with_trailing_data_error": {
+			data: append(
+				[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-2)),
+				'\n', 'x',
+			),
+			readErr: readErr,
+		},
+		// When the trailing data after the truncation newline reads cleanly, the
+		// truncated result must be returned without error.
+		"terminated_with_trailing_data_no_error": {
+			data: append(
+				[]byte(strings.Repeat("a", bodyLogBufferSize(maxRequestBodyLen)-2)),
+				'\n', 'x',
+			),
+			want: truncatedResult,
+		},
 	}
 
-	for name, data := range tests {
+	for name, tc := range tests {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
 
-			reader := bufio.NewReaderSize(&readerWithError{
-				data: data,
-				err:  want,
-			}, bodyLogBufferSize(maxRequestBodyLen))
+			var underlying io.Reader
+			if tc.readErr != nil {
+				underlying = &readerWithError{data: tc.data, err: tc.readErr}
+			} else {
+				// strings.Reader signals io.EOF when exhausted, unlike
+				// readerWithError with a nil error.
+				underlying = strings.NewReader(string(tc.data))
+			}
+			reader := bufio.NewReaderSize(underlying, bodyLogBufferSize(maxRequestBodyLen))
 
-			_, err := ReadTruncatedBody(reader, maxRequestBodyLen)
-			if !errors.Is(err, want) {
-				t.Fatalf("ReadTruncatedBody() error = %v, want %v", err, want)
+			got, err := ReadTruncatedBody(reader, maxRequestBodyLen)
+			if tc.readErr != nil {
+				if !errors.Is(err, tc.readErr) {
+					t.Fatalf("ReadTruncatedBody() error = %v, want %v", err, tc.readErr)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("ReadTruncatedBody() error = %v", err)
+			}
+			if got != tc.want {
+				t.Errorf("ReadTruncatedBody() = %q, want %q", got, tc.want)
 			}
 		})
 	}
