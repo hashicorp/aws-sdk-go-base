@@ -5,6 +5,7 @@ package logging
 
 import (
 	"bufio"
+	"bytes"
 	"context"
 	"errors"
 	"io"
@@ -22,6 +23,22 @@ type readerWithError struct {
 	err  error
 }
 
+type countingBufferPool struct {
+	buffer *bytes.Buffer
+	gets   int
+	puts   int
+}
+
+func (p *countingBufferPool) Get() *bytes.Buffer {
+	p.gets++
+	return p.buffer
+}
+
+func (p *countingBufferPool) Put(buffer *bytes.Buffer) {
+	p.puts++
+	buffer.Reset()
+}
+
 func (r *readerWithError) Read(p []byte) (int, error) {
 	if len(r.data) == 0 {
 		return 0, r.err
@@ -29,6 +46,10 @@ func (r *readerWithError) Read(p []byte) (int, error) {
 	n := copy(p, r.data)
 	r.data = r.data[n:]
 	return n, r.err
+}
+
+func (r *readerWithError) Close() error {
+	return nil
 }
 
 func TestReadTruncatedBodySmallLimit(t *testing.T) {
@@ -250,6 +271,27 @@ func TestReadTruncatedBodyTrailingDataAfterTruncation(t *testing.T) {
 	}
 }
 
+func TestDefaultRequestBodyLoggerReturnsBufferOnReadError(t *testing.T) {
+	t.Parallel()
+
+	pool := &countingBufferPool{buffer: &bytes.Buffer{}}
+
+	want := errors.New("read body")
+	req := &http.Request{Body: &readerWithError{
+		data: []byte("body"),
+		err:  want,
+	}}
+
+	err := (&defaultRequestBodyLogger{pool: pool}).Log(t.Context(), req, nil)
+	if !errors.Is(err, want) {
+		t.Fatalf("Log() error = %v, want %v", err, want)
+	}
+
+	if pool.gets != 1 || pool.puts != 1 {
+		t.Errorf("pool calls = Get:%d Put:%d, want Get:1 Put:1", pool.gets, pool.puts)
+	}
+}
+
 func TestDefaultRequestBodyLogger(t *testing.T) {
 	t.Parallel()
 
@@ -331,19 +373,22 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 			t.Parallel()
 
 			expectedFullBody := tc.requestBody
+			pool := &countingBufferPool{buffer: &bytes.Buffer{}}
 
 			req := &http.Request{
 				Method: http.MethodPost,
 				URL:    &url.URL{Scheme: "https", Host: "example.com", Path: "/"},
 				Header: make(http.Header),
 			}
+			var original *testReadCloser
 			if tc.requestBody == "" {
 				req.Body = http.NoBody
 			} else {
-				req.Body = io.NopCloser(strings.NewReader(tc.requestBody))
+				original = &testReadCloser{Reader: strings.NewReader(tc.requestBody)}
+				req.Body = original
 			}
 
-			logger := &defaultRequestBodyLogger{}
+			logger := &defaultRequestBodyLogger{pool: pool}
 			var attrs []attribute.KeyValue
 
 			if err := logger.Log(t.Context(), req, &attrs); err != nil {
@@ -369,6 +414,30 @@ func TestDefaultRequestBodyLogger(t *testing.T) {
 			}
 			if string(remaining) != expectedFullBody {
 				t.Errorf("req.Body after Log:\n got: %q\nwant: %q", string(remaining), expectedFullBody)
+			}
+
+			if original == nil {
+				return
+			}
+
+			if err := req.Body.Close(); err != nil {
+				t.Fatalf("first req.Body.Close() error = %v", err)
+			}
+			if pool.puts != 1 {
+				t.Errorf("pool Put() calls after first Close() = %d, want 1", pool.puts)
+			}
+			if original.closeCalls != 1 {
+				t.Errorf("original Close() calls after first Close() = %d, want 1", original.closeCalls)
+			}
+
+			if err := req.Body.Close(); err != nil {
+				t.Fatalf("second req.Body.Close() error = %v", err)
+			}
+			if pool.puts != 1 {
+				t.Errorf("pool Put() calls after second Close() = %d, want 1", pool.puts)
+			}
+			if original.closeCalls != 1 {
+				t.Errorf("original Close() calls after second Close() = %d, want 1", original.closeCalls)
 			}
 		})
 	}
