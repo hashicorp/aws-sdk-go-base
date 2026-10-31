@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/slices"
@@ -240,41 +240,47 @@ func normalizeHeaderName(k string) string {
 }
 
 func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
-	parts := regexp.MustCompile(`\s+`).Split(v, 2) //nolint:mnd
-	if len(parts) != 2 {                           //nolint:mnd
+	// Split the scheme from the parameters at the first run of whitespace,
+	// equivalent to the regexp `\s+` split with limit 2 but without allocating.
+	wsStart := strings.IndexFunc(v, unicode.IsSpace)
+	if wsStart < 0 {
 		return attribute.KeyValue{}, false
 	}
-	scheme := parts[0]
+	scheme := v[:wsStart]
 	if scheme == "" {
 		return attribute.KeyValue{}, false
 	}
-	params := parts[1]
+	// Skip the remainder of the whitespace run to find the start of params.
+	params := strings.TrimLeftFunc(v[wsStart:], unicode.IsSpace)
 	if params == "" {
 		return attribute.KeyValue{}, false
 	}
 
 	key := RequestHeaderAttributeKey("Authorization")
 	if strings.HasPrefix(scheme, "AWS4-") {
-		components := regexp.MustCompile(`,\s+`).Split(params, -1)
+		components := strings.Split(params, ",")
 		var builder strings.Builder
-		builder.Grow(len(params))
+		builder.Grow(len(v))
 		for i, component := range components {
-			parts := strings.SplitAfterN(component, "=", 2)
-			name := parts[0]
-			value := parts[1]
-			if name != "SignedHeaders=" && name != "Credential=" {
+			component = strings.TrimSpace(component)
+			name, value, found := strings.Cut(component, "=")
+			if !found || name == "" {
+				return attribute.KeyValue{}, false
+			}
+			if name != "SignedHeaders" && name != "Credential" {
 				// "Signature" or an unknown field
 				value = "*****"
 			}
 			builder.WriteString(name)
+			builder.WriteByte('=')
 			builder.WriteString(value)
 			if i < len(components)-1 {
 				builder.WriteString(", ")
 			}
 		}
-		return key.String(fmt.Sprintf("%s %s", scheme, MaskAWSSensitiveValues(builder.String()))), true
+		return key.String(scheme + " " + MaskAWSSensitiveValues(builder.String())), true
 	} else {
-		return key.String(fmt.Sprintf("%s %s", scheme, strings.Repeat("*", len(params)))), true
+		return key.String(scheme + " " + strings.Repeat("*", len(params))), true
 	}
 }
 

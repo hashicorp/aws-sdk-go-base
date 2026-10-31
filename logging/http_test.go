@@ -151,6 +151,133 @@ func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
 	}
 }
 
+func TestAuthorizationHeaderAttribute(t *testing.T) {
+	t.Parallel()
+
+	const (
+		credential = "AKIA5PX2H2S3LHEXAMPLE"
+		signature  = "0123456789abcdef"
+	)
+	tests := map[string]struct {
+		header string
+		want   string
+		ok     bool
+	}{
+		"valid_sigv4": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ", SignedHeaders=host;x-amz-date, Signature=" + signature,
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host;x-amz-date, Signature=*****",
+			ok:     true,
+		},
+		"components_without_whitespace": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ",SignedHeaders=host,Signature=" + signature,
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****",
+			ok:     true,
+		},
+		"component_whitespace": {
+			header: "AWS4-HMAC-SHA256   Credential=" + credential + " ,  SignedHeaders=host  , Signature=" + signature + "  ",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****",
+			ok:     true,
+		},
+		"unknown_component": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ", Extra=sensitive-value, SignedHeaders=host",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, Extra=*****, SignedHeaders=host",
+			ok:     true,
+		},
+		"value_contains_equals": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + "=suffix, SignedHeaders=host=extra, Signature=" + signature + "=more",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE=suffix, SignedHeaders=host=extra, Signature=*****",
+			ok:     true,
+		},
+		"non_aws_scheme": {
+			header: "Bearer secret-token",
+			want:   "Bearer ************",
+			ok:     true,
+		},
+		"missing_equals": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ", Signature",
+		},
+		"trailing_comma": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ",",
+		},
+		"empty_component_name": {
+			header: "AWS4-HMAC-SHA256 =value",
+		},
+		"empty_values": {
+			header: "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=",
+			want:   "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=*****",
+			ok:     true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, ok := authorizationHeaderAttribute(tc.header)
+			if ok != tc.ok {
+				t.Fatalf("authorizationHeaderAttribute() ok = %t, want %t", ok, tc.ok)
+			}
+			if ok && got.Value.AsString() != tc.want {
+				t.Errorf("authorizationHeaderAttribute() = %q, want %q", got.Value.AsString(), tc.want)
+			}
+		})
+	}
+}
+
+func TestAuthorizationHeaderAttributeSensitiveValues(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		header string
+		want   string
+		ok     bool
+	}{
+		"sigv4": {
+			header: "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, SignedHeaders=host, Signature=signature",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****",
+			ok:     true,
+		},
+		"bearer": {
+			header: "Bearer bearer-token",
+			want:   "Bearer ************",
+			ok:     true,
+		},
+		"basic": {
+			header: "Basic dXNlcjpwYXNzd29yZA==",
+			want:   "Basic ********************",
+			ok:     true,
+		},
+		"empty_values": {
+			header: "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=",
+			want:   "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=*****",
+			ok:     true,
+		},
+		"missing_equals": {
+			header: "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, Signature",
+		},
+		"trailing_comma": {
+			header: "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE,",
+		},
+		"empty_component_name": {
+			header: "AWS4-HMAC-SHA256 =value",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, ok := authorizationHeaderAttribute(tc.header)
+			if ok != tc.ok {
+				t.Fatalf("authorizationHeaderAttribute() ok = %t, want %t", ok, tc.ok)
+			}
+			if ok && got.Value.AsString() != tc.want {
+				t.Errorf("authorizationHeaderAttribute() = %q, want %q", got.Value.AsString(), tc.want)
+			}
+		})
+	}
+}
+
 func TestDefaultRequestBodyLogger(t *testing.T) {
 	t.Parallel()
 
