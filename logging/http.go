@@ -230,13 +230,24 @@ func RequestHeaderAttributeKey(k string) attribute.Key {
 }
 
 func requestHeaderAttributeName(k string) string {
-	return fmt.Sprintf("http.request.header.%s", normalizeHeaderName(k))
+	return "http.request.header." + normalizeHeaderName(k)
 }
 
 func normalizeHeaderName(k string) string {
-	canonical := http.CanonicalHeaderKey(k)
-	lower := strings.ToLower(canonical)
-	return strings.ReplaceAll(lower, "-", "_")
+	// Lowercase ASCII letters and replace '-' with '_'. HTTP headers are ASCII.
+	b := make([]byte, len(k))
+	for i := 0; i < len(k); i++ {
+		c := k[i]
+		switch {
+		case c >= 'A' && c <= 'Z':
+			b[i] = c + ('a' - 'A')
+		case c == '-':
+			b[i] = '_'
+		default:
+			b[i] = c
+		}
+	}
+	return string(b)
 }
 
 // authorizationAttributeKey is the attribute key for the Authorization header.
@@ -340,7 +351,7 @@ func ResponseHeaderAttributeKey(k string) attribute.Key {
 }
 
 func responseHeaderAttributeName(k string) string {
-	return fmt.Sprintf("http.response.header.%s", normalizeHeaderName(k))
+	return "http.response.header." + normalizeHeaderName(k)
 }
 
 // cleanUpHeaderAttributes converts header attributes with a single element to a string
