@@ -240,8 +240,7 @@ func normalizeHeaderName(k string) string {
 }
 
 func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
-	// Split the scheme from the parameters at the first run of whitespace,
-	// equivalent to the regexp `\s+` split with limit 2 but without allocating.
+	// Split the scheme from the parameters at the first run of whitespace
 	wsStart := strings.IndexFunc(v, unicode.IsSpace)
 	if wsStart < 0 {
 		return attribute.KeyValue{}, false
