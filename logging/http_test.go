@@ -585,17 +585,15 @@ func BenchmarkDecomposeRequestHeaders(b *testing.B) {
 		"resend_only": {
 			"Amz-Sdk-Request": {"attempt=2; max=3"},
 		},
-		// Header-count sweep (#4): shows how allocations scale with the number
-		// of distinct headers.
+		// Header-count sweep: shows how allocations scale with the number of distinct headers.
 		"many_headers_1":   manyHeaders(1),
 		"many_headers_25":  manyHeaders(25),
 		"many_headers_100": manyHeaders(100),
-		// Authorization byte-size sweep (#3): shows how memory scales with the
-		// length of a single long AWS4 field.
+		// Authorization byte-size sweep: shows how memory scales with the length of a single long AWS4 field.
 		"large_auth_256B": largeAuthHeader(256),
 		"large_auth_1KiB": largeAuthHeader(1024),
 		"large_auth_4KiB": largeAuthHeader(4 * 1024),
-		// AWS4 component-count worst case (#5): many comma-separated components.
+		// AWS4 component-count worst case: many comma-separated components.
 		"many_component_auth_50":  manyComponentAuthHeader(50),
 		"many_component_auth_200": manyComponentAuthHeader(200),
 		"multi_valued": {
