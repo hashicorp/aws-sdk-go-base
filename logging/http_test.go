@@ -1096,6 +1096,102 @@ func TestResendCountAttribute(t *testing.T) {
 	}
 }
 
+func TestNormalizeHeaderName(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"canonical hyphenated": {
+			input:    "Content-Type",
+			expected: "content_type",
+		},
+		"already lowercase hyphenated": {
+			input:    "content-type",
+			expected: "content_type",
+		},
+		"uppercase hyphenated": {
+			input:    "CONTENT-TYPE",
+			expected: "content_type",
+		},
+		"mixed case": {
+			input:    "mIxEd-CaSe",
+			expected: "mixed_case",
+		},
+		"multiple segments": {
+			input:    "X-Amz-Request-Id",
+			expected: "x_amz_request_id",
+		},
+		"underscore preserved": {
+			input:    "Content_Length",
+			expected: "content_length",
+		},
+		"already normalized": {
+			input:    "x_already_normal",
+			expected: "x_already_normal",
+		},
+		"single token": {
+			input:    "single",
+			expected: "single",
+		},
+		"double hyphen": {
+			input:    "X-With--Double-Hyphen",
+			expected: "x_with__double_hyphen",
+		},
+		"empty": {
+			input:    "",
+			expected: "",
+		},
+		"acronym segment": {
+			input:    "WWW-Authenticate",
+			expected: "www_authenticate",
+		},
+		"space preserved": {
+			input:    "X Forwarded For",
+			expected: "x forwarded for",
+		},
+		"hyphen and space mix": {
+			input:    "X-With Space-Mix",
+			expected: "x_with space_mix",
+		},
+		"invalid byte preserved": {
+			input:    "Invalid@Header",
+			expected: "invalid@header",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := normalizeHeaderName(tc.input); got != tc.expected {
+				t.Errorf("normalizeHeaderName(%q) = %q, want %q", tc.input, got, tc.expected)
+			}
+		})
+	}
+}
+
+var normalizeHeaderNameSink string
+
+func BenchmarkNormalizeHeaderName(b *testing.B) {
+	benchmarks := map[string]string{
+		"canonical":     "Content-Type",
+		"already_lower": "content-type",
+		"long_multi":    "X-Amz-Request-Id",
+		"single_token":  "Host",
+	}
+
+	for name, input := range benchmarks {
+		b.Run(name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				normalizeHeaderNameSink = normalizeHeaderName(input)
+			}
+		})
+	}
+}
+
 func BenchmarkResendCountAttribute(b *testing.B) {
 	benchmarks := map[string]string{
 		"match":     "attempt=3; max=5",
