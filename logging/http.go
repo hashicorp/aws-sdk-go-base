@@ -239,6 +239,9 @@ func normalizeHeaderName(k string) string {
 	return strings.ReplaceAll(lower, "-", "_")
 }
 
+// authorizationAttributeKey is the attribute key for the Authorization header.
+var authorizationAttributeKey = RequestHeaderAttributeKey("Authorization")
+
 func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 	// Split the scheme from the parameters at the first run of whitespace
 	wsStart := strings.IndexFunc(v, unicode.IsSpace)
@@ -255,7 +258,7 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 		return attribute.KeyValue{}, false
 	}
 
-	key := RequestHeaderAttributeKey("Authorization")
+	key := authorizationAttributeKey
 	if strings.HasPrefix(scheme, "AWS4-") {
 		components := strings.Split(params, ",")
 		var builder strings.Builder
