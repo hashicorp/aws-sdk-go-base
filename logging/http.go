@@ -271,10 +271,16 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 
 	key := authorizationAttributeKey
 	if strings.HasPrefix(scheme, "AWS4-") {
-		components := strings.Split(params, ",")
 		var builder strings.Builder
 		builder.Grow(len(v))
-		for i, component := range components {
+		// Iterate the comma-separated components without allocating a slice.
+		// rest holds the unprocessed remainder; more reports whether another
+		// comma follows, so a trailing comma still yields a final empty
+		// component (matching strings.Split).
+		rest := params
+		first := true
+		for {
+			component, next, more := strings.Cut(rest, ",")
 			component = strings.TrimSpace(component)
 			name, value, found := strings.Cut(component, "=")
 			if !found || name == "" {
@@ -284,12 +290,17 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 				// "Signature" or an unknown field
 				value = "*****"
 			}
+			if !first {
+				builder.WriteString(", ")
+			}
+			first = false
 			builder.WriteString(name)
 			builder.WriteByte('=')
 			builder.WriteString(value)
-			if i < len(components)-1 {
-				builder.WriteString(", ")
+			if !more {
+				break
 			}
+			rest = next
 		}
 		return key.String(scheme + " " + MaskAWSSensitiveValues(builder.String())), true
 	} else {
