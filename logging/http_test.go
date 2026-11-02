@@ -690,6 +690,19 @@ func TestResendCountAttribute(t *testing.T) {
 			input:      "attempt=1; max=5",
 			expectedOK: false,
 		},
+		"zero attempt not logged": {
+			input:      "attempt=0; max=5",
+			expectedOK: false,
+		},
+		"zero-padded first attempt not logged": {
+			input:      "attempt=01; max=5",
+			expectedOK: false,
+		},
+		"zero-padded resend logged": {
+			input:      "attempt=02; max=5",
+			expectedKV: attribute.Int("http.resend_count", 2),
+			expectedOK: true,
+		},
 		"large count": {
 			input:      "attempt=100; max=200",
 			expectedKV: attribute.Int("http.resend_count", 100),

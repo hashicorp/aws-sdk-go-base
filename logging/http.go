@@ -299,12 +299,13 @@ func resendCountAttribute(v string) (kv attribute.KeyValue, ok bool) {
 		return
 	}
 
-	// Emit for any parsed value except exactly 1.
-	if digits[:n] != "1" {
-		attempt, err := strconv.Atoi(digits[:n])
-		if err != nil {
-			return
-		}
+	// Emit only for a numeric attempt greater than one, so a first attempt
+	// (including a zero-padded "01") and a zero count are not logged as resends.
+	attempt, err := strconv.Atoi(digits[:n])
+	if err != nil {
+		return
+	}
+	if attempt > 1 {
 		return attribute.Int("http.resend_count", attempt), true
 	}
 
