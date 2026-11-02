@@ -11,12 +11,24 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"unicode"
 )
 
 const (
 	fuzzAccessKey = "AKIA5PX2H2S3LHEXAMPLE"
 	fuzzSecretKey = "MfP3tIG15gibzIx7CSbhSNkgD5sSV4k2tWXgN8U8"
 )
+
+// isASCII reports whether s contains only ASCII bytes. HTTP header names are
+// ASCII, so fuzz inputs with non-ASCII bytes are out of the supported domain.
+func isASCII(s string) bool {
+	for i := 0; i < len(s); i++ {
+		if s[i] > unicode.MaxASCII {
+			return false
+		}
+	}
+	return true
+}
 
 func FuzzAuthorizationHeaderAttribute(f *testing.F) {
 	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, SignedHeaders=host, Signature=signature")
@@ -76,6 +88,10 @@ func FuzzDecomposeRequestHeaders(f *testing.F) {
 			header.Set("Amz-Sdk-Request", retry)
 		}
 		if headerName != "" {
+			// Header names are ASCII; non-ASCII names are out of domain.
+			if !isASCII(headerName) {
+				t.Skip()
+			}
 			// Prefix to prevent collisions with headers removed by decomposeRequestHeaders.
 			headerName = "X-Fuzz-" + headerName
 			header[headerName] = []string{headerValue}
@@ -129,6 +145,10 @@ func FuzzDecomposeResponseHeaders(f *testing.F) {
 	f.Fuzz(func(t *testing.T, headerName, firstValue, secondValue, contentLength string) {
 		header := make(http.Header)
 		if headerName != "" {
+			// Header names are ASCII; non-ASCII names are out of domain.
+			if !isASCII(headerName) {
+				t.Skip()
+			}
 			// Prefix to prevent collisions with headers removed by DecomposeResponseHeaders.
 			headerName = "X-Fuzz-" + headerName
 			header[headerName] = []string{firstValue}
