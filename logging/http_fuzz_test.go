@@ -60,6 +60,10 @@ func FuzzDecomposeRequestHeaders(f *testing.F) {
 	f.Add("Basic dXNlcjpwYXNz", "attempt=not-a-number;", "X-Example", "value", "token")
 	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, Signature", "attempt=3;", "X-Example", "value", "")
 	f.Add("AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE,", "", "X-Example", "value", "")
+	// This header would collide with "Content-Length", which is expected to be removed from headers
+	f.Add("Bearer secret-token", "", "Content_Length", "456", "")
+	// This header would collide with "User-Agent", which is expected to be removed from headers
+	f.Add("Bearer secret-token", "", "User_Agent", "test", "")
 
 	f.Fuzz(func(t *testing.T, authorization, retry, headerName, headerValue, token string) {
 		// Raw authorization input exercises arbitrary parser input without
@@ -72,6 +76,8 @@ func FuzzDecomposeRequestHeaders(f *testing.F) {
 			header.Set("Amz-Sdk-Request", retry)
 		}
 		if headerName != "" {
+			// Prefix to prevent collisions with headers removed by decomposeRequestHeaders.
+			headerName = "X-Fuzz-" + headerName
 			header[headerName] = []string{headerValue}
 		}
 		securityToken := "token:" + base64.RawURLEncoding.EncodeToString([]byte(token))
@@ -117,10 +123,14 @@ func FuzzDecomposeResponseHeaders(f *testing.F) {
 	f.Add("X-With-Hyphen", "first", "second", "")
 	f.Add("X_With_Underscore", "value", "", "")
 	f.Add("", "", "", "0")
+	// This header would collide with "Content-Length", which is expected to be removed from headers
+	f.Add("Content_Length", "456", "", "")
 
 	f.Fuzz(func(t *testing.T, headerName, firstValue, secondValue, contentLength string) {
 		header := make(http.Header)
 		if headerName != "" {
+			// Prefix to prevent collisions with headers removed by DecomposeResponseHeaders.
+			headerName = "X-Fuzz-" + headerName
 			header[headerName] = []string{firstValue}
 			if secondValue != "" {
 				header[headerName] = append(header[headerName], secondValue)
@@ -147,7 +157,7 @@ func FuzzDecomposeResponseHeaders(f *testing.F) {
 				t.Fatal("empty attribute key")
 			}
 		}
-		if headerName != "" && !strings.EqualFold(headerName, "Content-Length") {
+		if headerName != "" {
 			key := responseHeaderAttributeName(headerName)
 			got, ok := first[key]
 			if !ok {
