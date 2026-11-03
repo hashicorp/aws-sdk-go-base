@@ -63,10 +63,10 @@ func hasAccessKeyPrefix(in []byte, i int) bool {
 	return false
 }
 
-// MaskAWSAccessKey masks likely AWS access keys in field in place and returns it.
+// MaskAWSAccessKey masks likely AWS access keys in field in place.
 // It is equivalent to the regexp `UniqueIDRegex`, masking the match's middle,
 // but scans byte-wise without allocating.
-func MaskAWSAccessKey(field []byte) []byte {
+func MaskAWSAccessKey(field []byte) {
 	const (
 		accessKeyPrefixLen = 4
 		minLen             = accessKeyPrefixLen + 16 // prefix + [A-Z0-9]{16,}
@@ -94,7 +94,6 @@ func MaskAWSAccessKey(field []byte) []byte {
 		}
 		i = end
 	}
-	return field
 }
 
 func MaskAWSSensitiveValues(field string) string {

@@ -30,7 +30,8 @@ func FuzzMaskAWSAccessKey(f *testing.F) {
 
 	f.Fuzz(func(t *testing.T, input string) {
 		// Each implementation masks in place, so give each its own copy.
-		got := MaskAWSAccessKey([]byte(input))
+		got := []byte(input)
+		MaskAWSAccessKey(got)
 		want := referenceMaskAWSAccessKey([]byte(input))
 		if string(got) != string(want) {
 			t.Fatalf("MaskAWSAccessKey(%q) = %q, UniqueIDRegex reference = %q", input, string(got), string(want))
