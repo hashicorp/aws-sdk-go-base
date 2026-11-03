@@ -310,7 +310,8 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 		}
 		// Mask in place, then copy out once into a caller-owned string. The
 		// single copy is what lets the buffer be pooled later.
-		return key.String(string(MaskAWSSensitiveValuesBytes(builder.Bytes()))), true
+		MaskAWSSensitiveValuesBytes(builder.Bytes())
+		return key.String(string(builder.Bytes())), true
 	} else {
 		return key.String(scheme + " " + strings.Repeat("*", len(params))), true
 	}
@@ -433,7 +434,8 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 		if length < len(truncationMarker) {
 			return truncationMarker[:length]
 		}
-		masked := MaskAWSSensitiveValuesBytes(builder.Bytes())
+		MaskAWSSensitiveValuesBytes(builder.Bytes())
+		masked := builder.Bytes()
 		masked = append(masked[:visibleLen], truncationMarker[:length-visibleLen]...)
 		return unsafe.String(unsafe.SliceData(masked), len(masked))
 	}
@@ -495,7 +497,8 @@ func ReadTruncatedBody(reader *bufio.Reader, length int) (string, error) {
 			if truncated && builder.Len() > length {
 				return truncatedResult(), nil
 			}
-			masked := MaskAWSSensitiveValuesBytes(builder.Bytes())
+			MaskAWSSensitiveValuesBytes(builder.Bytes())
+			masked := builder.Bytes()
 			return unsafe.String(unsafe.SliceData(masked), len(masked)), nil
 		default:
 			return "", err

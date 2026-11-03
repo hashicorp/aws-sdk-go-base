@@ -244,12 +244,9 @@ func TestMaskAWSSensitiveValuesBytes(t *testing.T) {
 			t.Parallel()
 
 			input := []byte(test.input)
-			got := MaskAWSSensitiveValuesBytes(input)
-			if string(got) != test.expected {
-				t.Errorf("unexpected diff +wanted: %s, -got: %s", test.expected, got)
-			}
-			if len(input) > 0 && unsafe.SliceData(got) != unsafe.SliceData(input) {
-				t.Error("MaskAWSSensitiveValuesBytes should mask in place and return the same slice")
+			MaskAWSSensitiveValuesBytes(input)
+			if string(input) != test.expected {
+				t.Errorf("unexpected diff +wanted: %s, -got: %s", test.expected, input)
 			}
 		})
 	}
@@ -317,7 +314,7 @@ func BenchmarkMaskAWSSensitiveValuesBytes(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
 		copy(field, source)
-		field = MaskAWSSensitiveValuesBytes(field)
+		MaskAWSSensitiveValuesBytes(field)
 	}
 	dump = string(field)
 }
