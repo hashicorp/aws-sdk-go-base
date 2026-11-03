@@ -38,9 +38,30 @@ var awsAccessKeyPrefixes = [...]string{
 	"ANPA", "ANVA", "APKA", "AROA", "ASCA", "ASIA",
 }
 
+// upperAlnumTable and base64Table classify bytes for the masking scanners with
+// a single array load instead of a chain of range comparisons per byte.
+var (
+	upperAlnumTable [256]bool // [A-Z0-9]
+	base64Table     [256]bool // [A-Za-z0-9/+=]
+)
+
+func init() {
+	for c := 0; c < 256; c++ {
+		b := byte(c)
+		upper := (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
+		upperAlnumTable[c] = upper
+		base64Table[c] = upper || (b >= 'a' && b <= 'z') || b == '/' || b == '+' || b == '='
+	}
+}
+
 // isUpperAlnum reports whether b is in [A-Z0-9].
 func isUpperAlnum(b byte) bool {
-	return (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
+	return upperAlnumTable[b]
+}
+
+// isBase64 reports whether b is in the base64 alphabet [A-Za-z0-9/+=].
+func isBase64(b byte) bool {
+	return base64Table[b]
 }
 
 // hasAccessKeyPrefix reports whether in[i:] begins with a valid access-key prefix.
@@ -123,7 +144,7 @@ func MaskAWSSecretKeys(in []byte) {
 	for i := range len {
 		b := in[i]
 
-		if (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9') || b == '/' || b == '+' || b == '=' {
+		if isBase64(b) {
 			// base64 character.
 			base64Characters++
 		} else {
