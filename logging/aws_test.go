@@ -100,6 +100,132 @@ func TestMaskAWSSensitiveValues(t *testing.T) {
 	}
 }
 
+func TestMaskAWSAccessKey(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		// One case per IAM unique-ID prefix (prefix + 17 chars = 21).
+		"prefix_ABIA": {
+			input:    "ABIACKCEVSQ6C2EXAMPLE1",
+			expected: "ABIA**************PLE1",
+		},
+		"prefix_ACCA": {
+			input:    "ACCACKCEVSQ6C2EXAMPLE1",
+			expected: "ACCA**************PLE1",
+		},
+		"prefix_AGPA": {
+			input:    "AGPACKCEVSQ6C2EXAMPLE1",
+			expected: "AGPA**************PLE1",
+		},
+		"prefix_AIDA": {
+			input:    "AIDACKCEVSQ6C2EXAMPLE1",
+			expected: "AIDA**************PLE1",
+		},
+		"prefix_AIPA": {
+			input:    "AIPACKCEVSQ6C2EXAMPLE1",
+			expected: "AIPA**************PLE1",
+		},
+		"prefix_AKIA": {
+			input:    "AKIACKCEVSQ6C2EXAMPLE1",
+			expected: "AKIA**************PLE1",
+		},
+		"prefix_ANPA": {
+			input:    "ANPACKCEVSQ6C2EXAMPLE1",
+			expected: "ANPA**************PLE1",
+		},
+		"prefix_ANVA": {
+			input:    "ANVACKCEVSQ6C2EXAMPLE1",
+			expected: "ANVA**************PLE1",
+		},
+		"prefix_APKA": {
+			input:    "APKACKCEVSQ6C2EXAMPLE1",
+			expected: "APKA**************PLE1",
+		},
+		"prefix_AROA": {
+			input:    "AROACKCEVSQ6C2EXAMPLE1",
+			expected: "AROA**************PLE1",
+		},
+		"prefix_ASCA": {
+			input:    "ASCACKCEVSQ6C2EXAMPLE1",
+			expected: "ASCA**************PLE1",
+		},
+		"prefix_ASIA": {
+			input:    "ASIACKCEVSQ6C2EXAMPLE1",
+			expected: "ASIA**************PLE1",
+		},
+
+		// A3T is a 3-char prefix followed by one [A-Z0-9].
+		"prefix_A3T": {
+			input:    "A3TXABCDEFGHIJKLMNOPQR",
+			expected: "A3TX**************OPQR",
+		},
+
+		// Length boundary: 19 total (4+15) is too short; 20 (4+16) matches.
+		"too_short_19": {
+			input:    "AKIA123456789012345",
+			expected: "AKIA123456789012345",
+		},
+		"minimum_length_20": {
+			input:    "AKIA1234567890123456",
+			expected: "AKIA************3456",
+		},
+
+		// Prefix appears mid-run; preceding alnum is preserved.
+		"prefix_mid_run": {
+			input:    "XXAKIACKCEVSQ6C2EXAMPLE1",
+			expected: "XXAKIA**************PLE1",
+		},
+
+		// Back-to-back prefixes: leftmost match greedily spans the whole run.
+		"back_to_back": {
+			input:    "AKIAAKIACKCEVSQ6C2EXAMPLE1",
+			expected: "AKIA******************PLE1",
+		},
+
+		// Multiple keys separated by a non-alnum boundary.
+		"multiple_keys": {
+			input:    "AKIACKCEVSQ6C2EXAMPLE1 AROACKCEVSQ6C2EXAMPLE1",
+			expected: "AKIA**************PLE1 AROA**************PLE1",
+		},
+
+		// Near-miss prefix (AKIB is not a valid prefix): unchanged.
+		"near_miss_prefix": {
+			input:    "AKIB1234567890123456789",
+			expected: "AKIB1234567890123456789",
+		},
+
+		// A3T not followed by [A-Z0-9]: no match.
+		"a3t_non_alnum": {
+			input:    "A3T-1234567890123456789",
+			expected: "A3T-1234567890123456789",
+		},
+
+		"no_key": {
+			input:    "no keys here at all",
+			expected: "no keys here at all",
+		},
+		"empty": {
+			input:    "",
+			expected: "",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got := []byte(tc.input)
+			MaskAWSAccessKey(got)
+			if string(got) != tc.expected {
+				t.Errorf("MaskAWSAccessKey(%q) = %q, want %q", tc.input, string(got), tc.expected)
+			}
+		})
+	}
+}
+
 func BenchmarkMaskAWSAccessKey(b *testing.B) {
 	b.ReportAllocs()
 	for b.Loop() {
