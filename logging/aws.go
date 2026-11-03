@@ -6,7 +6,6 @@ package logging
 import (
 	"bytes"
 	"regexp"
-	"unsafe"
 )
 
 // IAM Unique ID prefixes from
@@ -122,17 +121,6 @@ func MaskAWSAccessKey(field []byte) {
 		}
 		i = end
 	}
-}
-
-// MaskAWSSensitiveValues returns a masked copy of field with AWS access and secret keys redacted.
-//
-// Deprecated: Use [MaskAWSSensitiveValuesBytes] instead, which masks in place
-// without allocating. Callers holding a string can convert with
-// MaskAWSSensitiveValuesBytes([]byte(field)).
-func MaskAWSSensitiveValues(field string) string {
-	b := []byte(field)
-	MaskAWSSensitiveValuesBytes(b)
-	return unsafe.String(unsafe.SliceData(b), len(b))
 }
 
 // MaskAWSSensitiveValuesBytes masks AWS access and secret keys in field in place.

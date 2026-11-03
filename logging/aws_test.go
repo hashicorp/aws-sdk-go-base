@@ -221,21 +221,6 @@ var maskAWSSensitiveValuesTests = map[string]maskAWSSensitiveValuesTestCase{
 	},
 }
 
-func TestMaskAWSSensitiveValues(t *testing.T) {
-	t.Parallel()
-
-	for name, test := range maskAWSSensitiveValuesTests {
-		t.Run(name, func(t *testing.T) {
-			t.Parallel()
-
-			got := MaskAWSSensitiveValues(test.input)
-			if got != test.expected {
-				t.Errorf("unexpected diff +wanted: %s, -got: %s", test.expected, got)
-			}
-		})
-	}
-}
-
 func TestMaskAWSSensitiveValuesBytes(t *testing.T) {
 	t.Parallel()
 
@@ -285,21 +270,6 @@ func BenchmarkMaskAWSSecretKeys(b *testing.B) {
 }
 `))
 	}
-}
-
-func BenchmarkMaskAWSSensitiveValues(b *testing.B) {
-	var s string
-	b.ReportAllocs()
-	for b.Loop() {
-		s = MaskAWSSensitiveValues(`
-{
-	"AWSSecretKey": "LEfH8nZmFN4BGIJnku6lkChHydRN5B/YlWCIjOte",
-	"BucketName": "test-bucket",
-	"AWSKeyId": "AIDACKCEVSQ6C2EXAMPLE",
-}
-`)
-	}
-	dump = s
 }
 
 func BenchmarkMaskAWSSensitiveValuesBytes(b *testing.B) {

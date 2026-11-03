@@ -3,11 +3,11 @@
 
 BREAKING CHANGES
 
+* Removes `logging.MaskAWSSensitiveValues` in favor of `logging.MaskAWSSensitiveValuesBytes`. ([#1542](https://github.com/hashicorp/aws-sdk-go-base/pull/1542))
 * `logging.MaskAWSAccessKey()` now modifies input in place and does not return masked value. ([#1561](https://github.com/hashicorp/aws-sdk-go-base/pull/1561))
 
 ENHANCEMENTS
 
-* Deprecates `logging.MaskAWSSensitiveValues`. ([#1542](https://github.com/hashicorp/aws-sdk-go-base/pull/1542))
 * Reduces memory allocation in logging. ([#1542](https://github.com/hashicorp/aws-sdk-go-base/pull/1542))
 * Reduces memory allocation in logging. ([#1555](https://github.com/hashicorp/aws-sdk-go-base/pull/1555))
 * Reduces memory allocation in logging. ([#1560](https://github.com/hashicorp/aws-sdk-go-base/pull/1560))
