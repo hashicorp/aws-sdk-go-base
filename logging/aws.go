@@ -30,16 +30,76 @@ const (
 	unmaskedLast  = 4
 )
 
+// awsAccessKeyPrefixes are the IAM unique-ID prefixes that precede an access
+// key's 16+ trailing [A-Z0-9] characters. "A3T" is a 3-character prefix
+// followed by one more [A-Z0-9]; the rest are 4 characters.
+var awsAccessKeyPrefixes = [...]string{
+	"ABIA", "ACCA", "AGPA", "AIDA", "AIPA", "AKIA",
+	"ANPA", "ANVA", "APKA", "AROA", "ASCA", "ASIA",
+}
+
+// isUpperAlnum reports whether b is in [A-Z0-9].
+func isUpperAlnum(b byte) bool {
+	return (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
+}
+
+// hasAccessKeyPrefix reports whether in[i:] begins with a valid access-key prefix.
+// Every prefix starts with 'A', so callers should gate on that first.
+func hasAccessKeyPrefix(in []byte, i int) bool {
+	if i+4 > len(in) {
+		return false
+	}
+	// in[i] == 'A' is guaranteed by the caller's gate, but re-checked cheaply
+	// via the comparisons below.
+	if in[i+1] == '3' && in[i] == 'A' && in[i+2] == 'T' && isUpperAlnum(in[i+3]) {
+		return true
+	}
+	p := in[i : i+4 : i+4]
+	for _, prefix := range awsAccessKeyPrefixes {
+		if p[0] == prefix[0] && p[1] == prefix[1] && p[2] == prefix[2] && p[3] == prefix[3] {
+			return true
+		}
+	}
+	return false
+}
+
+// MaskAWSAccessKey masks likely AWS access keys in field in place and returns it.
+// It is equivalent to the regexp `UniqueIDRegex`, masking the match's middle,
+// but scans byte-wise without allocating.
 func MaskAWSAccessKey(field []byte) []byte {
-	field = UniqueIDRegex.ReplaceAllFunc(field, func(s []byte) []byte {
-		return partialMaskString(s, unmaskedFirst, unmaskedLast)
-	})
+	const (
+		accessKeyPrefixLen = 4
+		minLen             = accessKeyPrefixLen + 16 // prefix + [A-Z0-9]{16,}
+	)
+	i := 0
+	for i < len(field) {
+		// Every access-key prefix starts with 'A'; skip other bytes cheaply.
+		if field[i] != 'A' || !hasAccessKeyPrefix(field, i) {
+			i++
+			continue
+		}
+		// Extend to the end of the contiguous [A-Z0-9] run (greedy match).
+		end := i + accessKeyPrefixLen
+		for end < len(field) && isUpperAlnum(field[end]) {
+			end++
+		}
+		if end-i < minLen {
+			// Not enough trailing characters; advance past this position.
+			i++
+			continue
+		}
+		// Mask the middle, preserving the first and last unmasked bytes.
+		for j := i + unmaskedFirst; j < end-unmaskedLast; j++ {
+			field[j] = '*'
+		}
+		i = end
+	}
 	return field
 }
 
 func MaskAWSSensitiveValues(field string) string {
-	b := unsafe.Slice(unsafe.StringData(field), len(field))
-	b = MaskAWSAccessKey(b)
+	b := []byte(field)
+	MaskAWSAccessKey(b)
 	MaskAWSSecretKeys(b)
 	return unsafe.String(unsafe.SliceData(b), len(b))
 }
