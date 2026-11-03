@@ -125,6 +125,10 @@ func MaskAWSAccessKey(field []byte) {
 }
 
 // MaskAWSSensitiveValues returns a masked copy of field with AWS access and secret keys redacted.
+//
+// Deprecated: Use [MaskAWSSensitiveValuesBytes] instead, which masks in place
+// without allocating. Callers holding a string can convert with
+// MaskAWSSensitiveValuesBytes([]byte(field)).
 func MaskAWSSensitiveValues(field string) string {
 	b := []byte(field)
 	MaskAWSSensitiveValuesBytes(b)
