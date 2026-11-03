@@ -24,6 +24,7 @@ func FuzzMaskAWSAccessKey(f *testing.F) {
 	f.Add("AKIA5PX2H2S3LHEXAMP")  // 19, too short
 	f.Add("AKIA5PX2H2S3LHEXAMPL") // 20, minimum
 	f.Add("AKIAAKIA5PX2H2S3LHEXAMPLE")
+	f.Add("AAKIACKCEVSQ6C2EXAMPLE1")
 	f.Add("prefix AKIA5PX2H2S3LHEXAMPLE and AROA1234567890ABCDEFGH suffix")
 	f.Add("no keys here at all")
 	f.Add("")

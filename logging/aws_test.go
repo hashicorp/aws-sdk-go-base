@@ -93,6 +93,17 @@ func TestMaskAWSAccessKey(t *testing.T) {
 			expected: "AKIA******************PLE1",
 		},
 
+		// Leading 'A' that is not a prefix, immediately followed by a valid
+		// prefix: the match starts at the second 'A'. Guards the next-'A' search.
+		"leading_a_then_prefix": {
+			input:    "AAKIACKCEVSQ6C2EXAMPLE1",
+			expected: "AAKIA**************PLE1",
+		},
+		"two_leading_a_then_prefix": {
+			input:    "AAAKIACKCEVSQ6C2EXAMPLE1",
+			expected: "AAAKIA**************PLE1",
+		},
+
 		// Multiple keys separated by a non-alnum boundary.
 		"multiple_keys": {
 			input:    "AKIACKCEVSQ6C2EXAMPLE1 AROACKCEVSQ6C2EXAMPLE1",
