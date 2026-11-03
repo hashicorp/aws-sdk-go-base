@@ -275,8 +275,7 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 		builder.Grow(len(v))
 		// Iterate the comma-separated components without allocating a slice.
 		// rest holds the unprocessed remainder; more reports whether another
-		// comma follows, so a trailing comma still yields a final empty
-		// component (matching strings.Split).
+		// comma follows, so a trailing comma still yields a final empty component.
 		rest := params
 		first := true
 		for {
