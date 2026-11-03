@@ -1,6 +1,16 @@
 <!-- markdownlint-disable single-title -->
 # v2.0.0 (Unreleased)
 
+BREAKING CHANGES
+
+* `logging.MaskAWSAccessKey()` now modifies input in place and does not return masked value. ([#1561](https://github.com/hashicorp/aws-sdk-go-base/pull/1561))
+
+ENHANCEMENTS
+
+* Reduces memory allocation in logging. ([#1555](https://github.com/hashicorp/aws-sdk-go-base/pull/1555))
+* Reduces memory allocation in logging. ([#1560](https://github.com/hashicorp/aws-sdk-go-base/pull/1560))
+* Reduces memory allocation in logging. ([#1561](https://github.com/hashicorp/aws-sdk-go-base/pull/1561))
+
 # v2.0.0-beta.76 (2026-10-15)
 
 BUG FIXES
