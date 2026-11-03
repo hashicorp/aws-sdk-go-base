@@ -145,14 +145,13 @@ func MaskAWSSecretKeys(in []byte) {
 	const (
 		secretKeyLen = 40
 	)
-	len := len(in)
+	l := len(in)
 	base64Characters := 0
 
-	for i := range len {
+	for i := range l {
 		b := in[i]
 
 		if isBase64(b) {
-			// base64 character.
 			base64Characters++
 		} else {
 			if base64Characters == secretKeyLen {
@@ -166,7 +165,7 @@ func MaskAWSSecretKeys(in []byte) {
 	}
 
 	if base64Characters == secretKeyLen {
-		for j := (len - secretKeyLen) + unmaskedFirst; j < len-unmaskedLast; j++ {
+		for j := (l - secretKeyLen) + unmaskedFirst; j < l-unmaskedLast; j++ {
 			in[j] = '*'
 		}
 	}
