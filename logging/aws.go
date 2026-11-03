@@ -4,6 +4,7 @@
 package logging
 
 import (
+	"bytes"
 	"regexp"
 	"unsafe"
 )
@@ -46,7 +47,7 @@ var (
 )
 
 func init() {
-	for c := 0; c < 256; c++ {
+	for c := range 256 {
 		b := byte(c)
 		upper := (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
 		upperAlnumTable[c] = upper
@@ -94,8 +95,14 @@ func MaskAWSAccessKey(field []byte) {
 	)
 	i := 0
 	for i < len(field) {
-		// Every access-key prefix starts with 'A'; skip other bytes cheaply.
-		if field[i] != 'A' || !hasAccessKeyPrefix(field, i) {
+		// Jump to the next 'A' (every access-key prefix starts with 'A')
+		a := bytes.IndexByte(field[i:], 'A')
+		if a < 0 {
+			return
+		}
+		i += a
+
+		if !hasAccessKeyPrefix(field, i) {
 			i++
 			continue
 		}
