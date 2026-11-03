@@ -9,9 +9,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"strconv"
 	"strings"
+	"unicode"
 
 	awsmiddleware "github.com/aws/aws-sdk-go-v2/aws/middleware"
 	"github.com/hashicorp/aws-sdk-go-base/v2/internal/slices"
@@ -230,66 +230,110 @@ func RequestHeaderAttributeKey(k string) attribute.Key {
 }
 
 func requestHeaderAttributeName(k string) string {
-	return fmt.Sprintf("http.request.header.%s", normalizeHeaderName(k))
+	return "http.request.header." + normalizeHeaderName(k)
 }
 
 func normalizeHeaderName(k string) string {
-	canonical := http.CanonicalHeaderKey(k)
-	lower := strings.ToLower(canonical)
-	return strings.ReplaceAll(lower, "-", "_")
+	// Lowercase ASCII letters and replace '-' with '_'. HTTP headers are ASCII.
+	b := make([]byte, len(k))
+	for i := 0; i < len(k); i++ {
+		c := k[i]
+		switch {
+		case c >= 'A' && c <= 'Z':
+			b[i] = c + ('a' - 'A')
+		case c == '-':
+			b[i] = '_'
+		default:
+			b[i] = c
+		}
+	}
+	return string(b)
 }
 
+// authorizationAttributeKey is the attribute key for the Authorization header.
+var authorizationAttributeKey = RequestHeaderAttributeKey("Authorization")
+
 func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
-	parts := regexp.MustCompile(`\s+`).Split(v, 2) //nolint:mnd
-	if len(parts) != 2 {                           //nolint:mnd
+	// Split the scheme from the parameters at the first run of whitespace
+	wsStart := strings.IndexFunc(v, unicode.IsSpace)
+	if wsStart < 0 {
 		return attribute.KeyValue{}, false
 	}
-	scheme := parts[0]
+	scheme := v[:wsStart]
 	if scheme == "" {
 		return attribute.KeyValue{}, false
 	}
-	params := parts[1]
+	// Skip the remainder of the whitespace run to find the start of params.
+	params := strings.TrimLeftFunc(v[wsStart:], unicode.IsSpace)
 	if params == "" {
 		return attribute.KeyValue{}, false
 	}
 
-	key := RequestHeaderAttributeKey("Authorization")
+	key := authorizationAttributeKey
 	if strings.HasPrefix(scheme, "AWS4-") {
-		components := regexp.MustCompile(`,\s+`).Split(params, -1)
 		var builder strings.Builder
-		builder.Grow(len(params))
-		for i, component := range components {
-			parts := strings.SplitAfterN(component, "=", 2)
-			name := parts[0]
-			value := parts[1]
-			if name != "SignedHeaders=" && name != "Credential=" {
+		builder.Grow(len(v))
+		// Iterate the comma-separated components without allocating a slice.
+		// rest holds the unprocessed remainder; more reports whether another
+		// comma follows, so a trailing comma still yields a final empty component.
+		rest := params
+		first := true
+		for {
+			component, next, more := strings.Cut(rest, ",")
+			component = strings.TrimSpace(component)
+			name, value, found := strings.Cut(component, "=")
+			if !found || name == "" {
+				return attribute.KeyValue{}, false
+			}
+			if name != "SignedHeaders" && name != "Credential" {
 				// "Signature" or an unknown field
 				value = "*****"
 			}
-			builder.WriteString(name)
-			builder.WriteString(value)
-			if i < len(components)-1 {
+			if !first {
 				builder.WriteString(", ")
 			}
+			first = false
+			builder.WriteString(name)
+			builder.WriteByte('=')
+			builder.WriteString(value)
+			if !more {
+				break
+			}
+			rest = next
 		}
-		return key.String(fmt.Sprintf("%s %s", scheme, MaskAWSSensitiveValues(builder.String()))), true
+		return key.String(scheme + " " + MaskAWSSensitiveValues(builder.String())), true
 	} else {
-		return key.String(fmt.Sprintf("%s %s", scheme, strings.Repeat("*", len(params)))), true
+		return key.String(scheme + " " + strings.Repeat("*", len(params))), true
 	}
 }
 
 func resendCountAttribute(v string) (kv attribute.KeyValue, ok bool) {
-	re := regexp.MustCompile(`attempt=(\d+);`)
-	match := re.FindStringSubmatch(v)
-	if len(match) != 2 { //nolint:mnd
+	// The Amz-Sdk-Request header is formatted by the SDK as "attempt=N; max=M",
+	// so parse the single leading attempt value directly, without regexp or
+	// allocation.
+	const marker = "attempt="
+	_, digits, found := strings.Cut(v, marker)
+	if !found {
 		return
 	}
 
-	attempt, err := strconv.Atoi(match[1])
+	// Count the run of leading ASCII digits.
+	n := 0
+	for n < len(digits) && digits[n] >= '0' && digits[n] <= '9' {
+		n++
+	}
+
+	// Require at least one digit followed immediately by ';'.
+	if n == 0 || n >= len(digits) || digits[n] != ';' {
+		return
+	}
+
+	// Emit only for a numeric attempt greater than one, so a first attempt
+	// (including a zero-padded "01") and a zero count are not logged as resends.
+	attempt, err := strconv.Atoi(digits[:n])
 	if err != nil {
 		return
 	}
-
 	if attempt > 1 {
 		return attribute.Int("http.resend_count", attempt), true
 	}
@@ -317,7 +361,7 @@ func ResponseHeaderAttributeKey(k string) attribute.Key {
 }
 
 func responseHeaderAttributeName(k string) string {
-	return fmt.Sprintf("http.response.header.%s", normalizeHeaderName(k))
+	return "http.response.header." + normalizeHeaderName(k)
 }
 
 // cleanUpHeaderAttributes converts header attributes with a single element to a string

@@ -7,10 +7,12 @@ import (
 	"bufio"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"math"
 	"net/http"
 	"net/url"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -148,6 +150,335 @@ func TestReadTruncatedBodyReturnsReaderErrorAfterTruncation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestAuthorizationHeaderAttribute(t *testing.T) {
+	t.Parallel()
+
+	const (
+		credential = "AKIA5PX2H2S3LHEXAMPLE"
+		signature  = "0123456789abcdef"
+	)
+	tests := map[string]struct {
+		header string
+		want   string
+		ok     bool
+	}{
+		"valid_sigv4": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ", SignedHeaders=host;x-amz-date, Signature=" + signature,
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host;x-amz-date, Signature=*****",
+			ok:     true,
+		},
+		"components_without_whitespace": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ",SignedHeaders=host,Signature=" + signature,
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****",
+			ok:     true,
+		},
+		"component_whitespace": {
+			header: "AWS4-HMAC-SHA256   Credential=" + credential + " ,  SignedHeaders=host  , Signature=" + signature + "  ",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****",
+			ok:     true,
+		},
+		"unknown_component": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ", Extra=sensitive-value, SignedHeaders=host",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, Extra=*****, SignedHeaders=host",
+			ok:     true,
+		},
+		"value_contains_equals": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + "=suffix, SignedHeaders=host=extra, Signature=" + signature + "=more",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE=suffix, SignedHeaders=host=extra, Signature=*****",
+			ok:     true,
+		},
+		"non_aws_scheme": {
+			header: "Bearer secret-token",
+			want:   "Bearer ************",
+			ok:     true,
+		},
+		"missing_equals": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ", Signature",
+		},
+		"trailing_comma": {
+			header: "AWS4-HMAC-SHA256 Credential=" + credential + ",",
+		},
+		"empty_component_name": {
+			header: "AWS4-HMAC-SHA256 =value",
+		},
+		"empty_values": {
+			header: "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=",
+			want:   "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=*****",
+			ok:     true,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, ok := authorizationHeaderAttribute(tc.header)
+			if ok != tc.ok {
+				t.Fatalf("authorizationHeaderAttribute() ok = %t, want %t", ok, tc.ok)
+			}
+			if ok && got.Value.AsString() != tc.want {
+				t.Errorf("authorizationHeaderAttribute() = %q, want %q", got.Value.AsString(), tc.want)
+			}
+		})
+	}
+}
+
+func TestAuthorizationHeaderAttributeSensitiveValues(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		header string
+		want   string
+		ok     bool
+	}{
+		"sigv4": {
+			header: "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, SignedHeaders=host, Signature=signature",
+			want:   "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****",
+			ok:     true,
+		},
+		"bearer": {
+			header: "Bearer bearer-token",
+			want:   "Bearer ************",
+			ok:     true,
+		},
+		"basic": {
+			header: "Basic dXNlcjpwYXNzd29yZA==",
+			want:   "Basic ********************",
+			ok:     true,
+		},
+		"empty_values": {
+			header: "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=",
+			want:   "AWS4-HMAC-SHA256 Credential=, SignedHeaders=, Signature=*****",
+			ok:     true,
+		},
+		"missing_equals": {
+			header: "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, Signature",
+		},
+		"trailing_comma": {
+			header: "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE,",
+		},
+		"empty_component_name": {
+			header: "AWS4-HMAC-SHA256 =value",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, ok := authorizationHeaderAttribute(tc.header)
+			if ok != tc.ok {
+				t.Fatalf("authorizationHeaderAttribute() ok = %t, want %t", ok, tc.ok)
+			}
+			if ok && got.Value.AsString() != tc.want {
+				t.Errorf("authorizationHeaderAttribute() = %q, want %q", got.Value.AsString(), tc.want)
+			}
+		})
+	}
+}
+
+func TestDecomposeRequestHeaders(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		header    http.Header
+		assertion func(t *testing.T, values map[string]any)
+	}{
+		"ordinary_headers_and_exclusions": {
+			header: http.Header{
+				"Content-Length":  {"123"},
+				"User-Agent":      {"sdk-agent"},
+				"X-Custom-Header": {"value"},
+				"X-Multiple":      {"first", "second"},
+			},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.request.header.x_custom_header"], "value"; got != want {
+					t.Errorf("single header = %#v, want %#v", got, want)
+				}
+				if got, want := values["http.request.header.x_multiple"], []string{"first", "second"}; !reflect.DeepEqual(got, want) {
+					t.Errorf("multiple header = %#v, want %#v", got, want)
+				}
+				for _, key := range []string{"http.request.header.content_length", "http.request.header.user_agent"} {
+					if _, ok := values[key]; ok {
+						t.Errorf("excluded header %q was emitted", key)
+					}
+				}
+			},
+		},
+		"resend_count": {
+			header: http.Header{"Amz-Sdk-Request": {"attempt=3; max=5", "attempt=9; max=10"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.resend_count"], int64(3); got != want {
+					t.Errorf("resend count = %v, want %v", got, want)
+				}
+			},
+		},
+		"no_resend_count": {
+			header: http.Header{"Amz-Sdk-Request": {"attempt=1; max=5", "attempt=9; max=10"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if _, ok := values["http.resend_count"]; ok {
+					t.Error("resend count was emitted")
+				}
+			},
+		},
+		"malformed_resend_count": {
+			header: http.Header{"Amz-Sdk-Request": {"attempt=not-a-number;"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if _, ok := values["http.resend_count"]; ok {
+					t.Error("resend count was emitted")
+				}
+			},
+		},
+		"valid_sigv4": {
+			header: http.Header{"Authorization": {"AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, SignedHeaders=host, Signature=signature"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.request.header.authorization"], "AWS4-HMAC-SHA256 Credential=AKIA*************MPLE, SignedHeaders=host, Signature=*****"; got != want {
+					t.Errorf("authorization = %q, want %q", got, want)
+				}
+			},
+		},
+		"non_aws_authorization": {
+			header: http.Header{"Authorization": {"Bearer bearer-token"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.request.header.authorization"], "Bearer ************"; got != want {
+					t.Errorf("authorization = %q, want %q", got, want)
+				}
+			},
+		},
+		"malformed_aws4_is_omitted": {
+			header: http.Header{"Authorization": {"AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE, Signature"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if _, ok := values["http.request.header.authorization"]; ok {
+					t.Error("authorization was emitted")
+				}
+			},
+		},
+		"security_token": {
+			header: http.Header{"X-Amz-Security-Token": {"security-token"}},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.request.header.x_amz_security_token"], "*****"; got != want {
+					t.Errorf("security token = %q, want %q", got, want)
+				}
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			headerBefore := tc.header.Clone()
+			values := attributeValues(decomposeRequestHeaders(&http.Request{Header: tc.header}))
+			if !reflect.DeepEqual(tc.header, headerBefore) {
+				t.Error("request header was modified")
+			}
+			tc.assertion(t, values)
+		})
+	}
+}
+
+func TestDecomposeResponseHeaders(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		header    http.Header
+		assertion func(t *testing.T, values map[string]any)
+	}{
+		"ordinary_headers_and_content_length": {
+			header: http.Header{
+				"Content-Length":  {"123"},
+				"X-Custom-Header": {"value"},
+				"X-Multiple":      {"first", "second"},
+			},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.response.header.x_custom_header"], "value"; got != want {
+					t.Errorf("single header = %#v, want %#v", got, want)
+				}
+				if got, want := values["http.response.header.x_multiple"], []string{"first", "second"}; !reflect.DeepEqual(got, want) {
+					t.Errorf("multiple header = %#v, want %#v", got, want)
+				}
+				if _, ok := values["http.response.header.content_length"]; ok {
+					t.Error("content length was emitted")
+				}
+			},
+		},
+		"normalized_names": {
+			header: http.Header{
+				"mIxEd-Case-Header": {"mixed"},
+				"X_With_Underscore": {"underscore"},
+			},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.response.header.mixed_case_header"], "mixed"; got != want {
+					t.Errorf("mixed-case header = %#v, want %#v", got, want)
+				}
+				if got, want := values["http.response.header.x_with_underscore"], "underscore"; got != want {
+					t.Errorf("underscore header = %#v, want %#v", got, want)
+				}
+			},
+		},
+		"empty_headers_and_values": {
+			header: http.Header{
+				"X-Empty": {""},
+				"X-Mixed": {"", "value"},
+			},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if got, want := values["http.response.header.x_empty"], ""; got != want {
+					t.Errorf("empty header = %#v, want %#v", got, want)
+				}
+				if got, want := values["http.response.header.x_mixed"], []string{"", "value"}; !reflect.DeepEqual(got, want) {
+					t.Errorf("mixed header = %#v, want %#v", got, want)
+				}
+			},
+		},
+		"empty": {
+			header: http.Header{},
+			assertion: func(t *testing.T, values map[string]any) {
+				t.Helper()
+				if len(values) != 0 {
+					t.Errorf("attributes = %#v, want empty", values)
+				}
+			},
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			before := tc.header.Clone()
+			values := attributeValues(DecomposeResponseHeaders(&http.Response{Header: tc.header}))
+			if !reflect.DeepEqual(tc.header, before) {
+				t.Error("response header was modified")
+			}
+			for key := range values {
+				if !strings.HasPrefix(key, "http.response.header.") {
+					t.Errorf("non-response header attribute %q", key)
+				}
+			}
+			tc.assertion(t, values)
+		})
+	}
+}
+
+func attributeValues(attrs []attribute.KeyValue) map[string]any {
+	values := make(map[string]any, len(attrs))
+	for _, attr := range attrs {
+		values[string(attr.Key)] = attr.Value.AsInterface()
+	}
+	return values
 }
 
 func TestDefaultRequestBodyLogger(t *testing.T) {
@@ -504,4 +835,416 @@ func TestS3ObjectBodyLoggers(t *testing.T) {
 			t.Errorf("expected %v, got %v", []attribute.KeyValue{expected}, attrs)
 		}
 	})
+}
+
+// Sinks hold benchmark results in package scope so the compiler cannot treat
+// the benchmarked calls as dead code and eliminate them.
+var (
+	// headerAttributesSink receives the []attribute.KeyValue result of the
+	// header-decomposition benchmarks.
+	headerAttributesSink []attribute.KeyValue
+	// attributeKeyValueSink receives the attribute returned by the helper benchmarks.
+	attributeKeyValueSink attribute.KeyValue
+	// boolSink receives the ok return value from the helper benchmarks.
+	boolSink bool
+)
+
+// benchSignedHeader is a realistic SigV4-signed request: Authorization with an
+// AWS4 scheme, a security token, and an Amz-Sdk-Request retry attempt.
+var benchSignedHeader = http.Header{
+	"Authorization":        {"AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE/20231030/us-east-1/s3/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"},
+	"X-Amz-Security-Token": {"FwoGZXIvYXdzEXAMPLEsecuritytokenvalue"},
+	"Amz-Sdk-Request":      {"attempt=2; max=3"},
+	"X-Amz-Date":           {"20231030T120000Z"},
+	"X-Amz-Content-Sha256": {"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+	"Content-Type":         {"application/x-amz-json-1.0"},
+	"User-Agent":           {"aws-sdk-go-v2/1.0"},
+	"Content-Length":       {"42"},
+}
+
+// manyHeaders returns a header map with n distinct single-valued headers.
+func manyHeaders(n int) http.Header {
+	h := make(http.Header, n)
+	for i := range n {
+		h.Set(fmt.Sprintf("X-Custom-Header-%d", i), fmt.Sprintf("value-%d", i))
+	}
+	return h
+}
+
+// largeAuthHeader returns an AWS4 Authorization header whose SignedHeaders list
+// is padded so the whole header value is at least targetBytes long. This
+// stresses the bytes.Buffer / MaskAWSSensitiveValuesBytes path in
+// authorizationHeaderAttribute, the worst case for memory in this function.
+func largeAuthHeader(targetBytes int) http.Header {
+	var signed strings.Builder
+	signed.WriteString("host")
+	for i := 0; signed.Len() < targetBytes; i++ {
+		fmt.Fprintf(&signed, ";x-amz-meta-header-%d", i)
+	}
+	v := "AWS4-HMAC-SHA256 Credential=AKIA5PX2H2S3LHEXAMPLE/20231030/us-east-1/s3/aws4_request, SignedHeaders=" +
+		signed.String() + ", Signature=aabbccddeeff00112233445566778899aabbccddeeff00112233445566778899"
+	return http.Header{"Authorization": {v}}
+}
+
+// manyComponentAuthHeader returns an AWS4 Authorization header with n
+// comma-separated components. authorizationHeaderAttribute splits the
+// parameter string on commas and allocates per component, so this is the worst
+// case for allocation count (as opposed to largeAuthHeader, which stresses
+// total byte size via a single long field).
+func manyComponentAuthHeader(n int) http.Header {
+	components := make([]string, 0, n+2)
+	components = append(components, "Credential=AKIA5PX2H2S3LHEXAMPLE/20231030/us-east-1/s3/aws4_request")
+	for i := range n {
+		components = append(components, fmt.Sprintf("Signature%d=aabbccddeeff00112233445566778899", i))
+	}
+	components = append(components, "SignedHeaders=host")
+	v := "AWS4-HMAC-SHA256 " + strings.Join(components, ", ")
+	return http.Header{"Authorization": {v}}
+}
+
+func BenchmarkDecomposeRequestHeaders(b *testing.B) {
+	benchmarks := map[string]http.Header{
+		"empty": {},
+		"minimal": {
+			"X-Custom-Header": {"value"},
+		},
+		"realistic_signed": benchSignedHeader,
+		"security_token_only": {
+			"X-Amz-Security-Token": {"FwoGZXIvYXdzEXAMPLEsecuritytokenvalue"},
+		},
+		"resend_only": {
+			"Amz-Sdk-Request": {"attempt=2; max=3"},
+		},
+		// Header-count sweep: shows how allocations scale with the number of distinct headers.
+		"many_headers_1":   manyHeaders(1),
+		"many_headers_25":  manyHeaders(25),
+		"many_headers_100": manyHeaders(100),
+		// Authorization byte-size sweep: shows how memory scales with the length of a single long AWS4 field.
+		"large_auth_256B": largeAuthHeader(256),
+		"large_auth_1KiB": largeAuthHeader(1024),
+		"large_auth_4KiB": largeAuthHeader(4 * 1024),
+		// AWS4 component-count worst case: many comma-separated components.
+		"many_component_auth_50":  manyComponentAuthHeader(50),
+		"many_component_auth_200": manyComponentAuthHeader(200),
+		"multi_valued": {
+			"X-Multiple":  {"first", "second", "third", "fourth"},
+			"X-Multiple2": {"a", "b", "c", "d", "e", "f"},
+		},
+	}
+
+	for name, header := range benchmarks {
+		b.Run(name, func(b *testing.B) {
+			// decomposeRequestHeaders clones req.Header internally and never
+			// mutates the original, so a single request can be reused across
+			// iterations without the input drifting between runs.
+			req := &http.Request{Header: header}
+			b.ReportAllocs()
+			for b.Loop() {
+				headerAttributesSink = decomposeRequestHeaders(req)
+			}
+		})
+	}
+}
+
+// benchResponseHeader is a realistic AWS API response header set.
+var benchResponseHeader = http.Header{
+	"Content-Type":     {"application/x-amz-json-1.0"},
+	"Content-Length":   {"1234"},
+	"X-Amzn-Requestid": {"a1b2c3d4-5678-90ab-cdef-EXAMPLE11111"},
+	"X-Amz-Id-2":       {"EXAMPLEidentifier2valuethatislongerthanmost=="},
+	"Date":             {"Thu, 30 Oct 2026 12:00:00 GMT"},
+	"Server":           {"AmazonS3"},
+	"X-Amz-Request-Id": {"EXAMPLEREQUESTID1"},
+	"Vary":             {"Accept-Encoding"},
+}
+
+func BenchmarkDecomposeResponseHeaders(b *testing.B) {
+	benchmarks := map[string]http.Header{
+		"empty": {},
+		"minimal": {
+			"Content-Type": {"application/json"},
+		},
+		"realistic": benchResponseHeader,
+		// content_length_only exercises the header.Del("Content-Length") branch
+		// unique to DecomposeResponseHeaders; it should produce near-empty output.
+		"content_length_only": {
+			"Content-Length": {"1234"},
+		},
+		// large_value_4KiB shows how memory scales with the length of a single
+		// header value, independent of header count.
+		"large_value_4KiB": {
+			"X-Amz-Meta-Data": {strings.Repeat("a", 4*1024)},
+		},
+		// Header-count sweep: shows how allocations scale with header count.
+		"many_headers_1":   manyHeaders(1),
+		"many_headers_25":  manyHeaders(25),
+		"many_headers_100": manyHeaders(100),
+		// Multi-valued headers (e.g. several Set-Cookie values) are preserved as
+		// string slices rather than collapsed by cleanUpHeaderAttributes.
+		"multi_valued": {
+			"Set-Cookie": {"a=1", "b=2", "c=3", "d=4"},
+			"Vary":       {"Accept-Encoding", "Origin"},
+		},
+	}
+
+	for name, header := range benchmarks {
+		b.Run(name, func(b *testing.B) {
+			// DecomposeResponseHeaders clones resp.Header internally and never
+			// mutates the original, so a single response can be reused across
+			// iterations without the input drifting between runs.
+			resp := &http.Response{Header: header}
+			b.ReportAllocs()
+			for b.Loop() {
+				headerAttributesSink = DecomposeResponseHeaders(resp)
+			}
+		})
+	}
+}
+
+func TestResendCountAttribute(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		input      string
+		expectedKV attribute.KeyValue
+		expectedOK bool
+	}{
+		"typical retry": {
+			input:      "attempt=3; max=5",
+			expectedKV: attribute.Int("http.resend_count", 3),
+			expectedOK: true,
+		},
+		"first attempt not logged": {
+			input:      "attempt=1; max=5",
+			expectedOK: false,
+		},
+		"zero attempt not logged": {
+			input:      "attempt=0; max=5",
+			expectedOK: false,
+		},
+		"zero-padded first attempt not logged": {
+			input:      "attempt=01; max=5",
+			expectedOK: false,
+		},
+		"zero-padded resend logged": {
+			input:      "attempt=02; max=5",
+			expectedKV: attribute.Int("http.resend_count", 2),
+			expectedOK: true,
+		},
+		"large count": {
+			input:      "attempt=100; max=200",
+			expectedKV: attribute.Int("http.resend_count", 100),
+			expectedOK: true,
+		},
+		"leading marker with prefix": {
+			input:      "prefix attempt=2; suffix",
+			expectedKV: attribute.Int("http.resend_count", 2),
+			expectedOK: true,
+		},
+		"empty": {
+			input:      "",
+			expectedOK: false,
+		},
+		"no marker": {
+			input:      "max=5",
+			expectedOK: false,
+		},
+		"no digits": {
+			input:      "attempt=not-a-number;",
+			expectedOK: false,
+		},
+		"missing semicolon": {
+			input:      "attempt=5",
+			expectedOK: false,
+		},
+		"empty digits": {
+			input:      "attempt=;",
+			expectedOK: false,
+		},
+		"space before semicolon": {
+			input:      "attempt=5 ;",
+			expectedOK: false,
+		},
+		"case sensitive": {
+			input:      "ATTEMPT=2;",
+			expectedOK: false,
+		},
+		"overflow is ignored": {
+			input:      "attempt=99999999999999999999999999;",
+			expectedOK: false,
+		},
+		// The parser inspects only the first "attempt=" occurrence, so a
+		// malformed first marker is not rescued by a later well-formed one.
+		"only first marker inspected": {
+			input:      "attempt=x; attempt=2;",
+			expectedOK: false,
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			gotKV, gotOK := resendCountAttribute(tc.input)
+			if gotOK != tc.expectedOK {
+				t.Fatalf("resendCountAttribute(%q) ok = %v, want %v", tc.input, gotOK, tc.expectedOK)
+			}
+			if tc.expectedOK && gotKV != tc.expectedKV {
+				t.Errorf("resendCountAttribute(%q) = %v, want %v", tc.input, gotKV, tc.expectedKV)
+			}
+		})
+	}
+}
+
+func TestNormalizeHeaderName(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		input    string
+		expected string
+	}{
+		"canonical hyphenated": {
+			input:    "Content-Type",
+			expected: "content_type",
+		},
+		"already lowercase hyphenated": {
+			input:    "content-type",
+			expected: "content_type",
+		},
+		"uppercase hyphenated": {
+			input:    "CONTENT-TYPE",
+			expected: "content_type",
+		},
+		"mixed case": {
+			input:    "mIxEd-CaSe",
+			expected: "mixed_case",
+		},
+		"multiple segments": {
+			input:    "X-Amz-Request-Id",
+			expected: "x_amz_request_id",
+		},
+		"underscore preserved": {
+			input:    "Content_Length",
+			expected: "content_length",
+		},
+		"already normalized": {
+			input:    "x_already_normal",
+			expected: "x_already_normal",
+		},
+		"single token": {
+			input:    "single",
+			expected: "single",
+		},
+		"double hyphen": {
+			input:    "X-With--Double-Hyphen",
+			expected: "x_with__double_hyphen",
+		},
+		"empty": {
+			input:    "",
+			expected: "",
+		},
+		"acronym segment": {
+			input:    "WWW-Authenticate",
+			expected: "www_authenticate",
+		},
+		"space preserved": {
+			input:    "X Forwarded For",
+			expected: "x forwarded for",
+		},
+		"hyphen and space mix": {
+			input:    "X-With Space-Mix",
+			expected: "x_with space_mix",
+		},
+		"invalid byte preserved": {
+			input:    "Invalid@Header",
+			expected: "invalid@header",
+		},
+	}
+
+	for name, tc := range tests {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := normalizeHeaderName(tc.input); got != tc.expected {
+				t.Errorf("normalizeHeaderName(%q) = %q, want %q", tc.input, got, tc.expected)
+			}
+		})
+	}
+}
+
+var normalizeHeaderNameSink string
+
+func BenchmarkNormalizeHeaderName(b *testing.B) {
+	benchmarks := map[string]string{
+		"canonical":     "Content-Type",
+		"already_lower": "content-type",
+		"long_multi":    "X-Amz-Request-Id",
+		"single_token":  "Host",
+	}
+
+	for name, input := range benchmarks {
+		b.Run(name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				normalizeHeaderNameSink = normalizeHeaderName(input)
+			}
+		})
+	}
+}
+
+func BenchmarkResendCountAttribute(b *testing.B) {
+	benchmarks := map[string]string{
+		"match":     "attempt=3; max=5",
+		"no_resend": "attempt=1; max=5",
+		"malformed": "attempt=not-a-number;",
+	}
+
+	for name, v := range benchmarks {
+		b.Run(name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				attributeKeyValueSink, boolSink = resendCountAttribute(v)
+			}
+		})
+	}
+}
+
+func BenchmarkAuthorizationHeaderAttribute(b *testing.B) {
+	benchmarks := map[string]string{
+		"aws4":                    benchSignedHeader.Get("Authorization"),
+		"non_aws_bearer":          "Bearer bearer-token",
+		"large_aws4_256B":         largeAuthHeader(256).Get("Authorization"),
+		"large_aws4_1KiB":         largeAuthHeader(1024).Get("Authorization"),
+		"large_aws4_4KiB":         largeAuthHeader(4 * 1024).Get("Authorization"),
+		"many_component_aws4_50":  manyComponentAuthHeader(50).Get("Authorization"),
+		"many_component_aws4_200": manyComponentAuthHeader(200).Get("Authorization"),
+	}
+
+	for name, v := range benchmarks {
+		b.Run(name, func(b *testing.B) {
+			b.ReportAllocs()
+			for b.Loop() {
+				attributeKeyValueSink, boolSink = authorizationHeaderAttribute(v)
+			}
+		})
+	}
+}
+
+func BenchmarkCleanUpHeaderAttributes(b *testing.B) {
+	// Build a mix of single-valued (collapsed) and multi-valued (preserved)
+	// string-slice attributes, matching what httpconv.RequestHeader produces.
+	attrs := make([]attribute.KeyValue, 0, 25)
+	for i := range 25 {
+		key := RequestHeaderAttributeKey(fmt.Sprintf("X-Custom-Header-%d", i))
+		if i%5 == 0 {
+			attrs = append(attrs, key.StringSlice([]string{"first", "second"}))
+		} else {
+			attrs = append(attrs, key.StringSlice([]string{fmt.Sprintf("value-%d", i)}))
+		}
+	}
+
+	b.ReportAllocs()
+	for b.Loop() {
+		headerAttributesSink = cleanUpHeaderAttributes(attrs)
+	}
 }
