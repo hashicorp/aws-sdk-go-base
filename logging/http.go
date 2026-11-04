@@ -272,14 +272,16 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 	}
 
 	key := authorizationAttributeKey
+
+	// Write "scheme " into a builder shared by both branches. Sizing to len(v)
+	// is an upper bound for either the masked AWS4 value or the fully-masked
+	// parameter section.
+	var builder strings.Builder
+	builder.Grow(len(v))
+	builder.WriteString(scheme)
+	builder.WriteByte(' ')
+
 	if strings.HasPrefix(scheme, "AWS4-") {
-		var builder strings.Builder
-		builder.Grow(len(v))
-		// Write "scheme " into the builder first so the whole value can be
-		// masked in place. The scheme is always "AWS4-*", which the masker
-		// never rewrites.
-		builder.WriteString(scheme)
-		builder.WriteByte(' ')
 		// Iterate the comma-separated components without allocating a slice.
 		// rest holds the unprocessed remainder; more reports whether another
 		// comma follows, so a trailing comma still yields a final empty component.
@@ -312,12 +314,17 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 		// there is a single allocation for the whole value. Mask in place over
 		// those bytes: this is safe because the builder's backing array is freshly
 		// heap-allocated (never a read-only literal) and is not observed before
-		// masking, and masking preserves length.
+		// masking, and masking preserves length. The "AWS4-*" scheme written
+		// above is never rewritten by the masker.
 		s := builder.String()
 		MaskAWSSensitiveValuesBytes(unsafe.Slice(unsafe.StringData(s), len(s)))
 		return key.String(s), true
 	} else {
-		return key.String(scheme + " " + strings.Repeat("*", len(params))), true
+		// Mask the entire parameter section.
+		for range len(params) {
+			builder.WriteByte('*')
+		}
+		return key.String(builder.String()), true
 	}
 }
 
