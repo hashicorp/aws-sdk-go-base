@@ -273,11 +273,11 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 
 	key := authorizationAttributeKey
 	if strings.HasPrefix(scheme, "AWS4-") {
-		var builder bytes.Buffer
+		var builder strings.Builder
 		builder.Grow(len(v))
-		// Write "scheme " into the buffer first so the whole value can be
-		// masked in place and copied out once. The scheme is always "AWS4-*",
-		// which the masker never rewrites.
+		// Write "scheme " into the builder first so the whole value can be
+		// masked in place. The scheme is always "AWS4-*", which the masker
+		// never rewrites.
 		builder.WriteString(scheme)
 		builder.WriteByte(' ')
 		// Iterate the comma-separated components without allocating a slice.
@@ -308,9 +308,14 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 			}
 			rest = next
 		}
-		// Mask in place, then copy out once into a caller-owned string.
-		MaskAWSSensitiveValuesBytes(builder.Bytes())
-		return key.String(builder.String()), true
+		// strings.Builder.String() returns its backing bytes without copying, so
+		// there is a single allocation for the whole value. Mask in place over
+		// those bytes: this is safe because the builder's backing array is freshly
+		// heap-allocated (never a read-only literal) and is not observed before
+		// masking, and masking preserves length.
+		s := builder.String()
+		MaskAWSSensitiveValuesBytes(unsafe.Slice(unsafe.StringData(s), len(s)))
+		return key.String(s), true
 	} else {
 		return key.String(scheme + " " + strings.Repeat("*", len(params))), true
 	}
