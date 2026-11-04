@@ -311,7 +311,7 @@ func authorizationHeaderAttribute(v string) (attribute.KeyValue, bool) {
 		// Mask in place, then copy out once into a caller-owned string. The
 		// single copy is what lets the buffer be pooled later.
 		MaskAWSSensitiveValuesBytes(builder.Bytes())
-		return key.String(string(builder.Bytes())), true
+		return key.String(builder.String()), true
 	} else {
 		return key.String(scheme + " " + strings.Repeat("*", len(params))), true
 	}
