@@ -231,7 +231,9 @@ func FuzzReadTruncatedBody(f *testing.F) {
 		// impractically large reader buffers.
 		readerBufferSize = int(uint(readerBufferSize)%uint(maxReaderBufferSize)) + 1
 		normalized := fuzzNormalizeBody(body)
-		expectedMasked := MaskAWSSensitiveValues(normalized)
+		maskedBytes := []byte(normalized)
+		MaskAWSSensitiveValuesBytes(maskedBytes)
+		expectedMasked := string(maskedBytes)
 
 		for _, maxLength := range []int{maxRequestBodyLen, MaxResponseBodyLen} {
 			reader := bufio.NewReaderSize(bytes.NewReader(body), readerBufferSize)

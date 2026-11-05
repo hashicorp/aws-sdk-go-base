@@ -4,8 +4,8 @@
 package logging
 
 import (
+	"bytes"
 	"regexp"
-	"unsafe"
 )
 
 // IAM Unique ID prefixes from
@@ -30,18 +30,103 @@ const (
 	unmaskedLast  = 4
 )
 
-func MaskAWSAccessKey(field []byte) []byte {
-	field = UniqueIDRegex.ReplaceAllFunc(field, func(s []byte) []byte {
-		return partialMaskString(s, unmaskedFirst, unmaskedLast)
-	})
-	return field
+// awsAccessKeyPrefixes are the four-character IAM unique-ID prefixes that precede an access
+// key's 16+ trailing [A-Z0-9] characters.
+// Note: "A3T[A-Z0-9];" is handled separately in hasAccessKeyPrefix.
+var awsAccessKeyPrefixes = [...]string{
+	"ABIA", "ACCA", "AGPA", "AIDA", "AIPA", "AKIA",
+	"ANPA", "ANVA", "APKA", "AROA", "ASCA", "ASIA",
 }
 
-func MaskAWSSensitiveValues(field string) string {
-	b := unsafe.Slice(unsafe.StringData(field), len(field))
-	b = MaskAWSAccessKey(b)
-	MaskAWSSecretKeys(b)
-	return unsafe.String(unsafe.SliceData(b), len(b))
+// upperAlnumTable and base64Table classify bytes for the masking scanners with
+// a single array load instead of a chain of range comparisons per byte.
+var (
+	upperAlnumTable [256]bool // [A-Z0-9]
+	base64Table     [256]bool // [A-Za-z0-9/+=]
+)
+
+func init() {
+	for c := range 256 {
+		b := byte(c)
+		upper := (b >= 'A' && b <= 'Z') || (b >= '0' && b <= '9')
+		upperAlnumTable[c] = upper
+		base64Table[c] = upper || (b >= 'a' && b <= 'z') || b == '/' || b == '+' || b == '='
+	}
+}
+
+// isUpperAlnum reports whether b is in [A-Z0-9].
+func isUpperAlnum(b byte) bool {
+	return upperAlnumTable[b]
+}
+
+// isBase64 reports whether b is in the base64 alphabet [A-Za-z0-9/+=].
+func isBase64(b byte) bool {
+	return base64Table[b]
+}
+
+// hasAccessKeyPrefix reports whether in[i:] begins with a valid access-key prefix.
+// Every prefix starts with 'A', so callers should gate on that first.
+func hasAccessKeyPrefix(in []byte, i int) bool {
+	if i+4 > len(in) {
+		return false
+	}
+	// in[i] == 'A' is guaranteed by the caller's gate. "A3T" is the one prefix
+	// followed by a variable [A-Z0-9]; compare its three fixed bytes at once.
+	if string(in[i:i+3]) == "A3T" && isUpperAlnum(in[i+3]) {
+		return true
+	}
+	p := in[i : i+4 : i+4]
+	for _, prefix := range awsAccessKeyPrefixes {
+		if p[0] == prefix[0] && p[1] == prefix[1] && p[2] == prefix[2] && p[3] == prefix[3] {
+			return true
+		}
+	}
+	return false
+}
+
+// MaskAWSAccessKey masks likely AWS access keys in field in place.
+// It is equivalent to the regexp `UniqueIDRegex`, masking the match's middle,
+// but scans byte-wise without allocating.
+func MaskAWSAccessKey(field []byte) {
+	const (
+		accessKeyPrefixLen = 4
+		minLen             = accessKeyPrefixLen + 16 // prefix + [A-Z0-9]{16,}
+	)
+	i := 0
+	for i < len(field) {
+		// Jump to the next 'A' (every access-key prefix starts with 'A')
+		a := bytes.IndexByte(field[i:], 'A')
+		if a < 0 {
+			return
+		}
+		i += a
+
+		if !hasAccessKeyPrefix(field, i) {
+			i++
+			continue
+		}
+		// Extend to the end of the contiguous [A-Z0-9] run (greedy match).
+		end := i + accessKeyPrefixLen
+		for end < len(field) && isUpperAlnum(field[end]) {
+			end++
+		}
+		if end-i < minLen {
+			// Not enough trailing characters; advance past this position.
+			i++
+			continue
+		}
+		// Mask the middle, preserving the first and last unmasked bytes.
+		for j := i + unmaskedFirst; j < end-unmaskedLast; j++ {
+			field[j] = '*'
+		}
+		i = end
+	}
+}
+
+// MaskAWSSensitiveValuesBytes masks AWS access and secret keys in field in place.
+func MaskAWSSensitiveValuesBytes(field []byte) {
+	MaskAWSAccessKey(field)
+	MaskAWSSecretKeys(field)
 }
 
 // MaskAWSSecretKeys masks likely AWS secret access keys in the input.
@@ -51,14 +136,13 @@ func MaskAWSSecretKeys(in []byte) {
 	const (
 		secretKeyLen = 40
 	)
-	len := len(in)
+	l := len(in)
 	base64Characters := 0
 
-	for i := range len {
+	for i := range l {
 		b := in[i]
 
-		if (b >= 'A' && b <= 'Z') || (b >= 'a' && b <= 'z') || (b >= '0' && b <= '9') || b == '/' || b == '+' || b == '=' {
-			// base64 character.
+		if isBase64(b) {
 			base64Characters++
 		} else {
 			if base64Characters == secretKeyLen {
@@ -72,7 +156,7 @@ func MaskAWSSecretKeys(in []byte) {
 	}
 
 	if base64Characters == secretKeyLen {
-		for j := (len - secretKeyLen) + unmaskedFirst; j < len-unmaskedLast; j++ {
+		for j := (l - secretKeyLen) + unmaskedFirst; j < l-unmaskedLast; j++ {
 			in[j] = '*'
 		}
 	}

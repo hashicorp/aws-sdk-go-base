@@ -252,7 +252,7 @@ func (w *limitedWriter) Write(p []byte) (int, error) {
 
 // readTruncatedBody is equivalent to logging.ReadTruncatedBody
 func readTruncatedBody(reader *textproto.Reader, len int) (string, error) {
-	var builder strings.Builder
+	var builder bytes.Buffer
 	for {
 		line, err := reader.ReadLine()
 		if errors.Is(err, io.EOF) {
@@ -269,8 +269,8 @@ func readTruncatedBody(reader *textproto.Reader, len int) (string, error) {
 		}
 	}
 
-	body := builder.String()
-	body = logging.MaskAWSSensitiveValues(body)
+	// Mask in place on the buffer, then copy out once.
+	logging.MaskAWSSensitiveValuesBytes(builder.Bytes())
 
-	return body, nil
+	return builder.String(), nil
 }
