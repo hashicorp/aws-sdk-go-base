@@ -30,9 +30,9 @@ const (
 	unmaskedLast  = 4
 )
 
-// awsAccessKeyPrefixes are the IAM unique-ID prefixes that precede an access
-// key's 16+ trailing [A-Z0-9] characters. "A3T" is a 3-character prefix
-// followed by one more [A-Z0-9]; the rest are 4 characters.
+// awsAccessKeyPrefixes are the four-character IAM unique-ID prefixes that precede an access
+// key's 16+ trailing [A-Z0-9] characters.
+// Note: "A3T[A-Z0-9];" is handled separately in hasAccessKeyPrefix.
 var awsAccessKeyPrefixes = [...]string{
 	"ABIA", "ACCA", "AGPA", "AIDA", "AIPA", "AKIA",
 	"ANPA", "ANVA", "APKA", "AROA", "ASCA", "ASIA",
@@ -49,9 +49,9 @@ func hasAccessKeyPrefix(in []byte, i int) bool {
 	if i+4 > len(in) {
 		return false
 	}
-	// in[i] == 'A' is guaranteed by the caller's gate, but re-checked cheaply
-	// via the comparisons below.
-	if in[i+1] == '3' && in[i] == 'A' && in[i+2] == 'T' && isUpperAlnum(in[i+3]) {
+	// in[i] == 'A' is guaranteed by the caller's gate. "A3T" is the one prefix
+	// followed by a variable [A-Z0-9]; compare its three fixed bytes at once.
+	if string(in[i:i+3]) == "A3T" && isUpperAlnum(in[i+3]) {
 		return true
 	}
 	p := in[i : i+4 : i+4]
