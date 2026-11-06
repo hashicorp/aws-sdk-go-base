@@ -536,7 +536,8 @@ func HTTPClientConfigurationTest_proxy(t *testing.T, getter TransportGetter) {
 		},
 	}
 
-	for name, testcase := range testcases {
+	for name := range testcases {
+		testcase := testcases[name]
 		t.Run(name, func(t *testing.T) {
 			servicemocks.InitSessionTestEnv(t)
 

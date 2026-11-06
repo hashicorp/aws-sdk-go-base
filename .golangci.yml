@@ -79,6 +79,9 @@ linters:
     gocritic:
       enabled-tags:
         - diagnostic
+        - performance
+      disabled-checks:
+        - hugeParam
     usetesting:
       os-create-temp: false
       os-mkdir-temp: false

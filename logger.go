@@ -247,52 +247,57 @@ func s3AttributeBuilder(ctx context.Context, in middleware.InitializeInput, out 
 
 	switch v := in.Parameters.(type) {
 	case *s3.AbortMultipartUploadInput:
-		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3Key(aws.ToString(v.Key)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3UploadID(aws.ToString(v.UploadId)))
+		s3Attributes = append(s3Attributes,
+			semconv.AWSS3Bucket(aws.ToString(v.Bucket)),
+			semconv.AWSS3Key(aws.ToString(v.Key)),
+			semconv.AWSS3UploadID(aws.ToString(v.UploadId)),
+		)
 
 	case *s3.CompleteMultipartUploadInput:
-		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3Key(aws.ToString(v.Key)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3UploadID(aws.ToString(v.UploadId)))
+		s3Attributes = append(s3Attributes,
+			semconv.AWSS3Bucket(aws.ToString(v.Bucket)),
+			semconv.AWSS3Key(aws.ToString(v.Key)),
+			semconv.AWSS3UploadID(aws.ToString(v.UploadId)),
+		)
 
 	case *s3.CreateBucketInput:
 		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
 
 	case *s3.CreateMultipartUploadInput:
-		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3Key(aws.ToString(v.Key)))
+		s3Attributes = append(s3Attributes,
+			semconv.AWSS3Bucket(aws.ToString(v.Bucket)),
+			semconv.AWSS3Key(aws.ToString(v.Key)),
+		)
 
 	case *s3.DeleteBucketInput:
 		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
 
 	case *s3.DeleteObjectInput:
-		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3Key(aws.ToString(v.Key)))
+		s3Attributes = append(s3Attributes,
+			semconv.AWSS3Bucket(aws.ToString(v.Bucket)),
+			semconv.AWSS3Key(aws.ToString(v.Key)),
+		)
 
 	case *s3.DeleteObjectsInput:
-		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3Delete(serializeDeleteShorthand(v.Delete)))
+		s3Attributes = append(s3Attributes,
+			semconv.AWSS3Bucket(aws.ToString(v.Bucket)),
+			semconv.AWSS3Delete(serializeDeleteShorthand(v.Delete)),
+		)
 
 	case *s3.GetObjectInput:
-		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3Key(aws.ToString(v.Key)))
+		s3Attributes = append(s3Attributes,
+			semconv.AWSS3Bucket(aws.ToString(v.Bucket)),
+			semconv.AWSS3Key(aws.ToString(v.Key)),
+		)
 
 	case *s3.HeadBucketInput:
 		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
 
 	case *s3.HeadObjectInput:
-		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3Key(aws.ToString(v.Key)))
+		s3Attributes = append(s3Attributes,
+			semconv.AWSS3Bucket(aws.ToString(v.Bucket)),
+			semconv.AWSS3Key(aws.ToString(v.Key)),
+		)
 
 	case *s3.ListBucketsInput:
 		// ListBucketsInput defines no attributes
@@ -304,18 +309,18 @@ func s3AttributeBuilder(ctx context.Context, in middleware.InitializeInput, out 
 		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
 
 	case *s3.PutObjectInput:
-		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3Key(aws.ToString(v.Key)))
+		s3Attributes = append(s3Attributes,
+			semconv.AWSS3Bucket(aws.ToString(v.Bucket)),
+			semconv.AWSS3Key(aws.ToString(v.Key)),
+		)
 
 	case *s3.UploadPartInput:
-		s3Attributes = append(s3Attributes, semconv.AWSS3Bucket(aws.ToString(v.Bucket)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3Key(aws.ToString(v.Key)))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3PartNumber(int(aws.ToInt32(v.PartNumber))))
-
-		s3Attributes = append(s3Attributes, semconv.AWSS3UploadID(aws.ToString(v.UploadId)))
+		s3Attributes = append(s3Attributes,
+			semconv.AWSS3Bucket(aws.ToString(v.Bucket)),
+			semconv.AWSS3Key(aws.ToString(v.Key)),
+			semconv.AWSS3PartNumber(int(aws.ToInt32(v.PartNumber))),
+			semconv.AWSS3UploadID(aws.ToString(v.UploadId)),
+		)
 	}
 
 	return s3Attributes
