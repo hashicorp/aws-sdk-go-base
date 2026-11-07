@@ -458,8 +458,30 @@ func AwsMetadataApiMock(responses []*MetadataResponse) func() {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 
-	os.Setenv("AWS_EC2_METADATA_SERVICE_ENDPOINT", ts.URL)
-	return ts.Close
+	restoreEnv := setEnv("AWS_EC2_METADATA_SERVICE_ENDPOINT", ts.URL)
+	return func() {
+		restoreEnv()
+		ts.Close()
+	}
+}
+
+// setEnv sets an environment variable and returns a function which restores it
+// to the value it had beforehand, unsetting it again if it was not set.
+//
+// The mocks below cannot use `t.Setenv` because they do not take a
+// `*testing.T`, and leaving the variable set would make it visible to every
+// later test in the package, pointing at a server which has been closed.
+func setEnv(key, value string) func() {
+	previous, wasSet := os.LookupEnv(key)
+	os.Setenv(key, value)
+
+	return func() {
+		if wasSet {
+			os.Setenv(key, previous)
+		} else {
+			os.Unsetenv(key)
+		}
+	}
 }
 
 // EcsCredentialsApiMock establishes a httptest server to mock out the ECS credentials API.
@@ -481,8 +503,11 @@ func EcsCredentialsApiMock() func() {
 		w.WriteHeader(http.StatusBadRequest)
 	}))
 
-	os.Setenv("AWS_CONTAINER_CREDENTIALS_FULL_URI", ts.URL+"/creds")
-	return ts.Close
+	restoreEnv := setEnv("AWS_CONTAINER_CREDENTIALS_FULL_URI", ts.URL+"/creds")
+	return func() {
+		restoreEnv()
+		ts.Close()
+	}
 }
 
 func SsoCredentialsApiMock() (func(), string) {
