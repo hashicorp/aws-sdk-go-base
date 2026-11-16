@@ -259,11 +259,9 @@ func FuzzReadTruncatedBody(f *testing.F) {
 				if got != want {
 					t.Fatalf("ReadTruncatedBody() = %q, want truncated body %q", got, want)
 				}
-			} else {
+			} else if got != expectedMasked {
 				// When not truncated, the entire body must be returned with proper normalization and masking.
-				if got != expectedMasked {
-					t.Fatalf("ReadTruncatedBody() = %q, want complete body %q", got, expectedMasked)
-				}
+				t.Fatalf("ReadTruncatedBody() = %q, want complete body %q", got, expectedMasked)
 			}
 		}
 	})

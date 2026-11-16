@@ -3421,7 +3421,7 @@ func (c *configurer) AddEndpoint(k, v string) {
 	case "sso":
 		c.SsoEndpoint = v
 	default:
-		panic(fmt.Sprintf(`invalid endpoint "%s"`, k))
+		panic(fmt.Sprintf("invalid endpoint %q", k))
 	}
 }
 
@@ -3810,11 +3810,12 @@ func TestRetryHandlers(t *testing.T) {
 				return i
 			})
 			_, metadata, err := am.HandleFinalize(ctx, middleware.FinalizeInput{Request: nil}, testcase.NextHandler())
-			if err != nil && testcase.Err == nil {
+			switch {
+			case err != nil && testcase.Err == nil:
 				t.Errorf("expect no error, got %v", err)
-			} else if err == nil && testcase.Err != nil {
+			case err == nil && testcase.Err != nil:
 				t.Errorf("expect error, got none")
-			} else if err != nil && testcase.Err != nil {
+			case err != nil && testcase.Err != nil:
 				if !strings.Contains(err.Error(), testcase.Err.Error()) {
 					t.Errorf("expect %v, got %v", testcase.Err, err)
 				}

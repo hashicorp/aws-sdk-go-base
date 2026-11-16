@@ -17,7 +17,7 @@ import (
 // values which do not match the expected `{product}/{version} ({comment})`
 // pattern (where version and comment are optional) return a zero value struct.
 func FromSlice[T any](sl []T) config.UserAgentProducts {
-	return slices.ApplyToAll(sl, func(v T) config.UserAgentProduct { return from(v) })
+	return slices.ApplyToAll(sl, from[T])
 }
 
 func from[T any](v T) config.UserAgentProduct {

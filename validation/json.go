@@ -19,7 +19,7 @@ type DuplicateKeyError struct {
 }
 
 func (e *DuplicateKeyError) Error() string {
-	return fmt.Sprintf(`duplicate key "%s"`, strings.Join(append(e.path, e.key), "."))
+	return fmt.Sprintf("duplicate key %q", strings.Join(append(e.path, e.key), "."))
 }
 
 // JSONNoDuplicateKeys verifies the provided JSON object contains

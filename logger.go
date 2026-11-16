@@ -149,7 +149,7 @@ func (r *requestResponseLogger) HandleDeserialize(ctx context.Context, in middle
 	elapsed := time.Since(start)
 
 	if err == nil && isDebug {
-		if err = r.logResponse(ctx, logger, out.RawResponse, elapsed); err != nil {
+		if err := r.logResponse(ctx, logger, out.RawResponse, elapsed); err != nil {
 			return out, metadata, err
 		}
 	}

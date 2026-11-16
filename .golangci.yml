@@ -19,6 +19,7 @@ linters:
     - errcheck
     - errname
     - goconst
+    - gocritic
     - govet
     - ineffassign
     - misspell
@@ -75,6 +76,9 @@ linters:
         - strings.SplitN
         - strings.SplitAfterN
         - os.MkdirAll
+    gocritic:
+      enabled-tags:
+        - diagnostic
     usetesting:
       os-create-temp: false
       os-mkdir-temp: false
