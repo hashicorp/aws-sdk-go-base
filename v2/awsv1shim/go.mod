@@ -13,7 +13,7 @@ require (
 	github.com/hashicorp/aws-sdk-go-base/v2 v2.0.0-beta.76
 	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/hashicorp/terraform-plugin-log v0.11.0
-	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.70.0
+	go.opentelemetry.io/contrib/instrumentation/github.com/aws/aws-sdk-go-v2/otelaws v0.72.0
 	go.opentelemetry.io/otel v1.47.0
 )
 
@@ -31,7 +31,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.20.6 // indirect
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.114.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/signin v1.10.4 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sns v1.42.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sns v1.47.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sqs v1.52.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sso v1.38.4 // indirect
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.43.4 // indirect
