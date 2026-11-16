@@ -3,6 +3,7 @@
 package logging
 
 import (
+	"bytes"
 	"testing"
 )
 
@@ -34,7 +35,7 @@ func FuzzMaskAWSAccessKey(f *testing.F) {
 		got := []byte(input)
 		MaskAWSAccessKey(got)
 		want := referenceMaskAWSAccessKey([]byte(input))
-		if string(got) != string(want) {
+		if !bytes.Equal(got, want) {
 			t.Fatalf("MaskAWSAccessKey(%q) = %q, UniqueIDRegex reference = %q", input, string(got), string(want))
 		}
 	})

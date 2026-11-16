@@ -13,7 +13,7 @@ import (
 
 // cannotAssumeRoleError occurs when AssumeRole cannot complete.
 type cannotAssumeRoleError struct {
-	ar  config.AssumeRole
+	ar  *config.AssumeRole
 	err error
 }
 
@@ -50,7 +50,7 @@ func (e cannotAssumeRoleError) Err() error {
 	return e.err
 }
 
-func newCannotAssumeRoleError(ar AssumeRole, err error) cannotAssumeRoleError {
+func newCannotAssumeRoleError(ar *AssumeRole, err error) cannotAssumeRoleError {
 	return cannotAssumeRoleError{
 		ar:  ar,
 		err: err,
