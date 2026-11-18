@@ -17,10 +17,15 @@ import (
 	"time"
 )
 
+// nonExistentFile is used to point the AWS SDK's shared configuration and
+// credentials file locations at a path which cannot be read, so that tests
+// never pick up the configuration of the user running them.
+const nonExistentFile = "file_not_exists"
+
 func InitSessionTestEnv(t *testing.T) {
 	StashEnv(t)
-	t.Setenv("AWS_CONFIG_FILE", "file_not_exists")
-	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", "file_not_exists")
+	t.Setenv("AWS_CONFIG_FILE", nonExistentFile)
+	t.Setenv("AWS_SHARED_CREDENTIALS_FILE", nonExistentFile)
 }
 
 func StashEnv(t *testing.T) {
@@ -82,8 +87,21 @@ func UnsetEnv(t *testing.T) func() {
 	}
 	// The Shared Credentials Provider has a very reasonable fallback option of
 	// checking the user's home directory for credentials, which may create
-	// unexpected results for users running these tests
+	// unexpected results for users running these tests.
+	//
+	// Overriding "HOME" is not sufficient: the AWS SDK for Go v2 resolves the
+	// default shared configuration and credentials file paths into the
+	// package-level variables `config.DefaultSharedConfigFiles` and
+	// `config.DefaultSharedCredentialsFiles` when the `config` package is
+	// initialized, which happens before any test body runs. The file locations
+	// must also be pointed at a path which does not exist.
 	t.Setenv("HOME", "/dev/null")
+	if err := os.Setenv("AWS_CONFIG_FILE", nonExistentFile); err != nil {
+		t.Fatalf("Error setting env var AWS_CONFIG_FILE: %s", err)
+	}
+	if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", nonExistentFile); err != nil {
+		t.Fatalf("Error setting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
+	}
 
 	return func() {
 		// re-set all the envs we unset above
@@ -101,6 +119,9 @@ func UnsetEnv(t *testing.T) func() {
 		}
 		if err := os.Setenv("AWS_SHARED_CREDENTIALS_FILE", e.CredsFilename); err != nil {
 			t.Fatalf("Error resetting env var AWS_SHARED_CREDENTIALS_FILE: %s", err)
+		}
+		if err := os.Setenv("AWS_CONFIG_FILE", e.ConfigFilename); err != nil {
+			t.Fatalf("Error resetting env var AWS_CONFIG_FILE: %s", err)
 		}
 		if err := os.Setenv("HOME", e.Home); err != nil {
 			t.Fatalf("Error resetting env var HOME: %s", err)
@@ -151,18 +172,19 @@ func getEnv() *currentEnv {
 	// Grab any existing AWS keys and preserve. In some tests we'll unset these, so
 	// we need to have them and restore them after
 	return &currentEnv{
-		Key:           os.Getenv("AWS_ACCESS_KEY_ID"),
-		Secret:        os.Getenv("AWS_SECRET_ACCESS_KEY"),
-		Token:         os.Getenv("AWS_SESSION_TOKEN"),
-		Profile:       os.Getenv("AWS_PROFILE"),
-		CredsFilename: os.Getenv("AWS_SHARED_CREDENTIALS_FILE"),
-		Home:          os.Getenv("HOME"),
+		Key:            os.Getenv("AWS_ACCESS_KEY_ID"),
+		Secret:         os.Getenv("AWS_SECRET_ACCESS_KEY"),
+		Token:          os.Getenv("AWS_SESSION_TOKEN"),
+		Profile:        os.Getenv("AWS_PROFILE"),
+		CredsFilename:  os.Getenv("AWS_SHARED_CREDENTIALS_FILE"),
+		ConfigFilename: os.Getenv("AWS_CONFIG_FILE"),
+		Home:           os.Getenv("HOME"),
 	}
 }
 
 // struct to preserve the current environment
 type currentEnv struct {
-	Key, Secret, Token, Profile, CredsFilename, Home string
+	Key, Secret, Token, Profile, CredsFilename, ConfigFilename, Home string
 }
 
 // Copied and adapted from https://github.com/aws/aws-sdk-go-v2/blob/ee5e3f05637540596cc7aab1359742000a8d533a/config/resolve_credentials_test.go#L127
